@@ -47,10 +47,6 @@ const VerifyEmail = () => {
           setMessage(
             data.message || "Email verified successfully! You can now log in."
           );
-<<<<<<< HEAD
-
-=======
->>>>>>> 7a130ae7abebcd41a75cf2778e062547d6586986
           setTimeout(() => {
             navigate("/login");
           }, 3000);
@@ -98,10 +94,6 @@ const VerifyEmail = () => {
         >
           {message}
         </p>
-<<<<<<< HEAD
-=======
-
->>>>>>> 7a130ae7abebcd41a75cf2778e062547d6586986
         {status === "error" && (
           <div className="mt-4 space-y-2">
             <button

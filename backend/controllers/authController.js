@@ -162,14 +162,7 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.verifyEmail = async (req, res) => {
-<<<<<<< HEAD
-  const { token } = req.body;
-
-  // Add detailed logging
-  console.log("Received verification request with token:", token);
-=======
   const token = req.query.token || req.body.token;
->>>>>>> 7a130ae7abebcd41a75cf2778e062547d6586986
 
   if (!token) {
     console.log("No token provided in request");
