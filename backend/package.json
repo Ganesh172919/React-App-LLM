@@ -4,7 +4,8 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --verbose --forceExit --detectOpenHandles",
+    "test:watch": "jest --watch --forceExit --detectOpenHandles"
   },
   "keywords": [],
   "author": "",
@@ -33,6 +34,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/mongoose": "^5.11.96",
     "eslint": "^9.23.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.9",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",

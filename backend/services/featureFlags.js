@@ -107,12 +107,12 @@ class FeatureFlagService {
 
     if (!flag.enabled) return false;
 
-    if (!flag.tiers.includes(userTier)) return false;
-
     if (userId) {
       const override = this.overrides.get(`${flagName}:${userId}`);
       if (override !== undefined) return override;
     }
+
+    if (!flag.tiers.includes(userTier)) return false;
 
     if (flag.rolloutPercentage < 100) {
       if (!userId) return false;
