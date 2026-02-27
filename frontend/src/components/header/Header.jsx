@@ -8,14 +8,37 @@ function Header() {
   return (
     <header className="text-center text-xl font-bold py-4 bg-gray-800 shadow-md">
       <nav className="flex justify-between items-center px-4">
-        <div>
+        <div className="flex items-center gap-1">
           <NavLink to="/" className="text-white hover:text-blue-500 mx-2">
             Home
           </NavLink>
           {user && (
-            <NavLink to="/chat" className="text-white hover:text-blue-500 mx-2">
-              Chat
-            </NavLink>
+            <>
+              <NavLink
+                to="/subscription"
+                className="text-white hover:text-blue-500 mx-2 text-sm"
+              >
+                Plans
+              </NavLink>
+              <NavLink
+                to="/analytics"
+                className="text-white hover:text-blue-500 mx-2 text-sm"
+              >
+                Analytics
+              </NavLink>
+              <NavLink
+                to="/api-keys"
+                className="text-white hover:text-blue-500 mx-2 text-sm"
+              >
+                API Keys
+              </NavLink>
+              <NavLink
+                to="/settings"
+                className="text-white hover:text-blue-500 mx-2 text-sm"
+              >
+                Settings
+              </NavLink>
+            </>
           )}
         </div>
         <div>

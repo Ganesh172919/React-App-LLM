@@ -26,6 +26,11 @@ import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
 import VerifyEmail from "./components/VerifyEmail";
 import ReactMarkdown from "react-markdown";
+import SubscriptionPage from "./components/subscription/SubscriptionPage";
+import ApiKeysPage from "./components/apikeys/ApiKeysPage";
+import AnalyticsDashboard from "./components/analytics/AnalyticsDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
+import SettingsPage from "./components/settings/SettingsPage";
 
 const App = () => {
   const [prompt, setPrompt] = useState("");
@@ -619,6 +624,26 @@ const App = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route
+          path="/subscription"
+          element={user ? <SubscriptionPage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/api-keys"
+          element={user ? <ApiKeysPage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/analytics"
+          element={user ? <AnalyticsDashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/admin"
+          element={user ? <AdminDashboard /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/settings"
+          element={user ? <SettingsPage /> : <Navigate to="/login" />}
+        />
         <Route
           path="/"
           element={
