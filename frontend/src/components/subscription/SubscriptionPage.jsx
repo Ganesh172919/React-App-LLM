@@ -189,6 +189,11 @@ function SubscriptionPage() {
                   subscription?.tier === tier.id ||
                   (subscription?.tier === "enterprise" && tier.id !== "enterprise")
                 }
+                title={
+                  subscription?.tier === "enterprise" && tier.id !== "enterprise"
+                    ? "Contact support to downgrade from Enterprise"
+                    : undefined
+                }
                 className={`w-full py-3 rounded-lg font-bold transition ${
                   subscription?.tier === tier.id
                     ? "bg-green-700 cursor-default"
