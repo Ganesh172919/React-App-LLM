@@ -4,6 +4,9 @@ const { logger } = require("../services/logger");
 async function authenticateApiKey(req, res, next) {
   const apiKey = req.headers["x-api-key"];
 
+  // This middleware is optional - if no API key header is provided, fall
+  // through to the next authentication layer (e.g., JWT cookie auth).
+  // Routes that require authentication should always use authenticateToken.
   if (!apiKey) {
     return next();
   }

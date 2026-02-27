@@ -27,6 +27,10 @@ class AIAgent {
             /process\.exit/i,
             /__proto__/i,
             /constructor\.prototype/i,
+            /Function\s*\(/i,
+            /setTimeout\s*\(\s*['"`]/i,
+            /setInterval\s*\(\s*['"`]/i,
+            /import\s*\(\s*['"`]/i,
           ];
           return !dangerousPatterns.some((p) => p.test(JSON.stringify(input)));
         },
@@ -59,7 +63,8 @@ class AIAgent {
         validate: (output) => {
           if (!output.code) return { valid: true };
           try {
-            new Function(output.code);
+            const acorn = require("acorn");
+            acorn.parse(output.code, { ecmaVersion: 2020, sourceType: "module" });
             return { valid: true };
           } catch (e) {
             return { valid: false, error: `Syntax error: ${e.message}` };
