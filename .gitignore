@@ -1,0 +1,12 @@
+**/node_modules/
+**/node_modules.broken/
+**/dist/
+**/.env
+!.env.example
+*.log
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/

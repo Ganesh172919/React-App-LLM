@@ -3,7 +3,6 @@ const http = require("http");
 const WebSocket = require("ws");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
-const cors = require("cors");
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
@@ -75,12 +74,15 @@ wss.on("close", () => {
   console.log("WebSocket server closed");
 });
 
-// Broadcast function for application use
-app.locals.broadcastUpdate = (data) => {
-  console.log(`Broadcasting to ${wss.clients.size} clients`);
+// Broadcast only to sockets that belong to the affected user.
+app.locals.broadcastUpdate = (data, userId) => {
+  const targetUserId = String(userId || "");
 
   wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
+    if (
+      client.readyState === WebSocket.OPEN &&
+      String(client.userId) === targetUserId
+    ) {
       try {
         client.send(
           JSON.stringify({
@@ -115,12 +117,5 @@ process.on("SIGTERM", () => {
     });
   });
 });
-
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-  })
-);
 
 module.exports = server;

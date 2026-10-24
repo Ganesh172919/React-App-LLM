@@ -1,4 +1,5 @@
-import React, { useContext } from "react";
+import { useContext } from "react";
+import { Link } from "react-router-dom";
 import { SidebarContext } from "../context/SidebarContext";
 
 const Sidebar = ({
@@ -12,11 +13,6 @@ const Sidebar = ({
   isNewChat,
 }) => {
   const { sidebarOpen, setSidebarOpen } = useContext(SidebarContext);
-
-  // Function to truncate text for display
-  const truncateText = (text, length = 20) => {
-    return text?.length > length ? text.substring(0, length) + "..." : text;
-  };
 
   const getSessionTitle = (session) => {
     return (
@@ -180,9 +176,9 @@ const Sidebar = ({
         )}
       </div>
       <div className="p-3 border-t border-gray-700">
-        <button
+        <Link
+          to="/dashboard"
           className="w-full p-2 flex items-center justify-center gap-2 hover:bg-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
-          disabled={loadingStates.deleting}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -198,8 +194,8 @@ const Sidebar = ({
               d="M13 10V3L4 14h7v7l9-11h-7z"
             />
           </svg>
-          <span>Upgrade Plan</span>
-        </button>
+          <span>View analytics</span>
+        </Link>
       </div>
     </div>
   );

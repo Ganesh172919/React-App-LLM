@@ -4,9 +4,5 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [
-    require("tailwind-scrollbar"),
-    require("tailwind-scrollbar-hide"),
-    require("@tailwindcss/typography"),
-  ],
+  plugins: [],
 };

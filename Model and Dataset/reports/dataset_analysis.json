@@ -1,0 +1,141 @@
+{
+  "generated_at_utc": "2026-10-24T23:53:17.212235+00:00",
+  "source_file": "Final data set for llm based health assitance (1).csv",
+  "scope": "Descriptive profiling only; no model training or clinical validation performed.",
+  "rows": {
+    "total": 16412,
+    "valid_question_answer_pairs": 16407,
+    "excluded_missing_value_rows": 5,
+    "unique_normalized_questions": 14345,
+    "unique_normalized_pairs": 16359
+  },
+  "quality_flags": {
+    "missing_question_rows": 0,
+    "missing_answer_rows": 5,
+    "exact_duplicate_rows_after_whitespace_normalization": 48,
+    "repeated_question_rows": 2062,
+    "questions_under_4_words": 215,
+    "answers_under_20_words": 656,
+    "answers_over_1000_words": 225
+  },
+  "lengths_in_words": {
+    "question": {
+      "min": 3,
+      "p25": 5.0,
+      "median": 7,
+      "mean": 7.1,
+      "p75": 9.0,
+      "p95": 11.0,
+      "max": 26
+    },
+    "answer": {
+      "min": 1,
+      "p25": 66.0,
+      "median": 132,
+      "mean": 189.7,
+      "p75": 237.0,
+      "p95": 489.0,
+      "max": 4133
+    }
+  },
+  "question_types": {
+    "definition": 7790,
+    "other": 4123,
+    "symptoms": 2749,
+    "causes": 736,
+    "risk": 378,
+    "prognosis": 358,
+    "prevention": 221,
+    "treatment": 45,
+    "diagnosis": 7
+  },
+  "top_question_terms": [
+    {
+      "term": "syndrome",
+      "count": 3626
+    },
+    {
+      "term": "symptoms",
+      "count": 2748
+    },
+    {
+      "term": "treatments",
+      "count": 2437
+    },
+    {
+      "term": "inherited",
+      "count": 1459
+    },
+    {
+      "term": "related",
+      "count": 1169
+    },
+    {
+      "term": "many",
+      "count": 1117
+    },
+    {
+      "term": "affected",
+      "count": 1117
+    },
+    {
+      "term": "genetic",
+      "count": 1097
+    },
+    {
+      "term": "changes",
+      "count": 1088
+    },
+    {
+      "term": "type",
+      "count": 899
+    },
+    {
+      "term": "deficiency",
+      "count": 861
+    },
+    {
+      "term": "causes",
+      "count": 755
+    },
+    {
+      "term": "diagnose",
+      "count": 649
+    },
+    {
+      "term": "cancer",
+      "count": 554
+    },
+    {
+      "term": "research",
+      "count": 396
+    },
+    {
+      "term": "done",
+      "count": 396
+    },
+    {
+      "term": "clinical",
+      "count": 395
+    },
+    {
+      "term": "trials",
+      "count": 395
+    },
+    {
+      "term": "congenital",
+      "count": 382
+    },
+    {
+      "term": "dysplasia",
+      "count": 370
+    }
+  ],
+  "recommendations": [
+    "Remove rows with missing answers before retrieval, evaluation, or future training.",
+    "Deduplicate normalized question-answer pairs and review repeated questions with conflicting answers.",
+    "Retain source provenance and licensing metadata; the current CSV has only question and answer fields.",
+    "Use deterministic, question-level splits to prevent duplicate questions leaking across evaluation sets.",
+    "Treat this profiling report as data-quality evidence, not as clinical validation of any answer."
+  ]
+}

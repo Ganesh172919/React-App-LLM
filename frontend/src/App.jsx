@@ -1,4 +1,4 @@
-import React, {
+import {
   useState,
   useEffect,
   useRef,
@@ -24,8 +24,10 @@ import { isMedicalQuery } from "./utils/medicalDetector";
 import VerificationPending from "./components/auth/VerificationPending";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
-import VerifyEmail from "./components/VerifyEmail";
+import VerifyEmail from "./components/auth/VerifyEmail";
 import ReactMarkdown from "react-markdown";
+import AnalyticsDashboard from "./components/dashboard/AnalyticsDashboard";
+import { apiRequest, getWebSocketUrl } from "./lib/api";
 
 const App = () => {
   const [prompt, setPrompt] = useState("");
@@ -43,14 +45,13 @@ const App = () => {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [isNewChat, setIsNewChat] = useState(true);
   const [connectionError, setConnectionError] = useState(false);
-  const [fallbackToGemini, setFallbackToGemini] = useState(false);
   const messagesEndRef = useRef(null);
   const { sidebarOpen, setSidebarOpen } = useContext(SidebarContext);
   const { user } = useContext(AuthContext);
   const maxMessagesPerSession = 1000;
-  const isInitialMount = useRef(true);
-  const [wsReconnectAttempts, setWsReconnectAttempts] = useState(0);
+  const wsReconnectAttempts = useRef(0);
   const wsRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
 
   const debouncedUpdateSessions = useRef(
     debounce((newSessions) => {
@@ -62,7 +63,7 @@ const App = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const processMessages = (chatMessages) => {
+  const processMessages = useCallback((chatMessages) => {
     const processed = [];
     if (Array.isArray(chatMessages)) {
       chatMessages.forEach((msg) => {
@@ -81,6 +82,7 @@ const App = () => {
             timestamp: msg.timestamp || new Date().toISOString(),
             isMedical: msg.isMedical || false,
             references: msg.references || [],
+            verification: msg.verification,
           });
         }
         if (msg.text) {
@@ -90,20 +92,17 @@ const App = () => {
             timestamp: msg.timestamp || new Date().toISOString(),
             isMedical: msg.isMedical || false,
             references: msg.references || [],
+            verification: msg.verification,
           });
         }
       });
     }
     return processed;
-  };
+  }, []);
 
-  const fetchChatHistory = async () => {
+  const fetchChatHistory = useCallback(async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/history", {
-        credentials: "include",
-      });
-      const data = await response.json();
-      console.log("Raw chat history data:", data);
+      const data = await apiRequest("/history");
 
       if (Array.isArray(data)) {
         const history = data
@@ -120,8 +119,6 @@ const App = () => {
             }
 
             const messages = processMessages(chat.messages);
-            console.log("Processed messages for chat:", chatId, messages);
-
             if (messages.length > 0) {
               return {
                 id: chatId,
@@ -138,14 +135,13 @@ const App = () => {
           })
           .filter(Boolean);
 
-        console.log("Processed chat history:", history);
         setChatSessions(history);
       }
     } catch (error) {
       console.error("Error fetching chat history:", error);
       setChatSessions([]);
     }
-  };
+  }, [processMessages]);
 
   useEffect(() => {
     if (!user) {
@@ -156,14 +152,16 @@ const App = () => {
 
     fetchChatHistory();
 
+    let shouldReconnect = true;
+
     const setupWebSocket = () => {
-      const ws = new WebSocket(`ws://localhost:5000/ws`);
+      const ws = new WebSocket(getWebSocketUrl());
       wsRef.current = ws;
 
       ws.onopen = () => {
         console.log("WebSocket connected");
         setConnectionError(false);
-        setWsReconnectAttempts(0);
+        wsReconnectAttempts.current = 0;
       };
 
       ws.onmessage = (event) => {
@@ -172,7 +170,7 @@ const App = () => {
           console.log("WebSocket message received:", message);
 
           if (message.type === "CHAT_UPDATE") {
-            if (message.data.action === "SAVE") {
+            if (["SAVE", "NEW", "UPDATE"].includes(message.data.action)) {
               if (message.data.chat.id !== activeSessionId) {
                 debouncedUpdateSessions((prev) => {
                   const chat = message.data.chat;
@@ -252,9 +250,10 @@ const App = () => {
         console.log("WebSocket disconnected");
         setConnectionError(true);
 
-        const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts), 30000);
-        setTimeout(() => {
-          setWsReconnectAttempts((prev) => prev + 1);
+        const delay = Math.min(1000 * Math.pow(2, wsReconnectAttempts.current), 30000);
+        if (!shouldReconnect) return;
+        reconnectTimerRef.current = setTimeout(() => {
+          wsReconnectAttempts.current += 1;
           setupWebSocket();
         }, delay);
       };
@@ -262,39 +261,12 @@ const App = () => {
 
     setupWebSocket();
     return () => {
+      shouldReconnect = false;
+      clearTimeout(reconnectTimerRef.current);
       if (wsRef.current) wsRef.current.close();
       debouncedUpdateSessions.cancel();
     };
-  }, [user, activeSessionId, debouncedUpdateSessions]);
-
-  const API_URL =
-    "https://api-inference.huggingface.co/models/Ganesh19128734/fine-tuned-gpt2";
-  const HF_API_KEY = import.meta.env.VITE_API_KEY;
-
-  async function queryModel(prompt) {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${HF_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: 100,
-          temperature: 0.7,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Error:", response.statusText);
-      return;
-    }
-
-    const result = await response.json();
-    console.log(" Response:", result[0]?.generated_text);
-  }
+  }, [user, activeSessionId, debouncedUpdateSessions, fetchChatHistory, processMessages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -306,8 +278,9 @@ const App = () => {
       return;
     }
 
+    const submittedPrompt = prompt.trim();
     const userMessage = {
-      text: prompt,
+      text: submittedPrompt,
       isUser: true,
       timestamp: new Date().toISOString(),
     };
@@ -316,82 +289,38 @@ const App = () => {
     setMessages(updatedMessages);
     setPrompt("");
     setIsLoading(true);
-    setFallbackToGemini(false);
 
     try {
       let botReply;
       let references = [];
-      const isMedical = isMedicalQuery(prompt);
+      let verification;
+      const isMedical = isMedicalQuery(submittedPrompt);
+      let shouldUseGeneralAi = !isMedical;
+      let usedMedicalGrounding = false;
 
       if (isMedical) {
         try {
-          const medicalResponse = await fetch(
-            "http://localhost:5000/api/medical",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-              },
-              body: JSON.stringify({
-                prompt,
-                sessionId: activeSessionId || null,
-              }),
-              credentials: "include",
-            }
-          );
-
-          const medicalData = await medicalResponse.json();
-
-          if (!medicalResponse.ok) {
-            if (medicalData.shouldFallback) {
-              console.log("Medical API suggested fallback:", medicalData.error);
-              setFallbackToGemini(true);
-            } else {
-              throw new Error(
-                medicalData.error ||
-                  `Medical API responded with ${medicalResponse.status}`
-              );
-            }
-          } else if (medicalData.error) {
-            throw new Error(medicalData.error);
-          } else {
-            botReply = medicalData.text;
-            references = medicalData.references || [];
-          }
+          const medicalData = await apiRequest("/medical", {
+            method: "POST",
+            body: JSON.stringify({ prompt: submittedPrompt }),
+          });
+          botReply = medicalData.text;
+          references = medicalData.references || [];
+          verification = medicalData.verification;
+          usedMedicalGrounding = references.length > 0;
         } catch (medicalError) {
           console.warn("Medical API failed:", medicalError.message);
-          setFallbackToGemini(true);
+          shouldUseGeneralAi = true;
         }
       }
 
-      if (!isMedical || fallbackToGemini || !botReply) {
-        const apiKey = import.meta.env.VITE_API_KEY;
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: {
-                temperature: 0.7,
-                topK: 40,
-                topP: 0.95,
-                maxOutputTokens: 1024,
-              },
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
-        }
-
-        const data = await response.json();
-        botReply =
-          data.candidates?.[0]?.content?.parts?.[0]?.text ||
-          "I couldn't generate a response. Please try again.";
+      if (shouldUseGeneralAi || !botReply) {
+        const data = await apiRequest("/ai/chat", {
+          method: "POST",
+          body: JSON.stringify({ prompt: submittedPrompt }),
+        });
+        botReply = data.text || "I couldn't generate a response. Please try again.";
+        verification = data.verification;
         botReply = formatGeminiResponse(botReply);
       }
 
@@ -399,28 +328,26 @@ const App = () => {
         text: botReply,
         isUser: false,
         timestamp: new Date().toISOString(),
-        isMedical: isMedical && !fallbackToGemini,
+        isMedical: usedMedicalGrounding,
         references,
+        verification,
       };
 
       const finalMessages = [...updatedMessages, botMessage];
       setMessages(finalMessages);
 
       setLoadingStates((prev) => ({ ...prev, saving: true }));
-      const saveResponse = await fetch("http://localhost:5000/api/save", {
+      const saveData = await apiRequest("/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: userMessage.text,
           response: botReply,
           sessionId: activeSessionId || null,
-          isMedical: isMedical && !fallbackToGemini,
+          isMedical: usedMedicalGrounding,
           references,
+          verification,
         }),
-        credentials: "include",
       });
-
-      const saveData = await saveResponse.json();
       if (saveData.isNew) {
         setActiveSessionId(saveData.sessionId);
         setIsNewChat(false);
@@ -430,7 +357,10 @@ const App = () => {
       setError({
         message: "Failed to send message",
         details: error.message,
-        retry: () => handleSubmit(e),
+        retry: () => {
+          setPrompt(submittedPrompt);
+          setError(null);
+        },
       });
     } finally {
       setIsLoading(false);
@@ -484,24 +414,12 @@ const App = () => {
     });
 
     try {
-      const response = await fetch(`http://localhost:5000/api/delete`, {
+      await apiRequest("/delete", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
         body: JSON.stringify({
           sessionId: actualSessionId,
         }),
-        credentials: "include",
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(
-          data.message || `Server responded with ${response.status}`
-        );
-      }
 
       setChatSessions((prev) => {
         const updatedSessions = prev.filter(
@@ -613,6 +531,10 @@ const App = () => {
     <Router>
       <Header />
       <Routes>
+        <Route
+          path="/"
+          element={user ? <Navigate to="/chat" replace /> : <Home />}
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/verification-pending" element={<VerificationPending />} />
@@ -620,7 +542,7 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route
-          path="/"
+          path="/chat"
           element={
             user ? (
               <div className="flex flex-col h-full min-h-screen bg-gray-900 text-white">
@@ -659,12 +581,14 @@ const App = () => {
                           <p className="text-sm">{error.details}</p>
                         </div>
                         <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={error.retry}
-                            className="px-2 py-1 bg-red-700 rounded hover:bg-red-600"
-                          >
-                            Retry
-                          </button>
+                          {error.retry && (
+                            <button
+                              onClick={error.retry}
+                              className="px-2 py-1 bg-red-700 rounded hover:bg-red-600"
+                            >
+                              Retry
+                            </button>
+                          )}
                           <button
                             onClick={() => setError(null)}
                             className="px-2 py-1 bg-gray-600 rounded hover:bg-gray-500"
@@ -679,8 +603,26 @@ const App = () => {
                   <div className="flex-1 overflow-y-auto">
                     <div className="max-w-4xl mx-auto p-4">
                       {messages.length === 0 && !isLoading ? (
-                        <div className="text-center text-gray-400 py-10">
-                          Start a new conversation
+                        <div className="mx-auto max-w-2xl py-16 text-center">
+                          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-cyan-400/10 text-2xl text-cyan-300">
+                            +
+                          </div>
+                          <h2 className="mt-5 text-2xl font-semibold text-white">Start a health conversation</h2>
+                          <p className="mt-2 text-sm text-gray-400">
+                            Medical questions are routed through PubMed grounding when relevant sources are available.
+                          </p>
+                          <div className="mt-6 flex flex-wrap justify-center gap-2">
+                            {["Explain migraine warning signs", "How should I prepare for a doctor visit?", "Summarize my health question clearly"].map((suggestion) => (
+                              <button
+                                type="button"
+                                key={suggestion}
+                                onClick={() => setPrompt(suggestion)}
+                                className="rounded-full border border-gray-700 bg-gray-800 px-4 py-2 text-xs text-gray-300 hover:border-cyan-600 hover:text-white"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         messages.map((message, i) => (
@@ -761,9 +703,9 @@ const App = () => {
                                 {new Date(
                                   message.timestamp
                                 ).toLocaleTimeString()}
-                                {message.isMedical && (
+                                {message.references?.length > 0 && (
                                   <span className="ml-2 text-green-300">
-                                    ✓ Verified Medical Source
+                                    ✓ PubMed sources attached
                                   </span>
                                 )}
                               </div>
@@ -789,7 +731,8 @@ const App = () => {
                         type="text"
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Type your message..."
+                        placeholder="Ask a health or general question…"
+                        maxLength={4000}
                         className="flex-1 p-2 bg-gray-700 text-white rounded-md outline-none focus:ring focus:ring-blue-500"
                         disabled={isLoading || loadingStates.saving}
                       />
@@ -801,14 +744,22 @@ const App = () => {
                         {loadingStates.saving ? "Saving..." : "Send"}
                       </button>
                     </form>
+                    <p className="mx-auto mt-2 max-w-4xl text-center text-[11px] text-gray-500">
+                      AI responses can be incomplete. Use cited sources and consult a qualified professional for medical decisions.
+                    </p>
                   </div>
                 </div>
               </div>
             ) : (
-              <Home />
+              <Navigate to="/login" replace />
             )
           }
         />
+        <Route
+          path="/dashboard"
+          element={user ? <AnalyticsDashboard /> : <Navigate to="/login" replace />}
+        />
+        <Route path="*" element={<Navigate to={user ? "/chat" : "/"} replace />} />
       </Routes>
       <Footer />
     </Router>

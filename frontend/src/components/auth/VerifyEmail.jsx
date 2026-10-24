@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { apiRequest } from "../../lib/api";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
@@ -17,51 +18,16 @@ const VerifyEmail = () => {
       }
 
       try {
-        let response = await fetch(
-          `http://localhost:5000/api/auth/verify-email?token=${token}`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-            },
-          }
-        );
-
-        if (!response.ok && response.status === 404) {
-          response = await fetch(
-            "http://localhost:5000/api/auth/verify-email",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ token }),
-            }
-          );
-        }
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setStatus("success");
-          setMessage(
-            data.message || "Email verified successfully! You can now log in."
-          );
-<<<<<<< HEAD
-
-=======
->>>>>>> 7a130ae7abebcd41a75cf2778e062547d6586986
-          setTimeout(() => {
-            navigate("/login");
-          }, 3000);
-        } else {
-          setStatus("error");
-          setMessage(data.message || "Verification failed. Please try again.");
-        }
+        const data = await apiRequest(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+        setStatus("success");
+        setMessage(data.message || "Email verified successfully! You can now log in.");
+        setTimeout(() => {
+          navigate("/login");
+        }, 3000);
       } catch (error) {
         console.error("Verification error:", error);
         setStatus("error");
-        setMessage("An error occurred during verification. Please try again.");
+        setMessage(error.message || "Verification failed. Please try again.");
       }
     };
 
@@ -98,10 +64,6 @@ const VerifyEmail = () => {
         >
           {message}
         </p>
-<<<<<<< HEAD
-=======
-
->>>>>>> 7a130ae7abebcd41a75cf2778e062547d6586986
         {status === "error" && (
           <div className="mt-4 space-y-2">
             <button

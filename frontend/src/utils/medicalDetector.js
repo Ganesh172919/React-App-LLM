@@ -49,6 +49,16 @@ const MEDICAL_KEYWORDS = [
   "diabetes",
   "fever",
   "headache",
+  "migraine",
+  "symptom",
+  "symptoms",
+  "nausea",
+  "dizziness",
+  "rash",
+  "asthma",
+  "cholesterol",
+  "antibiotic",
+  "antibiotics",
 ];
 
 const MEDICAL_QUESTION_PREFIXES = [

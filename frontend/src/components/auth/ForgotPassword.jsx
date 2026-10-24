@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiRequest } from "../../lib/api";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -13,28 +14,17 @@ const ForgotPassword = () => {
     setMessage("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/forgot-password",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage("Password reset email sent. Please check your inbox.");
-        setEmail("");
-        setTimeout(() => {
-          navigate("/login");
-        }, 3000);
-      } else {
-        setMessage(data.message || "Failed to send reset email");
-      }
+      await apiRequest("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setMessage("Password reset email sent. Please check your inbox.");
+      setEmail("");
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
     } catch (error) {
-      setMessage("An error occurred. Please try again.");
+      setMessage(error.message || "Failed to send reset email");
     } finally {
       setIsSubmitting(false);
     }

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiRequest } from "../lib/api";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -11,22 +12,13 @@ const Register = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      await apiRequest("/auth/register", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        navigate("/login");
-      } else {
-        setError(data.message || "Registration failed");
-      }
+      navigate("/verification-pending");
     } catch (error) {
-      setError("An error occurred. Please try again.");
+      setError(error.message || "Registration failed");
     }
   };
 
@@ -79,9 +71,9 @@ const Register = () => {
         </form>
         <p className="mt-4 text-center text-gray-400">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-500 hover:underline">
+          <Link to="/login" className="text-blue-500 hover:underline">
             Login
-          </a>
+          </Link>
         </p>
       </div>
     </div>

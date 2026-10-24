@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { apiRequest } from "../../lib/api";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -23,27 +24,16 @@ const ResetPassword = () => {
     setMessage("");
 
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/reset-password",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, newPassword }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage("Password reset successfully");
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
-      } else {
-        setMessage(data.message || "Failed to reset password");
-      }
+      await apiRequest("/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token, newPassword }),
+      });
+      setMessage("Password reset successfully");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (error) {
-      setMessage("An error occurred. Please try again.");
+      setMessage(error.message || "Failed to reset password");
     } finally {
       setIsSubmitting(false);
     }
@@ -98,7 +88,7 @@ const ResetPassword = () => {
               className="mt-1 p-2 w-full bg-gray-700 text-white rounded-md outline-none focus:ring-2 focus:ring-blue-500"
               required
               disabled={isSubmitting}
-              minLength={6}
+              minLength={8}
             />
           </div>
           <div className="mb-6">
@@ -116,7 +106,7 @@ const ResetPassword = () => {
               className="mt-1 p-2 w-full bg-gray-700 text-white rounded-md outline-none focus:ring-2 focus:ring-blue-500"
               required
               disabled={isSubmitting}
-              minLength={6}
+              minLength={8}
             />
           </div>
           <button

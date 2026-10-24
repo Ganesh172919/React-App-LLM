@@ -2,11 +2,17 @@ const User = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const EmailService = require("../services/emailService");
-const rateLimit = require("express-rate-limit");
 const emailService = require("../services/emailService");
 
 exports.register = async (req, res) => {
-  const { email, password } = req.body;
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const password = typeof req.body.password === "string" ? req.body.password : "";
+
+  if (!/^\S+@\S+\.\S+$/.test(email) || password.length < 8) {
+    return res.status(400).json({
+      message: "Enter a valid email and a password with at least 8 characters",
+    });
+  }
 
   try {
     const existingUser = await User.findOne({ email });
@@ -52,7 +58,8 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const password = typeof req.body.password === "string" ? req.body.password : "";
   try {
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -162,14 +169,7 @@ exports.refreshToken = async (req, res) => {
 };
 
 exports.verifyEmail = async (req, res) => {
-<<<<<<< HEAD
-  const { token } = req.body;
-
-  // Add detailed logging
-  console.log("Received verification request with token:", token);
-=======
   const token = req.query.token || req.body.token;
->>>>>>> 7a130ae7abebcd41a75cf2778e062547d6586986
 
   if (!token) {
     console.log("No token provided in request");
@@ -180,14 +180,7 @@ exports.verifyEmail = async (req, res) => {
   }
 
   try {
-    // Log the token being used for verification
-    console.log(
-      "Attempting to verify token with secret:",
-      process.env.JWT_VERIFICATION_TOKEN ? "Secret exists" : "Secret missing"
-    );
-
     const decoded = jwt.verify(token, process.env.JWT_VERIFICATION_TOKEN);
-    console.log("Token decoded successfully:", decoded);
 
     const user = await User.findOne({
       email: decoded.email,
@@ -196,7 +189,6 @@ exports.verifyEmail = async (req, res) => {
     });
 
     if (!user) {
-      console.log("No user found with token:", token);
       return res.status(400).json({
         message:
           "Invalid or expired verification token. Please request a new verification email.",
@@ -209,7 +201,6 @@ exports.verifyEmail = async (req, res) => {
     user.verificationTokenExpiry = undefined;
     await user.save();
 
-    console.log("User verified successfully:", user.email);
     res.status(200).json({
       message: "Email verified successfully! You can now log in.",
       verified: true,
@@ -226,7 +217,7 @@ exports.verifyEmail = async (req, res) => {
 };
 
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
   try {
     const user = await User.findOne({ email });
@@ -252,6 +243,10 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
   const { token, newPassword } = req.body;
+
+  if (typeof newPassword !== "string" || newPassword.length < 8) {
+    return res.status(400).json({ message: "Password must contain at least 8 characters" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_RESET_TOKEN);
@@ -279,7 +274,7 @@ exports.resetPassword = async (req, res) => {
 };
 
 exports.resendVerification = async (req, res) => {
-  const { email } = req.body;
+  const email = typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 
   try {
     const user = await User.findOne({ email });

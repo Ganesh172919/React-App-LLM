@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 
 const VerificationPending = () => {
@@ -15,7 +14,7 @@ const VerificationPending = () => {
           in 24 hours.
         </p>
         <p className="text-gray-400 text-sm mb-6">
-          Didn't receive the email? Check your spam folder or contact support.
+          Didn&apos;t receive the email? Check your spam folder or contact support.
         </p>
         <button
           onClick={() => navigate("/login")}

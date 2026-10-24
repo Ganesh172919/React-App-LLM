@@ -1,6 +1,7 @@
-import React, { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { apiRequest } from "../lib/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,37 +15,29 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const data = await apiRequest("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-        credentials: "include",
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setUser(data.user);
-        navigate("/");
-      } else {
-        if (data.needsVerification) {
-          setError(
-            <div>
-              <p className="text-yellow-500 mb-2">{data.message}</p>
-              <button
-                onClick={() => navigate("/verification-pending")}
-                className="text-blue-500 hover:underline text-sm"
-              >
-                Resend verification email
-              </button>
-            </div>
-          );
-        } else {
-          setError(data.message || "Login failed");
-        }
-      }
+      setUser(data.user);
+      navigate("/chat");
     } catch (error) {
-      setError("An error occurred. Please try again.");
+      if (error.data?.needsVerification) {
+        setError(
+          <div>
+            <p className="text-yellow-500 mb-2">{error.message}</p>
+            <button
+              type="button"
+              onClick={() => navigate("/verification-pending")}
+              className="text-blue-500 hover:underline text-sm"
+            >
+              Verification help
+            </button>
+          </div>
+        );
+      } else {
+        setError(error.message || "Login failed");
+      }
     }
   };
 
@@ -104,15 +97,15 @@ const Login = () => {
           </button>
         </form>
         <div className="mt-4 text-center text-gray-400">
-          <a href="/forgot-password" className="text-blue-500 hover:underline">
+          <Link to="/forgot-password" className="text-blue-500 hover:underline">
             Forgot Password?
-          </a>
+          </Link>
         </div>
         <p className="mt-4 text-center text-gray-400">
-          Don't have an account?{" "}
-          <a href="/register" className="text-blue-500 hover:underline">
+          Don&apos;t have an account?{" "}
+          <Link to="/register" className="text-blue-500 hover:underline">
             Register
-          </a>
+          </Link>
         </p>
       </div>
     </div>

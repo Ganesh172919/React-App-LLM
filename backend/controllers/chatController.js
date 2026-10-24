@@ -3,7 +3,9 @@ const { v4: uuidv4 } = require("uuid");
 
 exports.saveChat = async (req, res) => {
   try {
-    const { prompt, response, sessionId } = req.body;
+    const { sessionId, isMedical = false, references = [], verification } = req.body;
+    const prompt = typeof req.body.prompt === "string" ? req.body.prompt.trim() : "";
+    const response = typeof req.body.response === "string" ? req.body.response.trim() : "";
     if (!prompt || !response) {
       return res
         .status(400)
@@ -16,11 +18,10 @@ exports.saveChat = async (req, res) => {
         { sessionId, userId: req.user.id },
         {
           $push: {
-            messages: { prompt, response },
+            messages: { prompt, response, isMedical, references, verification },
           },
           $set: {
             updatedAt: Date.now(),
-            title: prompt.slice(0, 30) || "New Chat",
           },
         },
         { new: true, upsert: false }
@@ -32,7 +33,8 @@ exports.saveChat = async (req, res) => {
           sessionId: newSessionId,
           userId: req.user.id,
           title: prompt.slice(0, 30) || "New Chat",
-          messages: [{ prompt, response }],
+          messages: [{ prompt, response, isMedical, references, verification }],
+          isMedical,
         });
         await chat.save();
       }
@@ -42,7 +44,8 @@ exports.saveChat = async (req, res) => {
         sessionId: newSessionId,
         userId: req.user.id,
         title: prompt.slice(0, 30) || "New Chat",
-        messages: [{ prompt, response }],
+        messages: [{ prompt, response, isMedical, references, verification }],
+        isMedical,
       });
       await chat.save();
     }
@@ -52,25 +55,30 @@ exports.saveChat = async (req, res) => {
         action: chat.sessionId === sessionId ? "UPDATE" : "NEW",
         chat: {
           id: chat.sessionId,
+          sessionId: chat.sessionId,
           title: chat.title,
-          messages: chat.messages
-            .map((msg) => ({
+          isMedical: chat.isMedical,
+          messages: chat.messages.flatMap((msg) => [
+            {
               text: msg.prompt,
               isUser: true,
               timestamp: msg.timestamp,
-            }))
-            .concat(
-              chat.messages.map((msg) => ({
-                text: msg.response,
-                isUser: false,
-                timestamp: msg.timestamp,
-              }))
-            ),
+              isMedical: msg.isMedical,
+            },
+            {
+              text: msg.response,
+              isUser: false,
+              timestamp: msg.timestamp,
+              isMedical: msg.isMedical,
+              references: msg.references,
+              verification: msg.verification,
+            },
+          ]),
           timestamp: chat.updatedAt,
         },
         sessionId: chat.sessionId,
         userId: chat.userId.toString(),
-      });
+      }, req.user.id);
     }
 
     res.status(201).json({
@@ -96,10 +104,23 @@ exports.getHistory = async (req, res) => {
       id: chat.sessionId,
       title: chat.title || chat.messages[0]?.prompt?.slice(0, 30) || "New Chat",
       messages: chat.messages.flatMap((msg) => [
-        { text: msg.prompt, isUser: true, timestamp: msg.timestamp },
-        { text: msg.response, isUser: false, timestamp: msg.timestamp },
+        {
+          text: msg.prompt,
+          isUser: true,
+          timestamp: msg.timestamp,
+          isMedical: msg.isMedical,
+        },
+        {
+          text: msg.response,
+          isUser: false,
+          timestamp: msg.timestamp,
+          isMedical: msg.isMedical,
+          references: msg.references,
+          verification: msg.verification,
+        },
       ]),
       timestamp: chat.updatedAt,
+      isMedical: chat.isMedical,
     }));
 
     res.status(200).json(formattedChats);
@@ -148,7 +169,7 @@ exports.deleteChat = async (req, res) => {
         action: "DELETE",
         sessionId: sessionId,
         userId: req.user.id.toString(),
-      });
+      }, req.user.id);
     }
 
     res.status(200).json({

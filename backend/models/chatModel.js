@@ -12,6 +12,17 @@ const referenceSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const verificationSchema = new mongoose.Schema(
+  {
+    status: String,
+    provider: String,
+    model: String,
+    sourceCount: Number,
+    grounded: Boolean,
+  },
+  { _id: false }
+);
+
 const messageSchema = new mongoose.Schema(
   {
     prompt: {
@@ -27,6 +38,7 @@ const messageSchema = new mongoose.Schema(
       default: false,
     },
     references: [referenceSchema],
+    verification: verificationSchema,
     timestamp: {
       type: Date,
       default: Date.now,

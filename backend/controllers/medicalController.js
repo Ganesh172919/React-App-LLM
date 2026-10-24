@@ -1,13 +1,23 @@
 const axios = require("axios");
-const Chat = require("../models/chatModel");
-const { v4: uuidv4 } = require("uuid");
+const { generateWithGemini } = require("../services/aiService");
+const { screenPrompt } = require("../services/safetyService");
 
 const PUBMED_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const MAX_RESULTS = 3;
 
 exports.handleMedicalQuery = async (req, res) => {
   try {
-    const { prompt, sessionId } = req.body;
+    const prompt = typeof req.body.prompt === "string" ? req.body.prompt.trim() : "";
+    const safety = screenPrompt(prompt);
+    if (!safety.allowed) {
+      return res.status(safety.category === "invalid" ? 400 : 200).json({
+        text: safety.message,
+        isMedical: true,
+        references: [],
+        safety,
+        verification: { status: "safety_redirect" },
+      });
+    }
 
     const searchParams = new URLSearchParams({
       db: "pubmed",
@@ -48,91 +58,51 @@ exports.handleMedicalQuery = async (req, res) => {
       });
     }
 
-    let botResponse = "Here's what I found from medical research:\n\n";
+    const sourceContext = articles
+      .map(
+        (article, index) =>
+          `[${index + 1}] ${article.title}. ${article.source || "Journal not listed"}, ${article.pubdate || "date not listed"}. PMID ${article.uid}.`
+      )
+      .join("\n");
 
-    articles.forEach((article, index) => {
-      botResponse += `**${index + 1}. ${article.title}**\n`;
-      if (article.authors) {
-        botResponse += `Authors: ${article.authors.map((a) => a.name).join(", ")}\n`;
-      }
-      if (article.pubdate) {
-        botResponse += `Published: ${article.pubdate}\n`;
-      }
-      if (article.source) {
-        botResponse += `Journal: ${article.source}\n`;
-      }
-      if (article.abstract) {
-        botResponse += `Abstract: ${article.abstract}\n\n`;
-      } else {
-        botResponse += `[No abstract available]\n\n`;
-      }
-    });
+    let botResponse;
+    let verification;
+    try {
+      const generated = await generateWithGemini({
+        prompt: `User question: ${prompt}\n\nPubMed source records:\n${sourceContext}`,
+        systemInstruction:
+          "Answer as a cautious medical information assistant. Use only the supplied PubMed source records. Cite claims with [1], [2], or [3]. If the records are insufficient, say so. Do not diagnose or prescribe. End with a brief reminder that this does not replace professional medical advice.",
+      });
+      botResponse = generated.text;
+      verification = {
+        status: "citation_grounded",
+        provider: "Gemini",
+        model: generated.model,
+        sourceCount: articles.length,
+      };
+    } catch (generationError) {
+      console.warn("Grounded generation unavailable:", generationError.message);
+      botResponse = `I found these relevant PubMed records:\n\n${sourceContext}\n\n*Review the linked sources with a qualified clinician. This information does not replace professional medical advice.*`;
+      verification = {
+        status: "references_only",
+        sourceCount: articles.length,
+      };
+    }
 
-    botResponse +=
-      "\n*This information is from PubMed and should not replace professional medical advice.*";
-
-    const chatData = {
-      prompt,
-      response: botResponse,
-      isMedical: true,
-      references: articles.map((article) => ({
+    const references = articles.map((article) => ({
         title: article.title,
         authors: article.authors?.map((a) => a.name),
         journal: article.source,
         pubdate: article.pubdate,
         pmid: article.uid,
         url: `https://pubmed.ncbi.nlm.nih.gov/${article.uid}`,
-      })),
-    };
-
-    let chat;
-    if (sessionId) {
-      chat = await Chat.findOneAndUpdate(
-        { sessionId, userId: req.user.id },
-        {
-          $push: { messages: chatData },
-          $set: {
-            updatedAt: Date.now(),
-            isMedical: true,
-          },
-        },
-        { new: true }
-      );
-    } else {
-      chat = new Chat({
-        sessionId: uuidv4(),
-        userId: req.user.id,
-        title: `Medical: ${prompt.slice(0, 20)}...`,
-        messages: [chatData],
-        isMedical: true,
-      });
-      await chat.save();
-    }
-
-    // Broadcast update
-    if (req.app.locals.broadcastUpdate) {
-      req.app.locals.broadcastUpdate({
-        action: sessionId ? "UPDATE" : "NEW",
-        chat: {
-          id: chat.sessionId,
-          title: chat.title,
-          isMedical: true,
-          messages: chat.messages.map((m) => ({
-            text: m.response,
-            isUser: false,
-            timestamp: m.timestamp,
-            isMedical: true,
-          })),
-          timestamp: chat.updatedAt,
-        },
-      });
-    }
+      }));
 
     res.status(200).json({
       text: botResponse,
       isMedical: true,
-      sessionId: chat.sessionId,
-      references: chatData.references,
+      references,
+      verification,
     });
   } catch (error) {
     console.error("PubMed API error:", error.message);
