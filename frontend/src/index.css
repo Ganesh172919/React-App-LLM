@@ -1,3 +1,41 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - GLOBAL STYLES & TYPOGRAPHY (index.css)
+ * ============================================================================
+ * Role:
+ *   Root CSS stylesheet importing Tailwind CSS 4, declaring dark theme variables,
+ *   configuring typography resets, and establishing markdown prose styling
+ *   rules for rendering AI and medical responses.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: STYLESHEET STRUCTURE
+ * ----------------------------------------------------------------------------
+ * [index.css]
+ *   │
+ *   ├── 1. Framework Imports (@import "tailwindcss")
+ *   │
+ *   ├── 2. Dark Palette & Global Resets
+ *   │     ├── :root / html / body: slate-950 (#020617) dark theme
+ *   │     ├── Selection highlight: cyan-300 (#67e8f9) on sky-900 (#082f49)
+ *   │     └── Font family: Inter, system-ui, sans-serif
+ *   │
+ *   └── 3. Prose Typography Rules (.prose)
+ *         ├── Paragraphs (margin: 0.5em 0)
+ *         ├── Lists (unordered & ordered with indentation)
+ *         ├── Inline Code (semi-transparent border & background)
+ *         ├── Code Blocks (pre with overflow-x auto)
+ *         ├── Hyperlinks (blue-300 with blue-400 hover for PubMed citations)
+ *         └── Headings (h1..h4 with proportional scale and weight)
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: TYPOGRAPHY CASCADE
+ * ----------------------------------------------------------------------------
+ *  Raw Markdown (ReactMarkdown) ──► HTML Tags (<p>, <code>, <a>)
+ *                                           │
+ *                                           ▼
+ *  .prose Styles Cascade Applied ──► Beautiful Dark UI Medical Layout
+ * ============================================================================
+ */
 @import "tailwindcss";
 
 :root {

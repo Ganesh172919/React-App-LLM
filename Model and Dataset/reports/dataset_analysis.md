@@ -31,6 +31,17 @@ Generated from `Final data set for llm based health assitance (1).csv`. This is 
 | Question | 3 | 7 | 7.1 | 11.0 | 26 |
 | Answer | 1 | 132 | 189.7 | 489.0 | 4133 |
 
+## Answer length distribution
+
+| Length band | Rows |
+| --- | ---: |
+| Under 20 Words | 656 |
+| 20 To 99 Words | 5,516 |
+| 100 To 249 Words | 6,657 |
+| 250 To 499 Words | 2,793 |
+| 500 To 999 Words | 559 |
+| 1000 Words Or More | 226 |
+
 ## Question types
 
 | Type | Rows |

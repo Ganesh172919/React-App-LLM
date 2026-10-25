@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-24T23:53:17.212235+00:00",
+  "generated_at_utc": "2026-10-25T00:03:12.836423+00:00",
   "source_file": "Final data set for llm based health assitance (1).csv",
   "scope": "Descriptive profiling only; no model training or clinical validation performed.",
   "rows": {
@@ -17,6 +17,15 @@
     "questions_under_4_words": 215,
     "answers_under_20_words": 656,
     "answers_over_1000_words": 225
+  },
+  "quality_rates_percent": {
+    "missing_question_rows": 0.0,
+    "missing_answer_rows": 0.03,
+    "exact_duplicate_rows_after_whitespace_normalization": 0.29,
+    "repeated_question_rows": 12.56,
+    "questions_under_4_words": 1.31,
+    "answers_under_20_words": 4.0,
+    "answers_over_1000_words": 1.37
   },
   "lengths_in_words": {
     "question": {
@@ -37,6 +46,14 @@
       "p95": 489.0,
       "max": 4133
     }
+  },
+  "answer_length_distribution": {
+    "under_20_words": 656,
+    "20_to_99_words": 5516,
+    "100_to_249_words": 6657,
+    "250_to_499_words": 2793,
+    "500_to_999_words": 559,
+    "1000_words_or_more": 226
   },
   "question_types": {
     "definition": 7790,

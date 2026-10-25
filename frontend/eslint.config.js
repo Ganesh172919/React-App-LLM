@@ -1,3 +1,26 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - ESLINT FLAT CONFIGURATION (eslint.config.js)
+ * ============================================================================
+ * Role:
+ *   Flat config ESLint 9 setup defining linting standards for React 19,
+ *   React Hooks, and JSX transforms.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: LINTING RULESETS
+ * ----------------------------------------------------------------------------
+ * [eslint.config.js]
+ *   │
+ *   ├── Ignores: ["dist", "node_modules", "node_modules.broken"]
+ *   ├── Language: ES2020, browser globals, JSX enabled
+ *   └── Rules: Recommended JS, Recommended React, JSX Runtime, React Hooks
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: STATIC CODE ANALYSIS
+ * ----------------------------------------------------------------------------
+ *  Source Files (.js, .jsx) ──► Flat Rules Evaluation ──► 0 Errors / 0 Warnings
+ * ============================================================================
+ */
 import js from "@eslint/js";
 import globals from "globals";
 import react from "eslint-plugin-react";

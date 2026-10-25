@@ -1,10 +1,148 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - GROUNDED MEDICAL QUERY CONTROLLER (medicalController.js)
+ * ============================================================================
+ * Role:
+ *   Orchestrates evidence-grounded medical question answering. Coordinates
+ *   safety screening, live literature retrieval via NCBI PubMed eUtils API,
+ *   constrained Gemini generation bounded to retrieved evidence, and algorithmic
+ *   citation verification.
+ *
+ * Grounding Pipeline:
+ *   1. Safety Screening: Screens user prompt for harmful or emergency patterns.
+ *   2. PubMed E-Search: Queries PubMed E-Utilities (`esearch.fcgi`) for up to 3
+ *      top relevance articles matching the clinical terms.
+ *   3. PubMed E-Summary: Fetches metadata (`esummary.fcgi`) including titles,
+ *      journals, authors, publication dates, and PMIDs.
+ *   4. Constrained LLM Prompting: Supplies source records numbered [1], [2], [3]
+ *      to Gemini with strict instructions to cite only supplied evidence.
+ *   5. Grounding Audit: Invokes `assessCitationGrounding` to ensure model output
+ *      cites valid numbers without hallucinating non-existent source indices.
+ *   6. Fallback Handling: If Gemini generation fails, presents raw PubMed citations
+ *      with clinical consultation advisories.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: GROUNDED MEDICAL RETRIEVAL & CITATION AUDIT
+ * ----------------------------------------------------------------------------
+ * [medicalController.js (handleMedicalQuery)]
+ *   │
+ *   ├── 1. Safety Screening Layer
+ *   │     ├── Calls screenPrompt(prompt)
+ *   │     └── If disallowed: Returns 200/400 safety redirection
+ *   │
+ *   ├── 2. PubMed Literature Retrieval
+ *   │     ├── Step A: E-Search query (db=pubmed, retmax=3, sort=relevance)
+ *   │     │     └── If no PMIDs found: returns 404 { shouldFallback: true }
+ *   │     └── Step B: E-Summary query (db=pubmed, id=pmid1,pmid2,pmid3)
+ *   │           └── Extracts article titles, journals, dates, and PMIDs
+ *   │
+ *   ├── 3. Context Construction
+ *   │     └── Formats sources: "[1] Title. Journal, Date. PMID..."
+ *   │
+ *   ├── 4. Bounded Gemini Generation
+ *   │     ├── Directs model: "Use only supplied PubMed source records. Cite claims with [1], [2], [3]..."
+ *   │     ├── On LLM Success:
+ *   │     │     ├── Receives generated text with inline brackets
+ *   │     │     └── Calls assessCitationGrounding(text, sourceCount)
+ *   │     └── On LLM Exception:
+ *   │           └── Falls back to "references_only" response mode with raw source links
+ *   │
+ *   └── 5. Response Assembly
+ *         └── Returns 200 OK with:
+ *               { text, isMedical: true, references: [...], verification: {...} }
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: PUBMED EVIDENCE RETRIEVAL & CITATION VERIFICATION
+ * ----------------------------------------------------------------------------
+ *  Client              medicalController                 NCBI PubMed API            Gemini AI
+ *    │                        │                                 │                       │
+ *    │── POST /api/medical ──>│                                 │                       │
+ *    │   { prompt }           ├─ screenPrompt()                 │                       │
+ *    │                        ├─ esearch.fcgi?term=prompt ─────>│                       │
+ *    │                        │<─ { idlist: [pmid1, pmid2] } ───┤                       │
+ *    │                        ├─ esummary.fcgi?id=pmids ───────>│                       │
+ *    │                        │<─ { result: { metadata } } ─────┤                       │
+ *    │                        │                                                         │
+ *    │                        ├─ Build Source Context: [1]..., [2]...                   │
+ *    │                        ├─ Generate Bounded Response ────────────────────────────>│
+ *    │                        │<─ "According to [1], migraine causes... [2]" ───────────┤
+ *    │                        │                                                         │
+ *    │                        ├─ assessCitationGrounding(text, sourceCount)             │
+ *    │                        │  - Valid citations: [1, 2]                              │
+ *    │                        │  - Invalid citations: []                                │
+ *    │                        │  - Grounded: true (100% coverage)                       │
+ *    │<── 200 OK ─────────────┤                                                         │
+ *    │    { text, references, │                                                         │
+ *    │      verification }    │                                                         │
+ * ============================================================================
+ */
 const axios = require("axios");
 const { generateWithGemini } = require("../services/aiService");
 const { screenPrompt } = require("../services/safetyService");
+const { assessCitationGrounding } = require("../services/citationService");
+const { buildPubMedQuery } = require("../services/pubmedService");
 
 const PUBMED_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const MAX_RESULTS = 3;
 
+/**
+ * ----------------------------------------------------------------------------
+ * METHOD: handleMedicalQuery
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW:
+ * [handleMedicalQuery Execution]
+ *   ├── Input Extraction: prompt = req.body.prompt.trim()
+ *   ├── Safety Screening: screenPrompt(prompt)
+ *   │     └── If !allowed: return 200/400 with safety_redirect verification
+ *   ├── PubMed E-Utilities Search:
+ *   │     ├── GET esearch.fcgi (term=prompt, retmax=3, sort=relevance)
+ *   │     └── If no PMIDs found: return 404 { shouldFallback: true }
+ *   ├── PubMed E-Utilities Summary:
+ *   │     ├── GET esummary.fcgi (id=idlist)
+ *   │     └── Parse articles (title, authors, journal, pubdate, pmid)
+ *   ├── Context Formatting: [1] Title. Journal, Pubdate. PMID.
+ *   ├── Grounded Gemini Generation:
+ *   │     ├── Prompt Gemini with sourceContext & strict [1]..[N] citation rules
+ *   │     ├── On Success: assessCitationGrounding(response, articles.length)
+ *   │     └── On Failure: Fallback to references_only text with raw source links
+ *   └── Return: 200 OK { text, isMedical: true, references, verification }
+ *
+ * ASCII FLOW:
+ * [POST /api/medical] ──► screenPrompt()
+ *                                │
+ *            ┌───────────────────┴───────────────────┐
+ *            ▼                                       ▼
+ *      [!allowed]                                [allowed]
+ *            │                                       │
+ *            ▼                                       ▼
+ *     Safety Redirect                     PubMed esearch.fcgi
+ *                                                    │
+ *                                        ┌───────────┴───────────┐
+ *                                        ▼                       ▼
+ *                                   [PMIDs Found]           [No PMIDs]
+ *                                        │                       │
+ *                                        ▼                       ▼
+ *                               PubMed esummary.fcgi       404 Fallback
+ *                                        │
+ *                                        ▼
+ *                               Build Source Context
+ *                                        │
+ *                                        ▼
+ *                             generateWithGemini()
+ *                                        │
+ *                               ┌────────┴────────┐
+ *                               ▼                 ▼
+ *                           [Success]          [Error]
+ *                               │                 │
+ *                               ▼                 ▼
+ *                     assessCitationGrounding() References Only
+ *                               │                 │
+ *                               └────────┬────────┘
+ *                                        │
+ *                                        ▼
+ *                               200 OK Response JSON
+ * ----------------------------------------------------------------------------
+ */
 exports.handleMedicalQuery = async (req, res) => {
   try {
     const prompt = typeof req.body.prompt === "string" ? req.body.prompt.trim() : "";
@@ -21,11 +159,10 @@ exports.handleMedicalQuery = async (req, res) => {
 
     const searchParams = new URLSearchParams({
       db: "pubmed",
-      term: prompt,
+      term: buildPubMedQuery(prompt),
       retmode: "json",
       retmax: MAX_RESULTS,
       sort: "relevance",
-      field: "title,abstract",
     });
 
     const searchUrl = `${PUBMED_BASE_URL}/esearch.fcgi?${searchParams}`;
@@ -75,17 +212,17 @@ exports.handleMedicalQuery = async (req, res) => {
       });
       botResponse = generated.text;
       verification = {
-        status: "citation_grounded",
+        ...assessCitationGrounding(botResponse, articles.length),
         provider: "Gemini",
         model: generated.model,
-        sourceCount: articles.length,
       };
     } catch (generationError) {
       console.warn("Grounded generation unavailable:", generationError.message);
       botResponse = `I found these relevant PubMed records:\n\n${sourceContext}\n\n*Review the linked sources with a qualified clinician. This information does not replace professional medical advice.*`;
       verification = {
+        ...assessCitationGrounding(botResponse, articles.length),
         status: "references_only",
-        sourceCount: articles.length,
+        provider: "PubMed",
       };
     }
 

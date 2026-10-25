@@ -1,3 +1,47 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - LOGIN VIEW COMPONENT (Login.jsx)
+ * ============================================================================
+ * Role:
+ *   Renders user sign-in form. Authenticates email and password credentials
+ *   via `POST /api/auth/login`. Sets the global user state in `AuthContext`
+ *   and redirects to `/chat` upon successful authentication. If the account
+ *   is unverified, routes the user to verification assistance.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: LOGIN FORM & STATE HANDLING
+ * ----------------------------------------------------------------------------
+ * [Login Component]
+ *   │
+ *   ├── 1. Form Inputs: Email and Password
+ *   ├── 2. Submission Handler (handleSubmit)
+ *   │     ├── Calls apiRequest("/auth/login", { email, password })
+ *   │     ├── On Success: setUser(data.user) ──► navigate("/chat")
+ *   │     └── On Error:
+ *   │           ├── If needsVerification: Displays warning & link to /verification-pending
+ *   │           └── Default: Displays error message
+ *   └── 3. Navigation Links: Forgot Password (/forgot-password), Register (/register)
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: LOGIN INTERACTION
+ * ----------------------------------------------------------------------------
+ *  [User Submits Credentials] ──► apiRequest('/auth/login')
+ *                                         │
+ *                             ┌───────────┴───────────┐
+ *                             ▼                       ▼
+ *                       200 OK (User)           Error Response
+ *                             │                       │
+ *                             ▼                       ▼
+ *                        setUser()             (needsVerification?)
+ *                        navigate('/chat')            │
+ *                                            ┌────────┴────────┐
+ *                                            ▼                 ▼
+ *                                          [Yes]              [No]
+ *                                            │                 │
+ *                                            ▼                 ▼
+ *                                     Verification Alert  Standard Alert
+ * ============================================================================
+ */
 import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
@@ -42,11 +86,12 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-900">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
+      <div className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-900 p-8">
         <h2 className="text-2xl font-bold mb-6 text-white text-center">
-          Login
+          Sign in to MedAssist
         </h2>
+        <p className="-mt-4 mb-6 text-center text-sm text-slate-400">Continue to your saved medical Q&amp;A chats.</p>
         {error && (
           <div className="mb-4 text-center">
             {typeof error === "string" ? (
@@ -69,7 +114,7 @@ const Login = () => {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 p-2 w-full bg-gray-700 text-white rounded-md outline-none"
+              className="mt-1 w-full rounded-md border border-slate-600 bg-slate-800 p-2.5 text-white outline-none focus:border-blue-500"
               required
             />
           </div>
@@ -85,7 +130,7 @@ const Login = () => {
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 p-2 w-full bg-gray-700 text-white rounded-md outline-none"
+              className="mt-1 w-full rounded-md border border-slate-600 bg-slate-800 p-2.5 text-white outline-none focus:border-blue-500"
               required
             />
           </div>

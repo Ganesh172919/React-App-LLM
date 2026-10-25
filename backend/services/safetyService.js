@@ -1,3 +1,57 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - PROMPT SAFETY FILTER SERVICE (safetyService.js)
+ * ============================================================================
+ * Role:
+ *   Acts as a deterministic, first-line safety shield evaluated before
+ *   any LLM generation or external API call. Screens user queries for
+ *   self-harm ideation, harmful instructions (poisons/bioweapons), medical
+ *   emergencies requiring immediate physical intervention, and invalid or
+ *   oversized payloads.
+ *
+ * Safety Categories & Actions:
+ *   - "invalid": Empty or exceeds MAX_PROMPT_LENGTH (4,000 chars) -> Disallowed (HTTP 400).
+ *   - "self_harm": Expressions of suicide or self-harm -> Disallowed (Safe redirection message).
+ *   - "harmful_instruction": Creation of weapons or poisons -> Disallowed (Harm prevention message).
+ *   - "possible_emergency": Acute symptoms (stroke, anaphylaxis, chest pain) -> Allowed, flagged
+ *     so the controller prepends emergency helpline directives to the model output.
+ *   - "allowed": Standard health/general queries permitted for processing.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: SAFETY SCREENING LOGIC
+ * ----------------------------------------------------------------------------
+ * [screenPrompt(prompt)]
+ *   │
+ *   ├── 1. Boundary & Length Validation
+ *   │     ├── If empty/whitespace ────────────► { allowed: false, category: "invalid" }
+ *   │     └── If length > 4000 characters ────► { allowed: false, category: "invalid" }
+ *   │
+ *   ├── 2. Self-Harm Inspection (SELF_HARM_PATTERNS)
+ *   │     └── Matches suicide, kill myself ───► { allowed: false, category: "self_harm", message }
+ *   │
+ *   ├── 3. Harmful Instruction Inspection (HARMFUL_INSTRUCTION_PATTERNS)
+ *   │     └── Matches poison, bioweapon ──────► { allowed: false, category: "harmful_instruction", message }
+ *   │
+ *   └── 4. Emergency Inspection (EMERGENCY_PATTERNS)
+ *         ├── Matches chest pain, stroke ─────► { allowed: true, category: "possible_emergency" }
+ *         └── Default allowed ────────────────► { allowed: true, category: "allowed" }
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: SAFETY DECISION TREE
+ * ----------------------------------------------------------------------------
+ *  [User Prompt]
+ *        │
+ *        ├──► Empty or Length > 4000? ──► [Disallowed: invalid] (400)
+ *        │
+ *        ├──► Matches Self-Harm? ───────► [Disallowed: self_harm] (Crisis Msg)
+ *        │
+ *        ├──► Matches Harmful Inst? ────► [Disallowed: harmful_instruction] (Refusal Msg)
+ *        │
+ *        ├──► Matches Emergency? ───────► [Allowed: possible_emergency] (Urgent Prefix)
+ *        │
+ *        └──► No Flags Matched ─────────► [Allowed: allowed] (Standard Processing)
+ * ============================================================================
+ */
 const MAX_PROMPT_LENGTH = 4000;
 
 const SELF_HARM_PATTERNS = [
@@ -19,6 +73,17 @@ const EMERGENCY_PATTERNS = [
 
 const matchesAny = (value, patterns) => patterns.some((pattern) => pattern.test(value));
 
+/**
+ * ----------------------------------------------------------------------------
+ * FUNCTION: screenPrompt
+ * ----------------------------------------------------------------------------
+ * Evaluates input prompt string against length boundaries, crisis self-harm patterns,
+ * harmful weapon/poison creation patterns, and acute medical emergency terms.
+ *
+ * @param {string} prompt - Raw user input string.
+ * @returns {{ allowed: boolean, category: string, message?: string }} Screening result.
+ * ----------------------------------------------------------------------------
+ */
 const screenPrompt = (prompt) => {
   const value = typeof prompt === "string" ? prompt.trim() : "";
 

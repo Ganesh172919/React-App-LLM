@@ -1,0 +1,431 @@
+{
+  "source_file": "Final data set for llm based health assitance (1).csv",
+  "source_sha256": "e402794930259ab9829cbbe8448182d259de744f2157e701d2c64d3a5b38a8d2",
+  "scope": "Structural and duplication audit only; no clinical validation or model training performed.",
+  "rows": {
+    "total": 16412,
+    "valid": 16407,
+    "distinct_normalized_answers": 16359
+  },
+  "multiple_answer_questions": {
+    "question_groups": 1396,
+    "rows_in_groups": 3438,
+    "additional_answer_variants": 2014,
+    "groups_below_0_35_similarity": 1128,
+    "mean_pairwise_similarity": 0.192
+  },
+  "content_flags": {
+    "answers_with_html_like_markup": 0,
+    "answers_with_urls": 159,
+    "answers_with_non_ascii_characters": 61
+  },
+  "sample_groups": [
+    {
+      "question": "What is (are) High Blood Cholesterol ?",
+      "source_rows": 19,
+      "distinct_answers": 19,
+      "answer_word_counts": [
+        20,
+        21,
+        26,
+        27,
+        31,
+        35,
+        40,
+        47,
+        53,
+        55,
+        59,
+        83,
+        91,
+        136,
+        149,
+        264,
+        270,
+        621,
+        752
+      ],
+      "minimum_answer_similarity": 0.036,
+      "average_answer_similarity": 0.133
+    },
+    {
+      "question": "What is (are) Medicare and Continuing Care ?",
+      "source_rows": 14,
+      "distinct_answers": 14,
+      "answer_word_counts": [
+        70,
+        72,
+        108,
+        108,
+        110,
+        110,
+        116,
+        128,
+        146,
+        169,
+        213,
+        227,
+        271,
+        615
+      ],
+      "minimum_answer_similarity": 0.061,
+      "average_answer_similarity": 0.176
+    },
+    {
+      "question": "What are the treatments for Breast Cancer ?",
+      "source_rows": 13,
+      "distinct_answers": 13,
+      "answer_word_counts": [
+        60,
+        67,
+        71,
+        92,
+        121,
+        140,
+        141,
+        151,
+        158,
+        284,
+        459,
+        735,
+        4133
+      ],
+      "minimum_answer_similarity": 0.035,
+      "average_answer_similarity": 0.139
+    },
+    {
+      "question": "What is (are) Stroke ?",
+      "source_rows": 13,
+      "distinct_answers": 13,
+      "answer_word_counts": [
+        28,
+        33,
+        60,
+        64,
+        68,
+        79,
+        82,
+        113,
+        127,
+        191,
+        203,
+        442,
+        599
+      ],
+      "minimum_answer_similarity": 0.039,
+      "average_answer_similarity": 0.125
+    },
+    {
+      "question": "What is (are) Skin Cancer ?",
+      "source_rows": 13,
+      "distinct_answers": 13,
+      "answer_word_counts": [
+        29,
+        48,
+        51,
+        65,
+        68,
+        76,
+        108,
+        173,
+        211,
+        401,
+        477,
+        483,
+        578
+      ],
+      "minimum_answer_similarity": 0.048,
+      "average_answer_similarity": 0.169
+    },
+    {
+      "question": "What is (are) Breast Cancer ?",
+      "source_rows": 13,
+      "distinct_answers": 13,
+      "answer_word_counts": [
+        31,
+        35,
+        46,
+        66,
+        91,
+        177,
+        198,
+        270,
+        273,
+        286,
+        339,
+        452,
+        573
+      ],
+      "minimum_answer_similarity": 0.07,
+      "average_answer_similarity": 0.158
+    },
+    {
+      "question": "What is (are) Colorectal Cancer ?",
+      "source_rows": 12,
+      "distinct_answers": 12,
+      "answer_word_counts": [
+        47,
+        48,
+        56,
+        59,
+        68,
+        92,
+        174,
+        206,
+        251,
+        293,
+        301,
+        317
+      ],
+      "minimum_answer_similarity": 0.071,
+      "average_answer_similarity": 0.142
+    },
+    {
+      "question": "What is (are) High Blood Pressure ?",
+      "source_rows": 11,
+      "distinct_answers": 11,
+      "answer_word_counts": [
+        69,
+        74,
+        89,
+        94,
+        104,
+        106,
+        150,
+        178,
+        284,
+        427,
+        897
+      ],
+      "minimum_answer_similarity": 0.035,
+      "average_answer_similarity": 0.144
+    },
+    {
+      "question": "What are the treatments for Prostate Cancer ?",
+      "source_rows": 11,
+      "distinct_answers": 11,
+      "answer_word_counts": [
+        44,
+        66,
+        88,
+        98,
+        100,
+        130,
+        132,
+        214,
+        222,
+        755,
+        2753
+      ],
+      "minimum_answer_similarity": 0.039,
+      "average_answer_similarity": 0.137
+    },
+    {
+      "question": "What is (are) Parkinson's Disease ?",
+      "source_rows": 11,
+      "distinct_answers": 11,
+      "answer_word_counts": [
+        47,
+        56,
+        59,
+        59,
+        74,
+        79,
+        84,
+        178,
+        206,
+        216,
+        743
+      ],
+      "minimum_answer_similarity": 0.049,
+      "average_answer_similarity": 0.116
+    },
+    {
+      "question": "What is (are) Leukemia ?",
+      "source_rows": 10,
+      "distinct_answers": 10,
+      "answer_word_counts": [
+        21,
+        25,
+        51,
+        51,
+        56,
+        63,
+        74,
+        98,
+        149,
+        615
+      ],
+      "minimum_answer_similarity": 0.0,
+      "average_answer_similarity": 0.118
+    },
+    {
+      "question": "What is (are) Age-related Macular Degeneration ?",
+      "source_rows": 10,
+      "distinct_answers": 10,
+      "answer_word_counts": [
+        27,
+        42,
+        44,
+        54,
+        54,
+        68,
+        119,
+        132,
+        163,
+        245
+      ],
+      "minimum_answer_similarity": 0.013,
+      "average_answer_similarity": 0.117
+    },
+    {
+      "question": "What is (are) Nutrition for Advanced Chronic Kidney Disease in Adults ?",
+      "source_rows": 10,
+      "distinct_answers": 10,
+      "answer_word_counts": [
+        35,
+        59,
+        108,
+        122,
+        146,
+        187,
+        223,
+        233,
+        294,
+        341
+      ],
+      "minimum_answer_similarity": 0.025,
+      "average_answer_similarity": 0.116
+    },
+    {
+      "question": "What is (are) Prostate Cancer ?",
+      "source_rows": 10,
+      "distinct_answers": 10,
+      "answer_word_counts": [
+        61,
+        63,
+        66,
+        66,
+        158,
+        179,
+        203,
+        208,
+        292,
+        332
+      ],
+      "minimum_answer_similarity": 0.093,
+      "average_answer_similarity": 0.201
+    },
+    {
+      "question": "Who is at risk for Prostate Cancer? ?",
+      "source_rows": 9,
+      "distinct_answers": 9,
+      "answer_word_counts": [
+        34,
+        46,
+        50,
+        54,
+        91,
+        98,
+        108,
+        186,
+        942
+      ],
+      "minimum_answer_similarity": 0.033,
+      "average_answer_similarity": 0.166
+    },
+    {
+      "question": "Who is at risk for Breast Cancer? ?",
+      "source_rows": 9,
+      "distinct_answers": 9,
+      "answer_word_counts": [
+        31,
+        53,
+        105,
+        259,
+        683,
+        793,
+        1204,
+        1209,
+        2056
+      ],
+      "minimum_answer_similarity": 0.041,
+      "average_answer_similarity": 0.177
+    },
+    {
+      "question": "What is (are) Lung Cancer ?",
+      "source_rows": 9,
+      "distinct_answers": 9,
+      "answer_word_counts": [
+        39,
+        63,
+        67,
+        87,
+        159,
+        240,
+        252,
+        342,
+        552
+      ],
+      "minimum_answer_similarity": 0.054,
+      "average_answer_similarity": 0.157
+    },
+    {
+      "question": "What is (are) Dry Mouth ?",
+      "source_rows": 8,
+      "distinct_answers": 8,
+      "answer_word_counts": [
+        16,
+        28,
+        44,
+        46,
+        57,
+        101,
+        160,
+        214
+      ],
+      "minimum_answer_similarity": 0.013,
+      "average_answer_similarity": 0.122
+    },
+    {
+      "question": "What are the treatments for Lung Cancer ?",
+      "source_rows": 8,
+      "distinct_answers": 8,
+      "answer_word_counts": [
+        23,
+        41,
+        62,
+        67,
+        89,
+        248,
+        292,
+        585
+      ],
+      "minimum_answer_similarity": 0.042,
+      "average_answer_similarity": 0.14
+    },
+    {
+      "question": "What is (are) Alzheimer's Disease ?",
+      "source_rows": 8,
+      "distinct_answers": 8,
+      "answer_word_counts": [
+        50,
+        53,
+        60,
+        88,
+        202,
+        243,
+        260,
+        881
+      ],
+      "minimum_answer_similarity": 0.093,
+      "average_answer_similarity": 0.153
+    }
+  ],
+  "recommendations": [
+    "Review low-similarity answer variants before retrieval evaluation or future training.",
+    "Keep one authoritative provenance record per answer variant instead of silently merging clinical claims.",
+    "Validate markup, URLs, licensing, and clinical accuracy in a separate qualified review."
+  ],
+  "training_performed": false
+}

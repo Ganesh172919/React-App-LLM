@@ -1,3 +1,36 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - FORGOT PASSWORD VIEW (ForgotPassword.jsx)
+ * ============================================================================
+ * Role:
+ *   Handles self-service password reset requests. Submits user email to
+ *   `POST /api/auth/forgot-password`. Alerts the user that a recovery email
+ *   was dispatched and redirects to `/login` after a 3-second delay.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: PASSWORD RECOVERY REQUEST
+ * ----------------------------------------------------------------------------
+ * [ForgotPassword Component]
+ *   │
+ *   ├── 1. Email Input Form
+ *   ├── 2. Submission Handler (handleSubmit)
+ *   │     ├── Calls apiRequest("/auth/forgot-password", { email })
+ *   │     ├── Displays confirmation message
+ *   │     └── Sets 3-second timer redirecting to /login
+ *   └── 3. Navigation: Link back to /login
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: PASSWORD RESET DISPATCH
+ * ----------------------------------------------------------------------------
+ *  [User Enters Email] ──► apiRequest('/auth/forgot-password')
+ *                                   │
+ *                                   ▼
+ *                      Display Confirmation Message
+ *                                   │
+ *                                   ▼ (after 3 seconds)
+ *                             navigate('/login')
+ * ============================================================================
+ */
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiRequest } from "../../lib/api";

@@ -1,7 +1,79 @@
-"""Profile a medical question-answer CSV without training a model.
+"""
+===============================================================================
+MEDASSIST AI - DATASET ANALYSIS & QUALITY PROFILER (analyze_dataset.py)
+===============================================================================
+Role:
+    Performs deterministic, reproducible descriptive profiling of the medical
+    question-and-answer CSV dataset ("Final data set for llm based health
+    assitance (1).csv"). Uses Python's standard library exclusively so it can
+    execute in minimal CI environments without external heavy ML dependencies.
+    It never alters the source dataset and performs zero model training.
 
-The script uses only Python's standard library so it can run in lightweight
-development and CI environments. It never modifies the source dataset.
+Key Profiling Outputs:
+    - Row counts: Total rows, valid Q&A pairs, excluded missing-value rows.
+    - Quality flags: Missing questions, missing answers, exact duplicates, repeated
+      normalized questions, questions < 4 words, answers < 20 or > 1,000 words.
+    - Length metrics: Min, P25, Median, Mean, P75, P95, Max word counts.
+    - Answer length distribution: 6 distinct length bands.
+    - Rule-based question classification: Symptoms, Causes, Treatment, Diagnosis,
+      Prevention, Risk, Prognosis, Definition, and Other.
+    - Top frequent medical vocabulary terms (after stop-word filtering).
+    - Output formats: `dataset_analysis.json` and `dataset_analysis.md`.
+
+-------------------------------------------------------------------------------
+MINDMAP FLOW: DATASET ANALYSIS PIPELINE
+-------------------------------------------------------------------------------
+[analyze_dataset.py Main Execution]
+  │
+  ├── 1. CLI Argument Parsing (parse_args)
+  │     ├── --input: Path to source CSV (default: Final data set...csv)
+  │     └── --output-dir: Output directory for reports (default: reports/)
+  │
+  ├── 2. Streaming CSV Ingestion (analyze_dataset)
+  │     ├── Reads utf-8-sig encoded rows via csv.DictReader
+  │     ├── Locates case-insensitive "question" and "answer" column headers
+  │     ├── Filters and tracks missing fields (missing_questions, missing_answers)
+  │     ├── Normalizes whitespace (single-spaced, trimmed text)
+  │     ├── Classifies question intent (classify_question: regex rules)
+  │     └── Tracks normalized pairs and repeated question frequencies
+  │
+  ├── 3. Statistical Aggregations
+  │     ├── Length summaries: length_summary() -> percentile calculations
+  │     ├── Answer length distribution bins (< 20, 20-99, 100-249, etc.)
+  │     ├── Question type frequency distributions
+  │     └── Top 20 frequent medical terms (top_terms with stop-word exclusion)
+  │
+  ├── 4. Actionable Data Recommendations
+  │     └── Emits 5 guidelines (deduplication, provenance retention, split safety)
+  │
+  └── 5. Report Generation & Serialization
+        ├── Writes JSON report: reports/dataset_analysis.json
+        └── Writes Markdown report: reports/dataset_analysis.md via render_markdown()
+
+-------------------------------------------------------------------------------
+ASCII FLOW: PROFILING & REPORT GENERATION SEQUENCE
+-------------------------------------------------------------------------------
+  [Source CSV: 16,412 rows]
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────┐
+  │ DictReader: Row-by-Row Extraction                      │
+  │ - normalize_text() (single-spaced whitespace)          │
+  │ - Classify Question Type (symptoms, causes, etc.)      │
+  │ - Count Words (questions & answers)                    │
+  └────────────────────────────────────────────────────────┘
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────┐
+  │ Compute Distribution Statistics & Quality Metrics      │
+  │ - Flags: 5 missing answers, 48 exact duplicates        │
+  │ - Percentiles: Median question = 7 wds, answer = 132   │
+  │ - Answer length bands (<20, 20-99, 100-249, etc.)      │
+  └────────────────────────────────────────────────────────┘
+             │
+             ├──► Write dataset_analysis.json (Structured data)
+             └──► Write dataset_analysis.md   (Human-readable summary)
+===============================================================================
 """
 
 from __future__ import annotations
@@ -142,6 +214,27 @@ def find_column(fieldnames: list[str], expected: str) -> str:
 
 
 def analyze_dataset(dataset_path: Path) -> dict[str, object]:
+    """Execute descriptive profiling over the medical Q&A CSV.
+
+    MINDMAP FLOW:
+    [analyze_dataset]
+      ├── CSV Streaming: DictReader with question/answer column matching
+      ├── Missing Field Checks: Count missing questions and answers
+      ├── Text Normalization: Single-space whitespace collapsing
+      ├── Statistical Accumulation:
+      │     ├── Question words and answer words lists
+      │     ├── Pair frequencies and repeated question frequencies
+      │     └── Question type classification (regex rules)
+      ├── Aggregations:
+      │     ├── Quality flags (under 4 words, under 20 words, over 1000 words)
+      │     ├── Length summary percentiles (p25, median, mean, p75, p95)
+      │     ├── Answer length distribution (6 bins)
+      │     └── Top 20 frequent medical terms (stop-word filtered)
+      └── Returns: Dictionary payload with rows, quality_flags, lengths, recommendations
+
+    ASCII FLOW:
+    CSV File ──► Stream Rows ──► Validate Columns ──► Count Words & Types ──► Report Dict
+    """
     questions: list[str] = []
     answers: list[str] = []
     pair_counts: Counter[tuple[str, str]] = Counter()
@@ -191,6 +284,18 @@ def analyze_dataset(dataset_path: Path) -> dict[str, object]:
         "answers_under_20_words": sum(value < 20 for value in answer_words),
         "answers_over_1000_words": sum(value > 1000 for value in answer_words),
     }
+    quality_rates = {
+        key: round((value / total_rows) * 100, 2) if total_rows else 0
+        for key, value in quality_flags.items()
+    }
+    answer_length_distribution = {
+        "under_20_words": sum(value < 20 for value in answer_words),
+        "20_to_99_words": sum(20 <= value < 100 for value in answer_words),
+        "100_to_249_words": sum(100 <= value < 250 for value in answer_words),
+        "250_to_499_words": sum(250 <= value < 500 for value in answer_words),
+        "500_to_999_words": sum(500 <= value < 1000 for value in answer_words),
+        "1000_words_or_more": sum(value >= 1000 for value in answer_words),
+    }
 
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -204,10 +309,12 @@ def analyze_dataset(dataset_path: Path) -> dict[str, object]:
             "unique_normalized_pairs": len(pair_counts),
         },
         "quality_flags": quality_flags,
+        "quality_rates_percent": quality_rates,
         "lengths_in_words": {
             "question": length_summary(question_words),
             "answer": length_summary(answer_words),
         },
+        "answer_length_distribution": answer_length_distribution,
         "question_types": dict(question_type_counts.most_common()),
         "top_question_terms": top_terms(questions),
         "recommendations": [
@@ -224,6 +331,7 @@ def render_markdown(report: dict[str, object]) -> str:
     rows = report["rows"]
     flags = report["quality_flags"]
     lengths = report["lengths_in_words"]
+    length_distribution = report["answer_length_distribution"]
     question_types = report["question_types"]
     top_terms_data = report["top_question_terms"]
     recommendations = report["recommendations"]
@@ -236,6 +344,10 @@ def render_markdown(report: dict[str, object]) -> str:
         f"| {item['term']} | {item['count']:,} |" for item in top_terms_data[:12]
     )
     recommendation_rows = "\n".join(f"- {item}" for item in recommendations)
+    distribution_rows = "\n".join(
+        f"| {label.replace('_', ' ').title()} | {count:,} |"
+        for label, count in length_distribution.items()
+    )
 
     return f"""# Medical Q&A dataset analysis
 
@@ -269,6 +381,12 @@ Generated from `{report['source_file']}`. This is descriptive profiling only. It
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Question | {lengths['question']['min']} | {lengths['question']['median']} | {lengths['question']['mean']} | {lengths['question']['p95']} | {lengths['question']['max']} |
 | Answer | {lengths['answer']['min']} | {lengths['answer']['median']} | {lengths['answer']['mean']} | {lengths['answer']['p95']} | {lengths['answer']['max']} |
+
+## Answer length distribution
+
+| Length band | Rows |
+| --- | ---: |
+{distribution_rows}
 
 ## Question types
 

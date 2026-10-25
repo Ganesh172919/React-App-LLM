@@ -1,3 +1,48 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - TRANSACTIONAL EMAIL SERVICE (emailService.js)
+ * ============================================================================
+ * Role:
+ *   Manages transactional email communications via the Brevo (formerly Sendinblue)
+ *   API SDK. Sends verification emails with 24-hour verification tokens and
+ *   password reset links with 1-hour expiration tokens.
+ *
+ * Configuration:
+ *   - BREVO_API_KEY: Authenticates with Brevo TransactionalEmailsApi.
+ *   - EMAIL_FROM_ADDRESS / EMAIL_FROM_NAME: Configures verified sender identity.
+ *   - FRONTEND_URL / CLIENT_ORIGIN: Target base URL for generated email links.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: EMAIL DISPATCH PIPELINE
+ * ----------------------------------------------------------------------------
+ * [EmailService Singleton]
+ *   │
+ *   ├── 1. Initialization
+ *   │     ├── Sets SibApiV3Sdk.ApiClient apiKey from BREVO_API_KEY
+ *   │     └── Instantiates SibApiV3Sdk.TransactionalEmailsApi()
+ *   │
+ *   ├── 2. Verification Email (sendVerificationEmail)
+ *   │     ├── Generates verification URL: ${frontendUrl}/verify-email?token=${token}
+ *   │     ├── Builds styled HTML email template (24-hour expiration notice)
+ *   │     └── Calls apiInstance.sendTransacEmail(sendSmtpEmail)
+ *   │
+ *   └── 3. Password Reset Email (sendPasswordResetEmail)
+ *         ├── Generates reset URL: ${frontendUrl}/reset-password?token=${token}
+ *         ├── Builds styled HTML email template (1-hour expiration notice)
+ *         └── Calls apiInstance.sendTransacEmail(sendSmtpEmail)
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: TRANSACTIONAL EMAIL DISPATCH
+ * ----------------------------------------------------------------------------
+ *  authController              EmailService                   Brevo API
+ *        │                           │                            │
+ *        │── sendVerificationEmail ─>│                            │
+ *        │   (email, token)          ├─ Build HTML & Link         │
+ *        │                           ├─ sendTransacEmail() ──────>│
+ *        │                           │<─ 201 Created Response ────┤
+ *        │<── Promise resolved ──────┤                            │
+ * ============================================================================
+ */
 const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 class EmailService {

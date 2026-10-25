@@ -1,0 +1,95 @@
+# ==============================================================================
+# MEDASSIST AI - CONTINUOUS INTEGRATION WORKFLOW (ci.yml)
+# ==============================================================================
+# Role:
+#   Automated GitHub Actions verification pipeline running on pushes to main
+#   and all pull requests. Ensures backend tests pass, frontend lints and builds,
+#   and Python dataset tools pass unit tests and profiling.
+#
+# ------------------------------------------------------------------------------
+# MINDMAP FLOW: CI JOBS MATRIX
+# ------------------------------------------------------------------------------
+# [GitHub Actions Workflow: CI]
+#   │
+#   ├── Job 1: backend (Node 20)
+#   │     ├── npm ci
+#   │     └── npm test (11 service-level assertions)
+#   │
+#   ├── Job 2: frontend (Node 20)
+#   │     ├── npm ci
+#   │     ├── npm run lint (ESLint 9)
+#   │     └── npm run build (Vite production bundle)
+#   │
+#   └── Job 3: dataset-tools (Python 3.12)
+#         ├── python -m unittest discover (dataset and LoRA tools)
+#         ├── python analyze_dataset.py --output-dir RUNNER_TEMP
+#         └── python audit_dataset.py --output-dir RUNNER_TEMP
+#
+# ------------------------------------------------------------------------------
+# ASCII FLOW: CI PIPELINE EXECUTION
+# ------------------------------------------------------------------------------
+#  git push main / Pull Request
+#              │
+#      ┌───────┼──────────────────┐
+#      ▼       ▼                  ▼
+#  [backend] [frontend]    [dataset-tools]
+#  npm test  lint & build  unittest & profiling
+#      │       │                  │
+#      └───────┼──────────────────┘
+#              ▼
+#       Green CI Status Check
+# ==============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  dataset-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s "Model and Dataset" -p "test_*.py"
+      - run: python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
+      - run: python "Model and Dataset/analyze_dataset.py" --output-dir "$RUNNER_TEMP/dataset-reports"
+      - run: python "Model and Dataset/audit_dataset.py" --output-dir "$RUNNER_TEMP/dataset-reports"

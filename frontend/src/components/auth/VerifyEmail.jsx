@@ -1,3 +1,43 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - EMAIL VERIFICATION VIEW (VerifyEmail.jsx)
+ * ============================================================================
+ * Role:
+ *   Handles automatic email verification on link click. Extracts token from URL
+ *   search params (`?token=...`), sends confirmation query to `/auth/verify-email`,
+ *   renders spinner, success icon, or error state, and redirects to `/login`.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: EMAIL VERIFICATION
+ * ----------------------------------------------------------------------------
+ * [VerifyEmail Component]
+ *   │
+ *   ├── 1. Mount Effect (useEffect)
+ *   │     ├── Reads ?token= from URL search params
+ *   │     ├── If no token: sets status = "error"
+ *   │     └── If token present: Calls GET /auth/verify-email?token=${token}
+ *   │
+ *   ├── 2. Success Path
+ *   │     ├── Sets status = "success"
+ *   │     └── Sets 3-second timer redirecting to /login
+ *   │
+ *   └── 3. Error Path
+ *         ├── Sets status = "error"
+ *         └── Offers "Register Again" and "Back to Login" actions
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: ASYNCHRONOUS VERIFICATION
+ * ----------------------------------------------------------------------------
+ *  Component Mount ──► Read ?token ──► GET /api/auth/verify-email
+ *                                            │
+ *                                   ┌────────┴────────┐
+ *                                   ▼                 ▼
+ *                                Success             Error
+ *                                   │                 │
+ *                                   ▼                 ▼
+ *                           navigate('/login')  Show retry buttons
+ * ============================================================================
+ */
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../lib/api";

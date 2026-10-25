@@ -1,3 +1,51 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - RESET PASSWORD VIEW (ResetPassword.jsx)
+ * ============================================================================
+ * Role:
+ *   Handles password updates using tokenized recovery links. Reads `token`
+ *   from URL search parameters, validates password match and minimum length
+ *   (8 characters), and posts new credentials to `POST /api/auth/reset-password`.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: PASSWORD RESET FORM & VALIDATION
+ * ----------------------------------------------------------------------------
+ * [ResetPassword Component]
+ *   │
+ *   ├── 1. URL Query Extraction
+ *   │     └── Reads token from URL (?token=...)
+ *   │     └── If missing: Renders invalid link view with link to /forgot-password
+ *   │
+ *   ├── 2. Form Inputs: New Password and Confirm Password (minLength: 8)
+ *   │
+ *   ├── 3. Submission Handler (handleSubmit)
+ *   │     ├── Verifies newPassword === confirmPassword
+ *   │     ├── Calls apiRequest("/auth/reset-password", { token, newPassword })
+ *   │     ├── Displays success message
+ *   │     └── Sets 2-second timeout to redirect to /login
+ *   │
+ *   └── 4. Error Boundary: Displays failure reason if token expired
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: PASSWORD RESET SUBMISSION
+ * ----------------------------------------------------------------------------
+ *  [User Enters New Password] ──► (newPassword === confirmPassword?)
+ *                                             │
+ *                                ┌────────────┴────────────┐
+ *                                ▼                         ▼
+ *                             [True]                    [False]
+ *                                │                         │
+ *                                ▼                         ▼
+ *                 POST /api/auth/reset-password      "Passwords do not match"
+ *                                │
+ *                       ┌────────┴────────┐
+ *                       ▼                 ▼
+ *                  200 Success          Error
+ *                       │                 │
+ *                       ▼                 ▼
+ *               navigate('/login')   Display Error
+ * ============================================================================
+ */
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiRequest } from "../../lib/api";

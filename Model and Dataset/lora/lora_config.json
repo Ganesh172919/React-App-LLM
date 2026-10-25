@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "base_model": "gpt2",
+  "task_type": "CAUSAL_LM",
+  "inference_mode": false,
+  "r": 8,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "bias": "none",
+  "target_modules": ["c_attn"],
+  "dataset": {
+    "question_column": "question",
+    "answer_column": "answer",
+    "max_sequence_length": 512,
+    "prompt_template": "Question: {question}\nAnswer: {answer}"
+  },
+  "safety": {
+    "training_enabled": false,
+    "requires_human_clinical_review": true,
+    "publish_adapter": false
+  }
+}

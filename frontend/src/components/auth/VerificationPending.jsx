@@ -1,3 +1,26 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - VERIFICATION PENDING NOTICE (VerificationPending.jsx)
+ * ============================================================================
+ * Role:
+ *   Advises newly registered users that a 24-hour verification link has been
+ *   dispatched to their email. Instructs them to check their inbox/spam folder
+ *   and provides a return link to the login screen.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: NOTICE VIEW
+ * ----------------------------------------------------------------------------
+ * [VerificationPending Component]
+ *   │
+ *   ├── Guidance: Explains 24-hour verification token lifespan
+ *   └── Navigation: "Back to Login" action button
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: USER GUIDANCE NOTICE
+ * ----------------------------------------------------------------------------
+ *  Registration Success ──► <VerificationPending /> ──► User verifies via email
+ * ============================================================================
+ */
 import { useNavigate } from "react-router-dom";
 
 const VerificationPending = () => {

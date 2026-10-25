@@ -1,204 +1,265 @@
-import { useContext } from "react";
+/**
+ * ============================================================================
+ * MEDASSIST AI - CHAT HISTORY SIDEBAR COMPONENT (Sidebar.jsx)
+ * ============================================================================
+ * Role:
+ *   Renders the collapsible conversation history navigation drawer. Provides
+ *   instant title search filtering, new chat initialization, session selection,
+ *   inline session renaming, conversation JSON downloading/exporting, and confirmed
+ *   session deletion.
+ *
+ * Props:
+ *   - onNewChat: Function resetting conversation state for a fresh chat.
+ *   - chatSessions: Object grouping sessions by temporal categories (Today, etc.).
+ *   - handleLoadChat: Function loading an existing conversation session.
+ *   - handleDeleteChat: Function executing session deletion.
+ *   - handleRenameChat: Function saving edited session title.
+ *   - handleExportChat: Function downloading conversation as formatted JSON.
+ *   - loadingStates: Async operations indicators (e.g. saving, deleting).
+ *   - deletingSessionIds: Set of session IDs undergoing active deletion.
+ *   - activeSessionId: Currently active chat ID.
+ *   - isNewChat: Boolean indicating if workspace is in an unsaved state.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: SIDEBAR STATE & USER ACTIONS
+ * ----------------------------------------------------------------------------
+ * [Sidebar Component]
+ *   │
+ *   ├── 1. Header Controls
+ *   │     ├── "New conversation" Button ──► Triggers onNewChat()
+ *   │     └── Close Drawer Button [×]    ──► Sets setSidebarOpen(false)
+ *   │
+ *   ├── 2. Live Search Filtering (query state)
+ *   │     ├── User types query into search input
+ *   │     └── useMemo filters grouped sessions matching normalized search text
+ *   │
+ *   ├── 3. Grouped Session Listing (Today / Yesterday / Last 5 Days / Previous)
+ *   │     ├── Session Item: Highlighted if activeSessionId === sessionId
+ *   │     ├── Load Chat: Clicking title invokes handleLoadChat(session)
+ *   │     ├── Inline Rename (editingId === sessionId):
+ *   │     │     ├── Input field for title editing (max 80 chars)
+ *   │     │     └── Save button submits handleRenameChat(sessionId, draftTitle)
+ *   │     ├── Export Action: Invokes handleExportChat(session)
+ *   │     └── Delete Action: Prompts window.confirm() -> handleDeleteChat(sessionId)
+ *   │
+ *   └── 4. Footer Link
+ *         └── Link to /dashboard ("Open analytics dashboard")
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: CONVERSATION ACTIONS INTERACTION
+ * ----------------------------------------------------------------------------
+ *  [User in Sidebar]
+ *         │
+ *         ├──► Click "New conversation" ──► onNewChat() ──► Reset Chat View
+ *         │
+ *         ├──► Type in Search Input ─────► useMemo() ────► Filter Grouped List
+ *         │
+ *         ├──► Click Chat Item ──────────► handleLoadChat(session) ──► Load History
+ *         │
+ *         ├──► Click "Rename" ───────────► Show input ──► submitRename() ──► PATCH API
+ *         │
+ *         ├──► Click "Export" ───────────► handleExportChat() ──► Download JSON
+ *         │
+ *         └──► Click "Delete" ───────────► window.confirm() ──► DELETE API
+ * ============================================================================
+ */
+import { useContext, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { SidebarContext } from "../context/SidebarContext";
 
-const Sidebar = ({
+/**
+ * Resolve the primary session ID whether stored in `sessionId` or `id`.
+ * @param {object} session
+ * @returns {string}
+ */
+const getSessionId = (session) => session.sessionId || session.id;
+
+/**
+ * Extract display title with fallback to the initial prompt snippet or "New Chat".
+ * @param {object} session
+ * @returns {string}
+ */
+const getSessionTitle = (session) =>
+  session.title || session.messages?.[0]?.text?.slice(0, 60) || "New Chat";
+
+function Sidebar({
   onNewChat,
   chatSessions,
   handleLoadChat,
   handleDeleteChat,
+  handleRenameChat,
+  handleExportChat,
   loadingStates,
   deletingSessionIds,
   activeSessionId,
   isNewChat,
-}) => {
+}) {
   const { sidebarOpen, setSidebarOpen } = useContext(SidebarContext);
+  const [query, setQuery] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [draftTitle, setDraftTitle] = useState("");
 
-  const getSessionTitle = (session) => {
-    return (
-      session.title || session.messages?.[0]?.text?.slice(0, 30) || "New Chat"
-    );
+  const filteredGroups = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return Object.entries(chatSessions)
+      .map(([category, sessions]) => [
+        category,
+        sessions.filter((session) =>
+          getSessionTitle(session).toLocaleLowerCase().includes(normalizedQuery)
+        ),
+      ])
+      .filter(([, sessions]) => sessions.length > 0);
+  }, [chatSessions, query]);
+
+  /**
+   * Enter inline rename mode for the chosen conversation session.
+   * @param {object} session
+   */
+  const startRenaming = (session) => {
+    setEditingId(getSessionId(session));
+    setDraftTitle(getSessionTitle(session));
   };
 
-  // Function to safely get session ID
-  const getSessionId = (session) => {
-    const id = session.sessionId || session.id;
-    if (!id) {
-      console.warn("Session missing ID:", session);
-    }
-    return id;
+  /**
+   * Commit the modified title to the backend and exit inline edit state.
+   * @param {string} sessionId
+   */
+  const submitRename = async (sessionId) => {
+    const title = draftTitle.trim();
+    if (title) await handleRenameChat(sessionId, title);
+    setEditingId(null);
+    setDraftTitle("");
   };
 
   return (
-    <div
-      className={`w-[260px] bg-gray-800 min-h-screen h-full flex flex-col transform transition-transform duration-300 fixed ${
+    <aside
+      aria-label="Chat history"
+      className={`fixed inset-y-0 left-0 top-16 z-40 flex h-[calc(100vh-4rem)] w-[300px] flex-col border-r border-slate-800 bg-slate-950 shadow-2xl transition-transform duration-300 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } z-10`}
+      }`}
     >
-      <div className="header p-3 flex justify-between items-center border-b border-gray-700">
+      <div className="flex items-center gap-2 border-b border-slate-800 p-3">
         <button
-          onClick={() => setSidebarOpen(false)}
-          className="close-button p-2 hover:bg-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
-          disabled={loadingStates.deleting}
-          aria-label="Close sidebar"
+          type="button"
+          onClick={onNewChat}
+          className="flex-1 rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          New conversation
         </button>
         <button
-          onClick={onNewChat}
-          className="new-chat-button p-2 hover:bg-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
-          disabled={loadingStates.deleting}
-          aria-label="Start new chat"
+          type="button"
+          onClick={() => setSidebarOpen(false)}
+          className="rounded-md border border-slate-700 p-2.5 text-slate-400 hover:text-white"
+          aria-label="Close chat history"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
+          <span aria-hidden="true">×</span>
         </button>
       </div>
 
-      <div className="chat-history flex-1 overflow-y-auto p-3">
-        {Object.entries(chatSessions).map(([category, sessions]) =>
-          sessions.length > 0 ? (
-            <div key={`category-${category}`} className="mb-4">
-              <h3 className="text-xs font-semibold mb-2 text-gray-400 uppercase tracking-wider">
+      <div className="border-b border-slate-800 p-3">
+        <label htmlFor="chat-search" className="sr-only">Search conversations</label>
+        <input
+          id="chat-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search conversations"
+          className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3">
+        {filteredGroups.length === 0 ? (
+          <p className="px-2 py-8 text-center text-sm text-slate-500">
+            {query ? "No matching conversations" : "Your saved conversations will appear here"}
+          </p>
+        ) : (
+          filteredGroups.map(([category, sessions]) => (
+            <section key={category} className="mb-5">
+              <h2 className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
                 {category}
-              </h3>
-              <ul>
-                {sessions.map((session, index) => {
+              </h2>
+              <ul className="space-y-1">
+                {sessions.map((session) => {
                   const sessionId = getSessionId(session);
+                  const active = activeSessionId === sessionId && !isNewChat;
                   return (
                     <li
-                      key={`${category}-${sessionId || index}`}
-                      className={`chat-item p-2 hover:bg-gray-700 rounded-lg flex justify-between items-center text-gray-300 hover:text-white mb-1 transition-colors ${
-                        activeSessionId === sessionId && !isNewChat
-                          ? "bg-gray-700"
-                          : ""
+                      key={sessionId}
+                      className={`rounded-md border p-2 transition ${
+                        active
+                          ? "border-cyan-500/40 bg-cyan-400/10"
+                          : "border-transparent hover:border-slate-700 hover:bg-slate-900"
                       }`}
                     >
-                      <button
-                        onClick={() => handleLoadChat(session)}
-                        className="flex-1 text-left truncate"
-                        disabled={
-                          deletingSessionIds.has(sessionId) ||
-                          loadingStates.loadingChat
-                        }
-                        title={getSessionTitle(session)}
-                      >
-                        {getSessionTitle(session)}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (sessionId) {
-                            console.log("Deleting session:", sessionId);
-                            handleDeleteChat(sessionId);
-                          } else {
-                            console.error(
-                              "No valid session ID found for deletion:",
-                              session
-                            );
-                          }
-                        }}
-                        className="delete-button p-1 hover:bg-gray-600 rounded text-red-400 hover:text-red-300 ml-2 transition-colors"
-                        disabled={
-                          !sessionId || deletingSessionIds.has(sessionId)
-                        }
-                        aria-label="Delete chat"
-                      >
-                        {deletingSessionIds.has(sessionId) ? (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 animate-spin"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                        ) : (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        )}
-                      </button>
+                      {editingId === sessionId ? (
+                        <form
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            submitRename(sessionId);
+                          }}
+                          className="flex gap-1"
+                        >
+                          <input
+                            autoFocus
+                            maxLength={80}
+                            value={draftTitle}
+                            onChange={(event) => setDraftTitle(event.target.value)}
+                            className="min-w-0 flex-1 rounded-lg border border-cyan-600 bg-slate-950 px-2 py-1 text-sm outline-none"
+                          />
+                          <button type="submit" className="px-2 text-xs text-cyan-300">Save</button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleLoadChat(session)}
+                          className="w-full truncate px-1 text-left text-sm text-slate-200"
+                          disabled={deletingSessionIds.has(sessionId) || loadingStates.loadingChat}
+                          title={getSessionTitle(session)}
+                        >
+                          {getSessionTitle(session)}
+                        </button>
+                      )}
+                      <div className="mt-2 flex items-center justify-end gap-1 text-[11px] text-slate-500">
+                        <button type="button" onClick={() => startRenaming(session)} className="rounded px-2 py-1 hover:bg-slate-800 hover:text-white">
+                          Rename
+                        </button>
+                        <button type="button" onClick={() => handleExportChat(session)} className="rounded px-2 py-1 hover:bg-slate-800 hover:text-white">
+                          Export
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Delete “${getSessionTitle(session)}”?`)) {
+                              handleDeleteChat(sessionId);
+                            }
+                          }}
+                          className="rounded px-2 py-1 text-rose-400 hover:bg-rose-950 hover:text-rose-300"
+                          disabled={!sessionId || deletingSessionIds.has(sessionId)}
+                        >
+                          {deletingSessionIds.has(sessionId) ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
                     </li>
                   );
                 })}
               </ul>
-            </div>
-          ) : null
+            </section>
+          ))
         )}
       </div>
-      <div className="p-3 border-t border-gray-700">
+
+      <div className="border-t border-slate-800 p-3">
         <Link
           to="/dashboard"
-          className="w-full p-2 flex items-center justify-center gap-2 hover:bg-gray-700 rounded-lg text-gray-300 hover:text-white transition-colors"
+          onClick={() => setSidebarOpen(false)}
+          className="flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-cyan-500 hover:text-white"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
-          <span>View analytics</span>
+          Open analytics dashboard
         </Link>
       </div>
-    </div>
+    </aside>
   );
-};
+}
 
 export default Sidebar;

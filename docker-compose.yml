@@ -1,0 +1,95 @@
+# ============================================================================
+# MEDASSIST AI - DOCKER COMPOSE MULTI-CONTAINER TOPOLOGY (docker-compose.yml)
+# ============================================================================
+# Architecture:
+#   Orchestrates a three-tier production environment:
+#     1. `mongo`: MongoDB 7 persistent database with mongosh healthcheck.
+#     2. `backend`: Express API and WebSocket server on port 5000 with healthcheck.
+#     3. `frontend`: High-performance Nginx web server serving Vite SPA and
+#        reverse-proxying /api/ and /ws to the backend on external port 8080.
+#
+# ----------------------------------------------------------------------------
+# MINDMAP FLOW: CONTAINER ORCHESTRATION & DEPENDENCIES
+# ----------------------------------------------------------------------------
+# [docker-compose up]
+#        │
+#        ├── 1. Service: mongo (mongo:7-jammy)
+#        │     ├── Volume: medassist-mongo -> /data/db
+#        │     └── Healthcheck: mongosh ping every 10s
+#        │
+#        ├── 2. Service: backend (Node 20 Alpine)
+#        │     ├── Depends On: mongo (service_healthy)
+#        │     ├── Healthcheck: GET /api/health every 30s
+#        │     └── Config: JWT secrets, Mongo URI, Gemini, Brevo SMTP
+#        │
+#        └── 3. Service: frontend (Nginx Alpine)
+#              ├── Depends On: backend (service_healthy)
+#              ├── Port Forwarding: 8080:80
+#              └── Routes: / (SPA), /api/ (backend:5000), /ws (WebSocket backend:5000)
+#
+# ----------------------------------------------------------------------------
+# ASCII FLOW: CONTAINER NETWORK & TRAFFIC ROUTING
+# ----------------------------------------------------------------------------
+#  User Browser (http://localhost:8080)
+#        │
+#        ▼
+#  ┌───────────────────────────────┐
+#  │ frontend container (Nginx:80) │
+#  └───────┬───────────────┬───────┘
+#          │               │
+#          │ / (Static)    │ /api/ & /ws (Reverse Proxy)
+#          ▼               ▼
+#     [Vite Dist]  ┌────────────────────────────────┐
+#                  │ backend container (Node:5000)  │
+#                  └───────────────┬────────────────┘
+#                                  │
+#                                  ▼ mongodb://mongo:27017/medassist
+#                  ┌────────────────────────────────┐
+#                  │ mongo container (MongoDB:27017)│
+#                  └────────────────────────────────┘
+# ============================================================================
+services:
+  mongo:
+    image: mongo:7-jammy
+    restart: unless-stopped
+    volumes:
+      - medassist-mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/medassist
+      CLIENT_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      JWT_ACCESS_TOKEN: ${JWT_ACCESS_TOKEN:?set JWT_ACCESS_TOKEN in .env}
+      JWT_REFRESH_TOKEN: ${JWT_REFRESH_TOKEN:?set JWT_REFRESH_TOKEN in .env}
+      JWT_VERIFICATION_TOKEN: ${JWT_VERIFICATION_TOKEN:?set JWT_VERIFICATION_TOKEN in .env}
+      JWT_RESET_TOKEN: ${JWT_RESET_TOKEN:?set JWT_RESET_TOKEN in .env}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@example.com}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-MedAssist AI}
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+volumes:
+  medassist-mongo:

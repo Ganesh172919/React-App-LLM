@@ -1,0 +1,21 @@
+{
+  "valid": true,
+  "training_performed": false,
+  "base_model": "gpt2",
+  "task_type": "CAUSAL_LM",
+  "rank": 8,
+  "alpha": 32,
+  "dropout": 0.05,
+  "target_modules": [
+    "c_attn"
+  ],
+  "max_sequence_length": 512,
+  "estimate_assumptions": {
+    "hidden_size": 768,
+    "layers": 12,
+    "projections_per_layer": 1
+  },
+  "estimated_adapter_parameters": 147456,
+  "estimated_fp16_megabytes": 0.281,
+  "note": "Analytical estimate only; no model was downloaded or trained."
+}

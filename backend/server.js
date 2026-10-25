@@ -1,3 +1,87 @@
+/**
+ * ============================================================================
+ * MEDASSIST AI - HTTP & WEBSOCKET SERVER (server.js)
+ * ============================================================================
+ * Role:
+ *   Primary application entrypoint binding the Express HTTP application and
+ *   WebSocket Server (ws) to a single network port. Manages real-time event
+ *   broadcasting, connection lifecycle, JWT-authenticated WebSocket handshakes,
+ *   periodic heartbeat monitoring, and graceful process termination.
+ *
+ * Architecture Highlights:
+ *   - Shares single HTTP port between Express API and WebSocket endpoints (/ws).
+ *   - User-scoped broadcasts: pushes CHAT_UPDATE events strictly to sockets
+ *     bearing the authenticated recipient's user ID (prevents cross-tenant leak).
+ *   - Heartbeat watchdog: 30-second interval pings dead sockets to terminate them.
+ *   - Graceful termination: handles SIGTERM / SIGINT signals with active client
+ *     eviction and socket cleanup before process exit.
+ *
+ * ----------------------------------------------------------------------------
+ * MINDMAP FLOW: SERVER INITIALIZATION & WEBSOCKET LIFECYCLE
+ * ----------------------------------------------------------------------------
+ * [server.js Entrypoint]
+ *   │
+ *   ├── 1. HTTP Server Setup
+ *   │     ├── Imports app (Express app instance)
+ *   │     ├── Initializes http.createServer(app)
+ *   │     └── Resolves PORT from process.env.PORT || 5000
+ *   │
+ *   ├── 2. WebSocket Server Initialization
+ *   │     ├── Instantiates WebSocket.Server on path: "/ws"
+ *   │     ├── Configures security limits: maxPayload 1024 bytes, perMessageDeflate: false
+ *   │     └── Enables clientTracking for user connection index
+ *   │
+ *   ├── 3. Connection Authentication Flow
+ *   │     ├── Checks Origin header against app.locals.allowedOrigins
+ *   │     ├── Parses HTTP cookies for accessToken
+ *   │     ├── Verifies JWT via process.env.JWT_ACCESS_TOKEN
+ *   │     ├── On Success: Attaches ws.userId = decoded.id, marks ws.isAlive = true
+ *   │     └── On Failure: Closes socket immediately with 1008 (Unauthorized)
+ *   │
+ *   ├── 4. Heartbeat Watchdog
+ *   │     ├── Runs every 30,000ms (30s)
+ *   │     ├── Terminates clients where isAlive === false
+ *   │     ├── Sets isAlive = false and emits ping()
+ *   │     └── Restores isAlive = true upon receiving 'pong'
+ *   │
+ *   ├── 5. User-Scoped Broadcast Utility (app.locals.broadcastUpdate)
+ *   │     ├── Receives (payloadData, targetUserId)
+ *   │     ├── Scans all connected wss.clients
+ *   │     ├── Filters clients where client.readyState === OPEN && client.userId === targetUserId
+ *   │     └── Dispatches JSON payload: { type: "CHAT_UPDATE", data, timestamp }
+ *   │
+ *   └── 6. Graceful Shutdown Handler
+ *         ├── Intercepts SIGTERM and SIGINT
+ *         ├── Closes all connected WebSocket clients (1001)
+ *         ├── Tears down WebSocket Server and terminates HTTP server
+ *         └── Sets 10-second hard fallback before process.exit(1)
+ *
+ * ----------------------------------------------------------------------------
+ * ASCII FLOW: WEBSOCKET AUTHENTICATION & BROADCAST SEQUENCE
+ * ----------------------------------------------------------------------------
+ * Client Browser                 HTTP/WS Server                    Mongoose / API
+ *       │                              │                                 │
+ *   [1] │─── Upgrade: websocket ──────>│                                 │
+ *       │    Cookie: accessToken=JWT   │                                 │
+ *       │    Origin: http://client     │                                 │
+ *       │                              ├─ Check Origin against whitelist │
+ *       │                              ├─ jwt.verify(accessToken)        │
+ *       │                              ├─ Set ws.userId = decoded.id     │
+ *       │<── 101 Switching Protocols ──┤                                 │
+ *       │    (Connection OPEN)         │                                 │
+ *       │                              │                                 │
+ *       │      [Heartbeat Loop]        │                                 │
+ *       │<── ping() (every 30s) ───────┤                                 │
+ *       │─── pong() ──────────────────>│ (ws.isAlive = true)             │
+ *       │                              │                                 │
+ *       │      [Chat Update Event]     │                                 │
+ *       │                              │<── POST /api/save ──────────────┤
+ *       │                              │    broadcastUpdate(data, userId)│
+ *       │                              ├─ Filter: ws.userId == userId    │
+ *       │<── CHAT_UPDATE JSON ─────────┤                                 │
+ *       │                              │                                 │
+ * ============================================================================
+ */
 const app = require("./app");
 const http = require("http");
 const WebSocket = require("ws");
@@ -9,18 +93,17 @@ const server = http.createServer(app);
 
 const wss = new WebSocket.Server({
   server,
-  path: "/ws", 
+  path: "/ws",
   clientTracking: true,
+  maxPayload: 1024,
+  perMessageDeflate: false,
 });
 
-// Connection Management
-const activeConnections = new Set();
-const connectionInterval = 30000; 
+const connectionInterval = 30000;
 
 const interval = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (!ws.isAlive) {
-      console.log("Terminating inactive connection");
       return ws.terminate();
     }
     ws.isAlive = false;
@@ -29,9 +112,11 @@ const interval = setInterval(() => {
 }, connectionInterval);
 
 wss.on("connection", (ws, req) => {
-  console.log("New WebSocket connection attempt");
-
   try {
+    const origin = req.headers.origin;
+    if (origin && !app.locals.allowedOrigins.includes(origin)) {
+      throw new Error("Origin is not allowed");
+    }
     const cookies = cookie.parse(req.headers.cookie || "");
     const token = cookies.accessToken;
 
@@ -40,33 +125,26 @@ wss.on("connection", (ws, req) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
-    ws.userId = decoded.id; 
-    console.log(`Authenticated connection for user ${decoded.id}`);
+    ws.userId = decoded.id;
   } catch (error) {
-    console.log("WebSocket auth failed:", error.message);
     return ws.close(1008, "Unauthorized");
   }
 
   ws.isAlive = true;
-  activeConnections.add(ws);
 
   ws.on("pong", () => {
     ws.isAlive = true;
-    console.log("Received pong from client");
   });
 
-  ws.on("message", (message) => {
-    console.log(`Received message from ${ws.userId}:`, message);
+  ws.on("message", () => {
+    ws.close(1003, "Client messages are not supported");
   });
 
   ws.on("error", (error) => {
     console.error(`WebSocket error for user ${ws.userId}:`, error);
   });
 
-  ws.on("close", () => {
-    console.log(`Connection closed for user ${ws.userId}`);
-    activeConnections.delete(ws);
-  });
+  ws.on("close", () => {});
 });
 
 wss.on("close", () => {
@@ -103,8 +181,11 @@ server.listen(PORT, () => {
   console.log(`WebSocket server running on ws://localhost:${PORT}/ws`);
 });
 
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received - shutting down gracefully");
+let shuttingDown = false;
+const shutdown = (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received - shutting down gracefully`);
 
   wss.clients.forEach((client) => {
     client.close(1001, "Server shutting down");
@@ -116,6 +197,10 @@ process.on("SIGTERM", () => {
       process.exit(0);
     });
   });
-});
+  setTimeout(() => process.exit(1), 10000).unref();
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 module.exports = server;
