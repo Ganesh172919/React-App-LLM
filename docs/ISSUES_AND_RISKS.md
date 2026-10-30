@@ -21,8 +21,9 @@ MedAssist AI operates at the intersection of generative language models, automat
 | High | The 4-2-1 formula appeared as an adult patient rate; Wells showed personal-sounding risk percentages and an unassessed zero score as “PE unlikely”; FeNa/FeUrea labels asserted injury patterns. | Fixed in the UI as educational examples and numeric score bands. Verified with component tests and the inbuilt-browser mobile review. Clinical validity remains open. |
 | Medium | At 320 px, header actions squeezed “Sign out” and the last starter prompt was clipped. | Fixed with a two-row header and compact empty-chat layout; verified in the inbuilt browser and headless regression. |
 | Medium | Repeated QA runs hit the expected 15-minute recovery rate limit and made the smoke suite fail. | The suite now checks either generic success or visible rate-limit feedback; fresh-instance success remains covered by the first run. |
+| Medium | A local JSON export could display forged verification and PubMed source metadata as if MedAssist had checked it; the old import label also implied the file was saved. | Fixed: bounded local preview strips evidence metadata, marks imported answers unverified, disables sending, and states that it is not saved or used as model context. Browser and component regressions cover this path. |
 
-The local software suites passed 64 backend, 43 frontend, 19 Python, 7 built HTTP, 20 core browser, and 21 dark/tools browser checks. These fixture-based results do not establish live-provider reliability or clinical safety.
+This cycle passed 66 backend, 47 frontend, 19 Python, 7 built HTTP, 21 core browser, and 24 dark/tools browser checks. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
 
 ```
 ========================================================================================================================
@@ -60,7 +61,7 @@ The local software suites passed 64 backend, 43 frontend, 19 Python, 7 built HTT
                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ TIER 4: PHARMACOLOGICAL NAME MATCHER & CALCULATOR BOUNDS (backend/services/interactionService.js)              │
-    │ ├── 12 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
+    │ ├── 14 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
     │ ├── Preservation Across Redirects: Retains drug interaction warnings even during emergency deflection           │
     │ └── Calculator Physiological Bounds: Caps input parameters to prevent clinically impossible calculations       │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -171,7 +172,7 @@ A primary vulnerability of Retrieval-Augmented Generation (RAG) systems is **hal
 
 ### 4.2 Drug Interaction Screening Boundaries
 
-The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 12 major high-severity contraindication pairs:
+The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 14 selected medication pairs. Its coverage is incomplete and has not been clinically validated:
 
 1. **Anticoagulants / Antiplatelets + NSAIDs / Aspirin** (Elevated systemic & intracranial hemorrhage risk)
 2. **PDE5 Inhibitors + Nitrates** (Profound refractory systemic hypotension and syncope)

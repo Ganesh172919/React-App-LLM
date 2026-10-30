@@ -12,14 +12,16 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 ### Core System Capabilities
 1. **Biomedical Evidence Grounding**: Live 3-stage NCBI Entrez E-Utilities harvesting (`esearch`, `esummary`, `efetch`) extracting structured MEDLINE XML abstracts.
 2. **Deterministic Citation Auditing**: Set-partitioning mathematical verifier analyzing `[N]` bracketed assertions against retrieved literature bounds.
-3. **High-Risk Medication Interaction Screener**: Heuristic screening covering 14 major FDA black-box contraindication drug pairs with preserved context across emergency deflections.
-4. **Educational Clinical Calculators**: 13 evidence-based medical scoring tools with strict physiological input bounds and WAI-ARIA tab navigation.
-5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer committed only upon explicit user confirmation (`/api/save`).
+3. **Medication Interaction Screener**: Heuristic name matching for 14 selected high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
+4. **Educational Clinical Calculators**: 13 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
+5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer followed by an automatic `/api/save` request after an answer is generated.
 6. **Multi-Tab Web Locks Synchronization**: Single-flight token renewal across concurrent browser tabs (`navigator.locks.request`).
 7. **Offline Machine Learning & LoRA Suite**: 1,437 ambiguous question groups quarantined; deterministic SHA-256 modulo 100 hash splits; closed-form LoRA parameter calculations.
 
 > [!IMPORTANT]
 > **Clinical Disclaimer**: MedAssist AI provides health and medical information strictly for educational and research purposes. It does not provide clinical diagnoses, medical advice, or treatment plans. Acute emergency symptoms require immediate contact with local emergency medical services.
+
+**Conversation JSON preview:** The chat sidebar can open a previously exported JSON conversation locally. The file is limited to 512 KB and 100 complete question-and-answer pairs. Imported answer text is marked unverified; citation, verification, provider, and identity metadata are discarded. The preview is not saved to the account or sent as model context. Start a new conversation to ask another question.
 
 ---
 
@@ -61,7 +63,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 14 FDA Black-Box Warning Drug Interaction Screener (interactionService.js)                                 │
+     │  - 14 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -106,7 +108,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      14 FDA Drug Interaction Warning Rules
+      14 Heuristic Medication Interaction Patterns
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -172,7 +174,7 @@ The platform includes a comprehensive 13-calculator clinical suite implemented i
 
 ## 5. Pharmacological Drug Interaction Screening & Preserved Context
 
-Implemented in [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js), this subsystem scans user questions against 14 major FDA black-box warning medication combinations:
+Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 14 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
 |:---|:---|:---|:---:|:---|

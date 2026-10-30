@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { AuthContext } from "../../context/AuthContext";
 import { apiRequest, downloadJson, downloadText, formatChatAsMarkdown, getWebSocketUrl, refreshSession } from "../../lib/api";
 import { readTab, writeTab, readPending } from "../../lib/tabStorage";
+import { MAX_IMPORT_BYTES, parseConversationImport } from "../../lib/conversationImport";
 import { isMedicalQuery } from "../../utils/medicalDetector";
 import ClinicalCalculatorsModal from "../tools/ClinicalCalculatorsModal";
 const labels = { citation_checked: "Citation numbers checked", references_only: "References only", generated: "AI generated", safety_redirect: "Safety response", insufficient_evidence: "Insufficient evidence", provider_unavailable: "Literature unavailable", invalid_citations: "Citation issue", sources_supplied: "Sources supplied" };
@@ -31,6 +32,7 @@ export default function ChatWorkspace() {
   const [calcModalOpen, setCalcModalOpen] = useState(false);
   const [isBrowserOnline, setIsBrowserOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
   const [historyFilter, setHistoryFilter] = useState("all");
+  const [importPreview, setImportPreview] = useState(false);
   const historyToggle = useRef(null); const wasSidebarOpen = useRef(false);
   const activeRef = useRef(recovered?.sessionId || null); const busyRef = useRef(false); const view = useRef(0); const mounted = useRef(true); const queryRef = useRef("");
   const historyRequest = useRef(0); const controller = useRef(null); const messagesPane = useRef(null); const composerInput = useRef(null); const deleteDialog = useRef(null); const clearAllDialog = useRef(null); const drawer = useRef(null); const importFileInput = useRef(null);
@@ -126,13 +128,13 @@ export default function ChatWorkspace() {
   }, []);
   const loadChat = async (id) => {
     if (busyRef.current || pendingRef.current) return; const generation = ++view.current; busyRef.current = true; setLoadingChat(true); setError(""); setStatus(""); setCopied(null); setSidebarOpen(false);
-    try { const chat = await apiRequest("/chats/" + id); if (mounted.current && generation === view.current) { selectActive(id); setActiveName(chat.title); setMessages(chat.messages); } }
+    try { const chat = await apiRequest("/chats/" + id); if (mounted.current && generation === view.current) { selectActive(id); setActiveName(chat.title); setMessages(chat.messages); setImportPreview(false); } }
     catch (err) { if (mounted.current && generation === view.current) setError(err.message); }
     finally { busyRef.current = false; if (mounted.current && generation === view.current) setLoadingChat(false); }
   };
-  const newChat = () => { if (busyRef.current || pendingRef.current) return; view.current++; selectActive(null); setActiveName(""); setMessages([]); setError(""); setStatus(""); setCopied(null); setSidebarOpen(false); };
+  const newChat = () => { if (busyRef.current || pendingRef.current) return; view.current++; selectActive(null); setActiveName(""); setMessages([]); setImportPreview(false); setError(""); setStatus(""); setCopied(null); setSidebarOpen(false); };
   const send = async (event, retry = null) => {
-    event?.preventDefault(); if (busyRef.current || (!retry && (!prompt.trim() || pendingRef.current))) return;
+    event?.preventDefault(); if (importPreview || busyRef.current || (!retry && (!prompt.trim() || pendingRef.current))) return;
     const job = retry || { prompt: prompt.trim(), sessionId: activeRef.current, exchangeId: crypto.randomUUID() };
     const generation = view.current; busyRef.current = true; setBusy(true); setError(""); setPending(job);
     controller.current = new AbortController();
@@ -182,6 +184,7 @@ export default function ChatWorkspace() {
     if (!file) return;
     e.target.value = "";
     try {
+      if (file.size > MAX_IMPORT_BYTES) throw new Error("The JSON file must be 512 KB or smaller.");
       const fileText = typeof file.text === "function"
         ? await file.text()
         : await new Promise((res, rej) => {
@@ -190,32 +193,17 @@ export default function ChatWorkspace() {
             reader.onerror = () => rej(reader.error);
             reader.readAsText(file);
           });
-      let parsed;
-      try {
-        parsed = JSON.parse(fileText);
-      } catch {
-        setError("Could not parse file. Please upload a valid JSON conversation export.");
-        return;
-      }
-      if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.messages) || !parsed.messages.length) {
-        setError("Invalid conversation file. The file must contain a 'messages' list.");
-        return;
-      }
-      const validMessages = parsed.messages.filter((m) => m && typeof m.text === "string" && typeof m.isUser === "boolean");
-      if (!validMessages.length) {
-        setError("No valid messages found in the imported file.");
-        return;
-      }
+      const imported = parseConversationImport(fileText);
       view.current++;
       selectActive(null);
-      const importedTitle = typeof parsed.title === "string" && parsed.title.trim() ? parsed.title.trim() : "Imported conversation";
-      setActiveName(importedTitle);
-      setMessages(validMessages);
+      setActiveName(imported.title);
+      setMessages(imported.messages);
+      setImportPreview(true);
       setError("");
-      setStatus("Imported conversation loaded into workspace");
+      setStatus("");
       setSidebarOpen(false);
     } catch (err) {
-      setError("Failed to read file: " + err.message);
+      setError(err.message || "The conversation file could not be read.");
     }
   };
   const toggleSpeech = (message, id) => {
@@ -412,8 +400,8 @@ Educational guidance only. This consultation does not establish a doctor-patient
       <aside id="chat-history" ref={drawer} className={"history card " + (sidebarOpen ? "is-open" : "")} role={sidebarOpen ? "dialog" : undefined} aria-label="Conversation history" onKeyDown={(event) => { if (event.key === "Escape") setSidebarOpen(false); }}>
         <div className="row-between"><h2>Conversations</h2><button className="text-button mobile-only" onClick={() => setSidebarOpen(false)}>Close</button></div>
         <button className="button full-width" onClick={newChat} disabled={navigationLocked}>New conversation</button>
-        <button type="button" className="button secondary full-width" style={{ marginTop: "6px" }} onClick={() => importFileInput.current?.click()} disabled={navigationLocked} title="Import a previously saved conversation JSON file">Import conversation</button>
-        <input ref={importFileInput} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} aria-label="Upload conversation JSON" />
+        <button type="button" className="button secondary full-width" style={{ marginTop: "6px" }} onClick={() => importFileInput.current?.click()} disabled={navigationLocked} title="Preview a conversation JSON file locally without saving it to your account">Preview conversation JSON</button>
+        <input ref={importFileInput} type="file" accept=".json,application/json" style={{ display: "none" }} onChange={handleImportFile} aria-label="Choose conversation JSON" />
         <label className="search-label" htmlFor="history-search">Search history</label>
         <div className="search-input-wrapper">
           <input
@@ -492,7 +480,7 @@ Educational guidance only. This consultation does not establish a doctor-patient
       <section className="conversation card" aria-label="Chat workspace" inert={sidebarOpen}>
         <div className="conversation-heading">
           <div className="row-between">
-            <h2>{activeTitle}</h2>
+            <h2>{importPreview ? "Local preview · " : ""}{activeTitle}</h2>
             <div className="actions" style={{ margin: 0 }}>
               <button type="button" className="text-button small-text" onClick={() => setCalcModalOpen(true)} title="Open clinical reference calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Ca, Anion Gap, FeNa) (Alt+C)" aria-keyshortcuts="Alt+C">Clinical tools</button>
               {messages.length > 0 && (
@@ -504,8 +492,9 @@ Educational guidance only. This consultation does not establish a doctor-patient
               )}
             </div>
           </div>
-          <p className="muted small-text">Educational information. Avoid personal details. Open source links from the PubMed records below answers.</p>
+          {!importPreview && <p className="muted small-text">Educational information. Avoid personal details. Open source links from the PubMed records below answers.</p>}
         </div>
+        {importPreview && <div className="notice" role="status">Local preview only: not saved to your account or used as AI context. Imported citations and verification are ignored. <button type="button" className="text-button" onClick={() => { newChat(); composerInput.current?.focus(); }}>Start a new conversation</button> to ask a question.</div>}
         {!isBrowserOnline && (
           <div className="offline-banner" role="status">
             You appear to be offline. Medical questions and searches require an active network connection.
@@ -517,7 +506,7 @@ Educational guidance only. This consultation does not establish a doctor-patient
         <div className="messages" ref={messagesPane} aria-label="Messages" aria-live="polite" aria-relevant="additions text">
           {!messages.length && <div className="empty-chat"><span className="empty-icon" aria-hidden="true">?</span><h3>Ask a health question</h3><p>Explore a topic, then review the sources and evidence label.</p><div className="suggestions">{[["Migraine triggers", "What are common migraine triggers?"], ["Asthma symptoms", "What are the symptoms of asthma?"], ["High blood pressure", "What is high blood pressure?"]].map(([label, suggestion]) => <button className="button secondary small" key={label} onClick={() => { setPrompt(suggestion); composerInput.current?.focus(); }}>{label}</button>)}</div></div>}
           {messages.map((message, index) => <article className={"message " + (message.isUser ? "user-message" : "assistant-message")} key={message.id || index}>
-            <div className="message-byline"><strong>{message.isUser ? "You" : "MedAssist AI"}</strong>{message.timestamp && <time>{new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>}</div>
+            <div className="message-byline"><strong>{message.isUser ? "You" : importPreview ? "Imported answer · unverified" : "MedAssist AI"}</strong>{message.timestamp && <time>{new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>}</div>
             <div className="prose">{renderMessageProse(message, message.id || index)}</div>
             {!message.isUser && message.verification?.drugInteractions?.length > 0 && (
               <div className="drug-alert-card" role="alert">
@@ -538,15 +527,15 @@ Educational guidance only. This consultation does not establish a doctor-patient
               </div>
             )}
             {!message.isUser && <div className="answer-actions">
-              <button className="text-button" onClick={() => copyAnswer(message, index)}>Copy answer</button>
-              {copied === (message.id || index) && <span className="small-text muted" role="status">Answer copied</span>}
-              <button type="button" className="text-button" onClick={() => copyClinicalSummary(message, index)}>{copiedSummary === (message.id || index) ? "Summary copied" : "Copy summary"}</button>
-              {typeof window !== "undefined" && "speechSynthesis" in window && (
+              <button className="text-button" onClick={() => copyAnswer(message, index)}>{importPreview ? "Copy imported text" : "Copy answer"}</button>
+              {copied === (message.id || index) && <span className="small-text muted" role="status">{importPreview ? "Imported text copied" : "Answer copied"}</span>}
+              {!importPreview && <button type="button" className="text-button" onClick={() => copyClinicalSummary(message, index)}>{copiedSummary === (message.id || index) ? "Summary copied" : "Copy summary"}</button>}
+              {!importPreview && typeof window !== "undefined" && "speechSynthesis" in window && (
                 <button className="text-button" onClick={() => toggleSpeech(message, message.id || index)}>
                   {speakingId === (message.id || index) ? "Stop listening" : "Listen to answer"}
                 </button>
               )}
-              {index > 0 && messages[index - 1]?.isUser && (
+              {!importPreview && index > 0 && messages[index - 1]?.isUser && (
                 <button
                   type="button"
                   className="text-button"
@@ -574,8 +563,8 @@ Educational guidance only. This consultation does not establish a doctor-patient
           {busy && <p className="answer-progress" role="status">{status}</p>}
         </div>
         <form onSubmit={send} className="composer">
-          <label htmlFor="chat-prompt">Your question</label><textarea ref={composerInput} id="chat-prompt" rows={2} maxLength={4000} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Ask about a condition, symptom, or health topic..." disabled={busy || loadingChat} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form.requestSubmit(); } }} />
-          <div className="row-between"><span className="muted small-text">{prompt.length}/4000{prompt.trim().length > 3 && isMedicalQuery(prompt) && <span className="grounding-hint"> · PubMed active</span>}<span className="shortcut-hint"> · Shift + Enter for a new line</span></span><button className="button" disabled={busy || loadingChat || !prompt.trim() || !!pending}>{busy || loadingChat ? "Please wait..." : "Send question"}</button></div>
+          <label htmlFor="chat-prompt">Your question</label><textarea ref={composerInput} id="chat-prompt" rows={2} maxLength={4000} value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder={importPreview ? "Start a new conversation to ask a question" : "Ask about a condition, symptom, or health topic..."} disabled={busy || loadingChat || importPreview} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form.requestSubmit(); } }} />
+          <div className="row-between"><span className="muted small-text">{prompt.length}/4000{!importPreview && prompt.trim().length > 3 && isMedicalQuery(prompt) && <span className="grounding-hint"> · PubMed active</span>}<span className="shortcut-hint"> · Shift + Enter for a new line</span></span><button className="button" disabled={busy || loadingChat || importPreview || !prompt.trim() || !!pending}>{busy || loadingChat ? "Please wait..." : "Send question"}</button></div>
           {pending && !busy && <button type="button" className="text-button" onClick={() => { setPrompt(pending.prompt); setPending(null); setMessages((old) => old.filter((item) => !item.id?.startsWith(pending.exchangeId))); setError(""); }}>Return message to draft</button>}
           {!error && !busy && status && <span className="small-text muted" role="status">{status === "Saved" ? "Conversation saved" : status}</span>}
         </form>
@@ -583,6 +572,6 @@ Educational guidance only. This consultation does not establish a doctor-patient
     </div>
     <dialog ref={deleteDialog} aria-labelledby="delete-chat-title" onCancel={() => setDeleting(null)}><h2 id="delete-chat-title">Delete this conversation?</h2><p>{deleting?.title}</p><p>This permanently removes the conversation from your account. Export it first if you need a copy.</p><div className="actions"><button className="button danger" onClick={remove} disabled={deletingBusy}>{deletingBusy ? "Deleting..." : "Delete conversation"}</button><button className="button secondary" disabled={deletingBusy} onClick={() => { deleteDialog.current.close(); setDeleting(null); }}>Keep conversation</button></div></dialog>
     <dialog ref={clearAllDialog} aria-labelledby="clear-all-title" onCancel={() => {}}><h2 id="clear-all-title">Clear all conversations?</h2><p>This permanently deletes all saved conversation history from your account. This action cannot be undone.</p><div className="actions"><button className="button danger" onClick={clearAll} disabled={deletingBusy}>{deletingBusy ? "Clearing..." : "Delete all history"}</button><button className="button secondary" disabled={deletingBusy} onClick={() => clearAllDialog.current?.close()}>Cancel</button></div></dialog>
-    <ClinicalCalculatorsModal isOpen={calcModalOpen} onClose={() => setCalcModalOpen(false)} onInsertPrompt={(text) => { setPrompt(text); composerInput.current?.focus(); }} />
+    <ClinicalCalculatorsModal isOpen={calcModalOpen} onClose={() => setCalcModalOpen(false)} onInsertPrompt={(text) => { if (importPreview) newChat(); setPrompt(text); composerInput.current?.focus(); }} />
   </main>;
 }

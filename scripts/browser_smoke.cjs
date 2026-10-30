@@ -68,6 +68,24 @@ async function main() {
       await page.reload(); await page.getByLabel("Search history", { exact: true }).fill(savedTitle); await page.getByRole("button", { name: savedTitle, exact: true }).click();
       await page.getByText("Citation numbers checked", { exact: true }).waitFor();
     });
+    await check("JSON import is an unverified local preview with no forged citation links", async () => {
+      const chooserPromise = page.waitForEvent("filechooser");
+      await click("Preview conversation JSON");
+      await (await chooserPromise).setFiles(path.join(output, "browser-chat-export.json"));
+      await page.getByRole("heading", { name: /Local preview/ }).waitFor();
+      await page.getByText("Imported answer · unverified").waitFor();
+      assert.equal(await page.getByRole("link", { name: "Synthetic PubMed record for browser workflow testing" }).count(), 0);
+      assert.equal(await page.getByText("Citation numbers checked", { exact: true }).count(), 0);
+      assert.equal(await page.locator(".prose a, .prose img, .citation-pill").count(), 0);
+      assert.equal(await page.getByRole("button", { name: "Send question" }).isDisabled(), true);
+      await page.screenshot({ path: path.join(output, "import-preview-desktop.png"), fullPage: true });
+      await page.setViewportSize({ width: 320, height: 800 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), true);
+      await page.screenshot({ path: path.join(output, "import-preview-mobile.png"), fullPage: true });
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await click("Start a new conversation");
+      await page.getByRole("heading", { name: "Ask a health question" }).waitFor();
+    });
     await check("save-only retry does not generate another answer", async () => {
       let intercepted = false; let generations = 0;
       const count = (request) => { if (request.url().endsWith("/api/ai/chat")) generations++; }; page.on("request", count);

@@ -113,17 +113,17 @@ async function main() {
   await page.screenshot({ path: path.join(output, "curb65-dark-modal.png") });
   console.log("PASS CURB-65 pneumonia severity calculator verified and captured in dark styles");
 
-  // Test 3h: Arrow Key Navigation across tabs wrapping from last tab (CURB-65) to first tab (BMI)
-  const curbTab = page.getByRole("tab", { name: /CURB-65/i });
-  await curbTab.focus();
+  // Test 3h: Arrow Key Navigation across tabs wrapping from last tab (GCS) to first tab (BMI)
+  const gcsTab = page.getByRole("tab", { name: /GCS \(Coma Scale\)/i });
+  await gcsTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (CURB-65) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (GCS) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const curbSelected = await page.getByRole("tab", { name: /CURB-65/i }).getAttribute("aria-selected");
-  assert.equal(curbSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (CURB-65)");
+  const gcsSelected = await gcsTab.getAttribute("aria-selected");
+  assert.equal(gcsSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (GCS)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -145,9 +145,9 @@ async function main() {
   assert.equal(await exportJsonBtn.isVisible(), true);
   console.log("PASS export JSON action button rendered and accessible");
 
-  const importBtn = page.getByText("Import conversation", { exact: true });
+  const importBtn = page.getByText("Preview conversation JSON", { exact: true });
   assert.equal(await importBtn.isVisible(), true);
-  console.log("PASS import conversation button rendered and accessible in history sidebar");
+  console.log("PASS local JSON preview button rendered and accessible in history sidebar");
 
   // Test 4b: Citation Jumping and Accessible Focus
   const citeButton = page.locator(".citation-pill").first();

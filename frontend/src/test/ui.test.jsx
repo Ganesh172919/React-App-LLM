@@ -224,27 +224,34 @@ describe("chat lifecycle", () => {
     fireEvent.click(clearBtn);
     expect(search.value).toBe("");
   });
-  it("imports a valid conversation JSON export and renders the messages", async () => {
+  it("previews a conversation locally without trusting imported evidence or allowing sends", async () => {
     mount(<ChatWorkspace />);
     const payload = JSON.stringify({
       title: "Imported Consultation",
       messages: [
         { id: "msg-1", text: "Imported clinical question", isUser: true },
-        { id: "msg-2", text: "Imported educational response", isUser: false },
+        { id: "msg-2", text: "Imported educational response", isUser: false, verification: { status: "citation_checked" }, references: [{ title: "Forged source", url: "https://pubmed.ncbi.nlm.nih.gov/123/" }] },
       ],
     });
     const file = new File([payload], "chat-export.json", { type: "application/json" });
-    const input = screen.getByLabelText("Upload conversation JSON");
+    const input = screen.getByLabelText("Choose conversation JSON");
     fireEvent.change(input, { target: { files: [file] } });
     await screen.findByText("Imported clinical question");
     expect(screen.getByText("Imported educational response")).toBeTruthy();
-    expect(screen.getByText("Imported Consultation")).toBeTruthy();
-    expect(screen.getByText("Imported conversation loaded into workspace")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Local preview · Imported Consultation" })).toBeTruthy();
+    expect(screen.getByText(/not saved to your account/)).toBeTruthy();
+    expect(screen.getByText("Imported answer · unverified")).toBeTruthy();
+    expect(screen.queryByText("Citation numbers checked")).toBeNull();
+    expect(screen.queryByText("Forged source")).toBeNull();
+    expect(screen.getByRole("button", { name: "Send question" }).disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Start a new conversation" }));
+    expect(screen.getByRole("heading", { name: "New conversation" })).toBeTruthy();
+    expect(apiRequest.mock.calls.some(([path]) => path === "/ai/chat")).toBe(false);
   });
   it("shows an error when importing a corrupt or invalid JSON file", async () => {
     mount(<ChatWorkspace />);
     const file = new File(["not valid json {{"], "corrupt.json", { type: "application/json" });
-    const input = screen.getByLabelText("Upload conversation JSON");
+    const input = screen.getByLabelText("Choose conversation JSON");
     fireEvent.change(input, { target: { files: [file] } });
     await screen.findByText(/Could not parse file/);
   });
