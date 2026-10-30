@@ -47,11 +47,22 @@ export function downloadText(filename, content, mimeType = "text/markdown;charse
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+const markdownSpecials = new Set("\\`*_{}[]()#+-.!|~");
+const markdownInline = (value) => String(value || "").replace(/\s+/g, " ").trim()
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  .replace(/./g, (char) => markdownSpecials.has(char) ? "\\" + char : char);
+const literalMarkdown = (value) => {
+  const text = String(value || "").replace(/\r\n?/g, "\n");
+  const longestRun = [...text.matchAll(/`+/g)].reduce((longest, [run]) => Math.max(longest, run.length), 0);
+  const fence = "`".repeat(Math.max(3, longestRun + 1));
+  return [fence + "text", text, fence];
+};
 export function formatChatAsMarkdown(chat) {
-  const title = chat.title || "Health Q&A Conversation";
+  const title = markdownInline(chat.title || "Health Q&A Conversation");
+  const preview = chat.unverifiedImport === true;
   const lines = [
     `# ${title}`,
-    `*MedAssist AI Evidence Report · Exported ${new Date().toLocaleDateString(undefined, { dateStyle: "long" })}*`,
+    `*${preview ? "Unverified local conversation preview" : "MedAssist AI conversation export"} · Exported ${new Date().toLocaleDateString(undefined, { dateStyle: "long" })}*`,
     "",
     "---",
     "",
@@ -60,24 +71,29 @@ export function formatChatAsMarkdown(chat) {
   for (const msg of messages) {
     if (msg.isUser) {
       lines.push("### Question");
-      lines.push(msg.text);
+      lines.push(...literalMarkdown(msg.text));
       lines.push("");
     } else {
-      lines.push("### MedAssist AI Response");
-      lines.push(msg.text);
+      lines.push(preview ? "### Imported answer (unverified)" : "### MedAssist AI response");
+      lines.push(...literalMarkdown(msg.text));
       lines.push("");
-      if (msg.references && msg.references.length > 0) {
+      if (!preview && msg.references && msg.references.length > 0) {
         lines.push("#### PubMed Literature References");
         msg.references.forEach((ref, idx) => {
-          const authors = ref.authors?.length ? ref.authors.slice(0, 3).join(", ") + (ref.authors.length > 3 ? " et al." : "") : "";
-          const meta = [authors, ref.journal, ref.pubdate].filter(Boolean).join(" · ");
-          lines.push(`${idx + 1}. [${ref.title}](${ref.url}) - ${meta} (PMID: ${ref.pmid})`);
+          const pmid = String(ref.pmid || "");
+          const title = markdownInline(ref.title || "PubMed record");
+          const authors = ref.authors?.length ? ref.authors.slice(0, 3).map(markdownInline).join(", ") + (ref.authors.length > 3 ? " et al." : "") : "";
+          const meta = [authors, markdownInline(ref.journal), markdownInline(ref.pubdate)].filter(Boolean).join(" · ");
+          const source = /^\d{1,12}$/.test(pmid) ? `[${title}](https://pubmed.ncbi.nlm.nih.gov/${pmid}/)` : title;
+          lines.push(`${idx + 1}. ${source}${meta ? " - " + meta : ""}${pmid ? " (PMID: " + markdownInline(pmid) + ")" : ""}`);
         });
         lines.push("");
       }
     }
   }
   lines.push("---");
-  lines.push("*Disclaimer: MedAssist AI provides educational health assistance grounded in PubMed biomedical literature. PubMed indexing alone does not establish peer review or clinical accuracy. It does not provide medical diagnoses, treatment prescriptions, or clinical verification. Always consult a qualified clinician for personal health concerns.*");
+  lines.push(preview
+    ? "*Unverified import: This text came from a local file. MedAssist AI did not generate, check, or save it. Citations and verification claims in the file were not trusted. Do not use it for care decisions.*"
+    : "*Disclaimer: MedAssist AI provides educational health assistance grounded in PubMed biomedical literature. PubMed indexing alone does not establish peer review or clinical accuracy. It does not provide medical diagnoses, treatment prescriptions, or clinical verification. Always consult a qualified clinician for personal health concerns.*");
   return lines.join("\n");
 }

@@ -163,18 +163,19 @@ export default function ChatWorkspace() {
     if (!messages.length) return;
     try {
       const activeTitle = sessions.find((session) => session.id === active)?.title || activeName || "Health Q&A";
-      const md = formatChatAsMarkdown({ title: activeTitle, sessionId: activeRef.current, messages });
-      downloadText("medassist-chat-" + (activeRef.current || "current") + ".md", md);
+      const md = formatChatAsMarkdown({ title: activeTitle, sessionId: activeRef.current, messages, unverifiedImport: importPreview });
+      downloadText(importPreview ? "medassist-unverified-preview.md" : "medassist-chat-" + (activeRef.current || "current") + ".md", md);
     } catch (err) { setError(err.message); }
   };
   const exportActiveJson = () => {
     if (!messages.length) return;
     try {
       const activeTitle = sessions.find((session) => session.id === active)?.title || activeName || "Health Q&A";
-      downloadJson("medassist-chat-" + (activeRef.current || "current") + ".json", {
+      downloadJson(importPreview ? "medassist-unverified-preview.json" : "medassist-chat-" + (activeRef.current || "current") + ".json", {
         title: activeTitle,
         sessionId: activeRef.current,
         exportedAt: new Date().toISOString(),
+        ...(importPreview ? { exportKind: "unverified-local-preview", warning: "Imported text was not generated or verified by MedAssist AI and is not saved to the account." } : {}),
         messages,
       });
     } catch (err) { setError(err.message); }
@@ -485,8 +486,8 @@ Educational guidance only. This consultation does not establish a doctor-patient
               <button type="button" className="text-button small-text" onClick={() => setCalcModalOpen(true)} title="Open clinical reference calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Ca, Anion Gap, FeNa) (Alt+C)" aria-keyshortcuts="Alt+C">Clinical tools</button>
               {messages.length > 0 && (
                 <>
-                  <button className="text-button small-text" onClick={exportActiveMarkdown} title="Export as structured Markdown document">Export Markdown</button>
-                  <button className="text-button small-text" onClick={exportActiveJson} title="Export structured conversation as JSON">Export JSON</button>
+                  <button className="text-button small-text" onClick={exportActiveMarkdown} title={importPreview ? "Export an unverified local preview as Markdown" : "Export as structured Markdown document"}>{importPreview ? "Export preview Markdown" : "Export Markdown"}</button>
+                  <button className="text-button small-text" onClick={exportActiveJson} title={importPreview ? "Export an unverified local preview as JSON" : "Export structured conversation as JSON"}>{importPreview ? "Export preview JSON" : "Export JSON"}</button>
                   <button className="text-button small-text" onClick={() => window.print()} title="Print or save as PDF">Print</button>
                 </>
               )}

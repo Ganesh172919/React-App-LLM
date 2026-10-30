@@ -22,8 +22,9 @@ MedAssist AI operates at the intersection of generative language models, automat
 | Medium | At 320 px, header actions squeezed “Sign out” and the last starter prompt was clipped. | Fixed with a two-row header and compact empty-chat layout; verified in the inbuilt browser and headless regression. |
 | Medium | Repeated QA runs hit the expected 15-minute recovery rate limit and made the smoke suite fail. | The suite now checks either generic success or visible rate-limit feedback; fresh-instance success remains covered by the first run. |
 | Medium | A local JSON export could display forged verification and PubMed source metadata as if MedAssist had checked it; the old import label also implied the file was saved. | Fixed: bounded local preview strips evidence metadata, marks imported answers unverified, disables sending, and states that it is not saved or used as model context. Browser and component regressions cover this path. |
+| Medium | A Markdown export of an imported file still claimed to be a MedAssist evidence report and retained active Markdown image syntax from untrusted text. | Fixed: preview downloads carry an unverified label; all conversation text is emitted in literal Markdown fences, and saved-chat reference links are constructed only from numeric PubMed IDs. Export and render regressions cover this path. |
 
-This cycle passed 66 backend, 47 frontend, 19 Python, 7 built HTTP, 21 core browser, and 24 dark/tools browser checks. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
+This cycle passed 66 backend, 49 frontend, 19 Python, 7 built HTTP, 21 core browser, and 24 dark/tools browser checks. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
 
 ```
 ========================================================================================================================
