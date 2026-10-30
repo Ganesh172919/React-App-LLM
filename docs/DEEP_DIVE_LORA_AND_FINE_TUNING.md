@@ -280,27 +280,148 @@ def calculate_memory_footprint_mb(parameter_count: int, bytes_per_param: int = 2
     """Compute FP16 storage footprint in megabytes."""
     return (parameter_count * bytes_per_param) / (1024 * 1024)
 
-def validate_setup(config_path: Path | None = None) -> dict:
-    config = load_lora_config(config_path)
-    params = estimate_adapter_parameters(
-        hidden_size=config.hidden_size,
-        layers=config.layers,
-        projections_per_layer=len(config.target_modules),
-        rank=config.r,
+def build_report(config_path: Path | None, hidden_size: int, layers: int) -> dict[str, object]:
+    """Assemble a comprehensive analytical report of the LoRA configuration."""
+    settings, _ = load_lora_config(config_path)
+    estimated_parameters = estimate_adapter_parameters(
+        hidden_size, layers, len(settings.target_modules), settings.rank
     )
-    fp16_mb = calculate_memory_footprint_mb(params, bytes_per_param=2)
-
     return {
-        "model_name_or_path": config.model_name_or_path,
-        "rank": config.r,
-        "alpha": config.lora_alpha,
-        "dropout": config.lora_dropout,
-        "target_modules": config.target_modules,
-        "adapter_trainable_parameters": params,
-        "fp16_adapter_footprint_mb": round(fp16_mb, 5),
+        "valid": True,
+        "training_performed": False,
+        "base_model": settings.base_model,
+        "task_type": settings.task_type,
+        "rank": settings.rank,
+        "alpha": settings.alpha,
+        "dropout": settings.dropout,
+        "target_modules": list(settings.target_modules),
+        "max_sequence_length": settings.max_sequence_length,
+        "estimate_assumptions": {
+            "hidden_size": hidden_size,
+            "layers": layers,
+            "projections_per_layer": len(settings.target_modules),
+        },
+        "estimated_adapter_parameters": estimated_parameters,
+        "estimated_fp16_megabytes": round(estimated_parameters * 2 / 1_048_576, 3),
+        "note": "Analytical estimate only; no model was downloaded or trained.",
+    }
+```
+
+---
+
+## 9. Review-Gated SFT Training Pipeline (`Model and Dataset/lora/train_lora.py`)
+
+The SFT training script enforces strict clinical board sign-off and license verification gates. By default, it operates in **safe dry-run inspection mode**, verifying SHA-256 hashes of all partitions against `manifest.json` without allocating GPU memory or downloading base weights:
+
+```python
+# Model and Dataset/lora/train_lora.py (Review Gates & Tokenization)
+def inspect_job(data_dir: Path) -> dict:
+    settings, raw = load_lora_config()
+    manifest = json.loads((data_dir / "manifest.json").read_text(encoding="utf-8"))
+    counts = {}
+    for name in ("train", "validation", "test"):
+        source = data_dir / (name + ".jsonl")
+        digest = hashlib.sha256(source.read_bytes()).hexdigest()
+        if digest != manifest.get("jsonl_sha256", {}).get(name):
+            raise ValueError("JSONL hash mismatch: " + name)
+        with source.open(encoding="utf-8") as handle:
+            rows = [json.loads(line) for line in handle if line.strip()]
+        if not rows or any(not row.get("question") or not row.get("answer") or not row.get("text") for row in rows):
+            raise ValueError("Empty or invalid SFT split: " + name)
+        if len(rows) != manifest["splits"][name]:
+            raise ValueError("Manifest count mismatch: " + name)
+        counts[name] = len(rows)
+    return {
+        "base_model": settings.base_model,
+        "rank": settings.rank,
+        "alpha": settings.alpha,
+        "target_modules": list(settings.target_modules),
+        "counts": counts,
+        "data_source_sha256": manifest["source_sha256"],
+        "clinical_review_approved": manifest.get("clinical_review_approved") is True,
+        "license_review_approved": manifest.get("license_review_approved") is True,
+        "reviewer": manifest.get("reviewer"),
+        "training_performed": False,
+        "config": raw
     }
 
-if __name__ == "__main__":
-    result = validate_setup()
-    print(json.dumps(result, indent=2))
+# Review Gate Enforcement in main()
+report = inspect_job(args.data_dir)
+if not args.train:
+    print(json.dumps(report, indent=2))
+    return
+
+if not report["clinical_review_approved"] or not report["license_review_approved"] or not report["reviewer"]:
+    raise SystemExit("Training blocked: the exact hashed dataset requires documented clinical/license review and a named reviewer.")
+
+# SFT Label Masking (-100 on prompt tokens)
+def tokenize(row):
+    prefix = "Question: " + row["question"] + "\nAnswer: "
+    tokens = tokenizer(prefix + row["answer"] + tokenizer.eos_token, max_length=settings.max_sequence_length, truncation=True)
+    prompt_length = len(tokenizer(prefix, add_special_tokens=False)["input_ids"])
+    tokens["labels"] = [-100] * min(prompt_length, len(tokens["input_ids"])) + tokens["input_ids"][prompt_length:]
+    return tokens
+```
+
+---
+
+## 10. Isolated CLI Inference (`Model and Dataset/lora/infer_adapter.py`)
+
+```python
+# Model and Dataset/lora/infer_adapter.py
+"""Standalone CLI inference with a trained adapter. Not used by the web app."""
+import argparse
+from pathlib import Path
+from peft import AutoPeftModelForCausalLM
+from transformers import AutoTokenizer
+
+DISCLAIMER = "Educational demonstration only. Not medical advice."
+
+def generate(adapter_dir: Path, question: str, max_new_tokens: int = 120) -> str:
+    tokenizer = AutoTokenizer.from_pretrained(str(adapter_dir))
+    model = AutoPeftModelForCausalLM.from_pretrained(str(adapter_dir))
+    prompt = "Question: " + question.strip() + "\nAnswer: "
+    inputs = tokenizer(prompt, return_tensors="pt")
+    output = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False, pad_token_id=tokenizer.eos_token_id)
+    return tokenizer.decode(output[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+```
+
+---
+
+## 11. Multi-Rank LoRA Scaling Analysis
+
+The table below illustrates parameter scaling across different low-rank bottleneck dimensions for a 12-layer transformer with $d_{\text{model}} = 768$:
+
+| Rank ($r$) | Scaling ($\alpha/r$) | Down $A$ ($r \times 768$) | Up $B$ ($768 \times r$) | Layer Params ($2 \times 768 \times r$) | Total Params ($12 \times L_{\text{params}}$) | FP16 Size | Param Reduction |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **$r = 4$** | $16 / 4 = 4.0$ | 3,072 | 3,072 | 6,144 | **73,728** | 0.141 MB | 99.94% |
+| **$r = 8$ (Default)** | $16 / 8 = 2.0$ | 6,144 | 6,144 | 12,288 | **147,456** | **0.281 MB** | **99.88%** |
+| **$r = 16$** | $16 / 16 = 1.0$ | 12,288 | 12,288 | 24,576 | **294,912** | 0.563 MB | 99.76% |
+| **$r = 32$** | $16 / 32 = 0.5$ | 24,576 | 24,576 | 49,152 | **589,824** | 1.125 MB | 99.53% |
+| **$r = 64$** | $16 / 64 = 0.25$ | 49,152 | 49,152 | 98,304 | **1,179,648** | 2.250 MB | 99.05% |
+
+---
+
+## 12. Operational Execution & Verification Runbook
+
+```powershell
+# 1. Profile and audit the source dataset
+python "Model and Dataset/analyze_dataset.py"
+python "Model and Dataset/audit_dataset.py"
+
+# 2. Build LoRA package: quarantine ambiguous records and hash splits
+python "Model and Dataset/lora/build_lora_package.py"
+
+# 3. Verify zero-leakage hash partitioning
+python "Model and Dataset/verify_splits.py"
+
+# 4. Perform closed-form parameter estimation (no GPU or model download)
+python "Model and Dataset/lora/validate_lora_setup.py" --output "Model and Dataset/reports/lora_validation.json"
+
+# 5. Execute safe dry-run inspection of SFT job
+python "Model and Dataset/lora/train_lora.py"
+
+# 6. Run automated test suites across dataset and LoRA packages
+python -m unittest discover -s "Model and Dataset" -p "test_*.py"
+python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
 ```

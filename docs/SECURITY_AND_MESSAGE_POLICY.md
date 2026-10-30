@@ -254,25 +254,184 @@ Before any generated answer is returned to the client or saved to MongoDB, `scre
 
 ## 7. High-Risk Drug Interaction Screening Policy (`interactionService.js`)
 
-In addition to first-line prompt screening, all queries are scanned against **12 FDA Black-Box Warning Contraindication Rules**:
-1. Anticoagulants/Antiplatelets + NSAIDs/Aspirin
-2. PDE5 Inhibitors + Nitrates
-3. Serotonergic Opioids + SSRIs/SNRIs
-4. ACE Inhibitors/ARBs + Potassium-Sparing Diuretics
-5. Methotrexate + Trimethoprim-Sulfamethoxazole
-6. Fluoroquinolones + Systemic Corticosteroids
-7. Benzodiazepines + Opioids
-8. Lithium + NSAIDs/ACE Inhibitors
-9. Statins + Strong CYP3A4 Inhibitors
-10. Warfarin + Azole Antifungals
-11. Digoxin + Amiodarone/Verapamil
-12. MAOIs + Serotonergic Agents
+In addition to first-line prompt screening, all queries entering `/api/ai/chat` and `/api/medical` are scanned against **14 Verified FDA Black-Box Warning Contraindication Rules**:
 
-### Preserved Context Invariant Across Emergency Deflections:
-If a user prompt simultaneously contains emergency symptoms and an interacting drug pair (e.g., *"I have severe chest pain and took nitroglycerin and sildenafil"*), `answerService.js` routes to the emergency directive while **preserving the drug interaction warning array** in the verification payload:
+```
+========================================================================================================================
+                         MEDASSIST AI — MULTI-TIER PHARMACOLOGICAL SAFETY GATEWAY
+========================================================================================================================
+
+    Incoming User Prompt / Generated Response
+                      │
+                      ▼
+         [ Unicode NFKC Normalization ] ──► Strips zero-width chars, homoglyphs, and invisible formatting
+                      │
+                      ▼
+       [ Deterministic Prompt Screen ] ──► Evaluates acute emergencies, crisis, self-harm, weapons, injections
+                      │
+                      ├──────────────────────────┐
+                      ▼                          ▼
+         [ Acute Emergency Detected ]     [ Safe for Query Processing ]
+                      │                          │
+                      │                          ▼
+                      │             [ 14 FDA Drug Pair Evaluator ]
+                      │             - Scans 14 high-risk drug interaction rule regexes
+                      │             - Detects simultaneous Drug A and Drug B presence
+                      │                          │
+                      ▼                          ▼
+      ┌─────────────────────────────────────────────────────────────┐
+      │   PRESERVED CONTEXT INVARIANT (answerService.js)            │
+      │   - If emergency detected: Return immediate 911 directives  │
+      │   - ATTACH detected drug interaction array to verification  │
+      │   - Guarantees toxic drug combinations are NEVER dropped    │
+      └─────────────────────────────────────────────────────────────┘
+                      │
+                      ▼
+    Client Verification Payload: { status, safetyCategory, drugInteractions: [...] }
+========================================================================================================================
+```
+
+### 7.1 Pharmacological Safety Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Drug Interaction Engine))
+    ::icon(fa fa-capsules)
+    (01 Critical Black-Box Pairs)
+      Anticoagulants + NSAIDs / Aspirin
+        Major GI and intracranial hemorrhage
+      PDE5 Inhibitors + Nitrates
+        Fatal refractory hypotension and collapse
+      Methotrexate + TMP-SMX Bactrim
+        Severe bone marrow suppression
+      Benzodiazepines + Opioids
+        Fatal respiratory depression and coma
+      CYP3A4 Statins + Strong Inhibitors
+        Acute rhabdomyolysis and renal failure
+      Warfarin + Azole Antifungals
+        CYP2C9 clearance inhibition and hemorrhage
+      MAOIs + SSRIs / Sympathomimetics
+        Malignant hypertensive crisis and hyperthermia
+      Allopurinol + Azathioprine / 6-MP
+        Xanthine oxidase inhibition and pancytopenia
+      Methotrexate + NSAIDs / Aspirin
+        Renal clearance blockade and bone marrow death
+    (02 High-Risk Monitored Pairs)
+      Tramadol / Opioids + SSRIs / SNRIs
+        Serotonin syndrome and seizure threshold
+      ACEIs / ARBs + K-Sparing Diuretics
+        Life-threatening hyperkalemia > 5.5 mEq/L
+      Fluoroquinolones + Corticosteroids
+        Synergistic Achilles tendon rupture
+      Lithium + NSAIDs / ACEIs
+        Prostaglandin inhibition and neurotoxicity
+      Digoxin + Amiodarone / Verapamil
+        P-glycoprotein blockade and heart block
+    (03 Preserved Context Invariant)
+      Emergency Redirection Integration
+      Preserved drugInteractions Payload Array
+      Zero Silent Warning Drops
+```
+
+### 7.2 Complete 14 FDA Black-Box Warning Interaction Inventory
+
+| # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Mechanism & Clinical Consequence |
+|:---|:---|:---|:---|:---:|:---|
+| **01** | Anticoagulants + NSAIDs | Warfarin, Eliquis, Xarelto, Plavix, Heparin | Ibuprofen, Naproxen, Aspirin, Ketorolac, Celebrex | **CRITICAL** | Synergy of platelet inhibition and GI mucosal damage causes massive GI hemorrhage and intracranial bleeding. |
+| **02** | PDE5 Inhibitors + Nitrates | Sildenafil (Viagra), Tadalafil (Cialis), Vardenafil | Nitroglycerin, Isosorbide Mononitrate/Dinitrate | **CRITICAL** | Synergistic cGMP accumulation causes profound, refractory vasodilation, fatal hypotension, and cardiovascular collapse. |
+| **03** | Opioids + Serotonergic Agents | Tramadol, Meperidine, Methadone, Dextromethorphan | Fluoxetine, Sertraline, Paroxetine, Venlafaxine | **HIGH** | Synergistic intrasynaptic serotonin accumulation triggers Serotonin Syndrome (hyperthermia, clonus, autonomic crisis). |
+| **04** | RAAS Blockers + K-Sparing Agents | Lisinopril, Enalapril, Ramipril, Losartan, Valsartan | Spironolactone, Eplerenone, Triamterene, K+ supplements | **HIGH** | Additive aldosterone suppression and renal potassium retention precipitate fatal cardiac arrhythmias ($K^+ > 5.5\text{ mEq/L}$). |
+| **05** | Methotrexate + TMP-SMX | Methotrexate (Trexall, Rasuvo, Otrexup) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | **CRITICAL** | Reduced tubular secretion and additive folate antagonism cause lethal pancytopenia and acute bone marrow suppression. |
+| **06** | Fluoroquinolones + Steroids | Ciprofloxacin, Levofloxacin, Moxifloxacin | Prednisone, Dexamethasone, Methylprednisolone | **HIGH** | Synergistic extracellular matrix collagen degradation markedly elevates risk of Achilles tendon rupture. |
+| **07** | Benzodiazepines + Opioids | Alprazolam, Diazepam, Lorazepam, Clonazepam | Oxycodone, Morphine, Fentanyl, Hydromorphone | **CRITICAL** | Concurrent $\text{GABA}_A$ and $\mu$-opioid receptor depression causes profound respiratory depression, coma, and fatal overdose. |
+| **08** | Lithium + NSAIDs / ACEIs | Lithium (Eskalith, Lithobid) | Ibuprofen, Naproxen, Lisinopril, Enalapril | **HIGH** | Renal prostaglandin inhibition decreases GFR, reducing lithium clearance by up to 40% and causing severe neurotoxicity. |
+| **09** | Statins + CYP3A4 Inhibitors | Simvastatin, Atorvastatin, Lovastatin | Clarithromycin, Gemfibrozil, Ketoconazole, Itraconazole | **CRITICAL** | CYP3A4 inhibition elevates plasma statin AUC by up to 20-fold, precipitating massive rhabdomyolysis and myoglobinuric AKI. |
+| **10** | Warfarin + Azole Antifungals | Warfarin (Coumadin, Jantoven) | Fluconazole, Voriconazole, Ketoconazole, Itraconazole | **CRITICAL** | Potent CYP2C9 inhibition halts S-warfarin clearance, causing supratherapeutic INR ($>10$) and life-threatening hemorrhages. |
+| **11** | Digoxin + P-gp Inhibitors | Digoxin (Lanoxin) | Amiodarone, Verapamil, Diltiazem | **HIGH** | P-glycoprotein transport blockade doubles serum digoxin concentrations, inducing severe AV block and ventricular arrhythmias. |
+| **12** | MAOIs + Serotonergic Agents | Phenelzine, Tranylcypromine, Selegiline, Isocarboxazid | SSRIs, SNRIs, Pseudoephedrine, Amphetamines | **CRITICAL** | Blockade of monoamine degradation triggers severe hypertensive crisis, malignant hyperthermia, and fatal Serotonin Syndrome. |
+| **13** | Xanthine Oxidase + Thiopurines | Allopurinol (Zyloprim), Febuxostat (Uloric) | Azathioprine (Imuran), 6-Mercaptopurine (6-MP, Purixan) | **CRITICAL** | Xanthine oxidase inhibition halts thiopurine breakdown, causing massive accumulation of 6-TGN and life-threatening bone marrow aplasia. |
+| **14** | Methotrexate + NSAIDs / Aspirin | Methotrexate (Rheumatrex, Trexall, Rasuvo) | Ibuprofen, Naproxen, Ketorolac, Indomethacin, Aspirin | **CRITICAL** | Competitive blockade of organic anion transporter 1/3 (OAT1/3) and renal PG inhibition precipitates fatal MTX toxicity and marrow failure. |
+
+---
+
+### 7.3 Core Interaction Engine Implementation (`backend/services/interactionService.js`)
 
 ```javascript
-// Implementation snippet from backend/services/answerService.js
+// backend/services/interactionService.js
+const HIGH_RISK_INTERACTION_RULES = [
+  // ... (Rules 1-12) ...
+  {
+    pair: "Allopurinol / Febuxostat + Azathioprine / 6-Mercaptopurine",
+    drugA: "Xanthine Oxidase Inhibitors (e.g., Allopurinol, Febuxostat)",
+    drugB: "Thiopurines (e.g., Azathioprine, 6-Mercaptopurine)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\ballopurinol\b/i, /\bzyloprim\b/i, /\baloprim\b/i,
+      /\bfebuxostat\b/i, /\buloric\b/i,
+    ],
+    drugsB: [
+      /\bazathioprine\b/i, /\bimuran\b/i, /\bazasan\b/i,
+      /\b6-mercaptopurine\b/i, /\b6-mp\b/i, /\bpurinethol\b/i, /\bpurixan\b/i,
+    ],
+    description: "Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia.",
+  },
+  {
+    pair: "Methotrexate + NSAIDs / High-Dose Aspirin",
+    drugA: "Methotrexate (e.g., Rheumatrex, Trexall)",
+    drugB: "NSAIDs / Aspirin (e.g., Ibuprofen, Naproxen, Ketorolac, High-Dose Aspirin)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bmethotrexate\b/i, /\btrexall\b/i, /\botrexup\b/i, /\brasuvo\b/i, /\brheumatrex\b/i,
+    ],
+    drugsB: [
+      /\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i,
+      /\bnaproxen\b/i, /\baleve\b/i, /\bnaprosyn\b/i,
+      /\bketorolac\b/i, /\btoradol\b/i,
+      /\bmeloxicam\b/i, /\bmobic\b/i,
+      /\bdiclofenac\b/i, /\bvoltaren\b/i,
+      /\bindomethacin\b/i, /\bindocin\b/i,
+      /\bcelecoxib\b/i, /\bcelebrex\b/i,
+      /\baspirin\b/i, /\bacetylsalicylic acid\b/i,
+    ],
+    description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
+  },
+];
+
+function detectDrugInteractions(text) {
+  if (typeof text !== "string" || !text.trim()) return [];
+  const normalized = text.toLowerCase();
+  const detected = [];
+
+  for (const rule of HIGH_RISK_INTERACTION_RULES) {
+    const hasA = rule.drugsA.some((p) => p.test(normalized));
+    const hasB = rule.drugsB.some((p) => p.test(normalized));
+    if (hasA && hasB) {
+      detected.push({
+        pair: rule.pair,
+        drugA: rule.drugA,
+        drugB: rule.drugB,
+        severity: rule.severity,
+        description: rule.description,
+        clinicalRecommendation: "This text mentions a potentially interacting medication pair. If you are considering or taking both, check with your prescriber or pharmacist. Do not change prescribed medicines based on this app.",
+      });
+    }
+  }
+
+  return detected;
+}
+
+module.exports = { detectDrugInteractions, HIGH_RISK_INTERACTION_RULES };
+```
+
+---
+
+### 7.4 Preserved Context Invariant Across Emergency Deflections
+
+If a user prompt simultaneously contains acute emergency symptoms and an interacting drug pair (e.g., *"I have crushing chest pain and shortness of breath after taking sildenafil and nitroglycerin"*), `answerService.js` routes immediately to the emergency directive while **preserving the drug interaction warning array** in the verification payload:
+
+```javascript
+// backend/services/answerService.js: Invariant preservation across redirects
 const promptInteractions = detectDrugInteractions(prompt);
 if (!safety.allowed || safety.category === "possible_emergency") {
   return {
@@ -289,4 +448,5 @@ if (!safety.allowed || safety.category === "possible_emergency") {
   };
 }
 ```
-This guarantees that critical pharmacological contraindications are never concealed or dropped during emergency medical redirects.
+
+This ensures that critical pharmacological warnings are never dropped or hidden during high-acuity clinical deflections.

@@ -187,15 +187,46 @@ def partition_and_quarantine(records):
 
 ```python
 # Implementation Snippet: Model and Dataset/lora/validate_lora_setup.py
-def calculate_lora_parameters(r=8, d_model=768, num_layers=12, targets=("c_attn",)):
-    """Computes exact parameter counts without initializing heavy torch weights."""
-    params_per_layer = 2 * r * d_model * len(targets)
-    total_trainable_params = params_per_layer * num_layers
-    fp16_bytes = total_trainable_params * 2
+def estimate_adapter_parameters(hidden_size: int, layers: int, projections_per_layer: int, rank: int) -> int:
+    """Calculate the exact number of trainable parameters in the LoRA matrices.
+
+    Args:
+        hidden_size: Transformer embedding / hidden dimension H.
+        layers: Total transformer blocks L.
+        projections_per_layer: Count of targeted linear projection heads P.
+        rank: Low-rank dimension R.
+
+    Returns:
+        int: Trainable parameter count.
+    """
+    if min(hidden_size, layers, projections_per_layer, rank) <= 0:
+        raise ValueError("All estimator inputs must be greater than zero")
+    return layers * projections_per_layer * 2 * hidden_size * rank
+
+def build_report(config_path: Path | None, hidden_size: int, layers: int) -> dict[str, object]:
+    """Assemble a comprehensive analytical report of the LoRA configuration."""
+    settings, _ = load_lora_config(config_path)
+    estimated_parameters = estimate_adapter_parameters(
+        hidden_size, layers, len(settings.target_modules), settings.rank
+    )
     return {
-        "trainable_parameters": total_trainable_params,
-        "fp16_memory_mb": round(fp16_bytes / (1024 * 1024), 3),
-        "reduction_percentage": round(100 * (1 - total_trainable_params / 124439808), 2)
+        "valid": True,
+        "training_performed": False,
+        "base_model": settings.base_model,
+        "task_type": settings.task_type,
+        "rank": settings.rank,
+        "alpha": settings.alpha,
+        "dropout": settings.dropout,
+        "target_modules": list(settings.target_modules),
+        "max_sequence_length": settings.max_sequence_length,
+        "estimate_assumptions": {
+            "hidden_size": hidden_size,
+            "layers": layers,
+            "projections_per_layer": len(settings.target_modules),
+        },
+        "estimated_adapter_parameters": estimated_parameters,
+        "estimated_fp16_megabytes": round(estimated_parameters * 2 / 1_048_576, 3),
+        "note": "Analytical estimate only; no model was downloaded or trained.",
     }
 ```
 

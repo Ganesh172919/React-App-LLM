@@ -104,19 +104,51 @@ mindmap
 
 ## 3. Dataset Summary & Statistical Breakdown
 
-| Dataset Metric | Count / Measured Value | Context & Clinical Significance |
-|:---|---:|:---|
-| **Total Processed Rows** | 16,412 | Complete corpus imported from source CSV |
-| **Valid Pairs** | 16,407 | Pairs possessing non-null question and answer text |
-| **Missing Answer Rows** | 5 | Dropped rows due to empty answer strings |
-| **Unique Normalized Questions** | 14,345 | Distinct questions after whitespace normalization |
-| **Question Length Median** | 7 words | Concise medical inquiries |
-| **Question Length P95** | 11 words | Long-tail descriptive questions |
-| **Answer Length Median** | 132 words | Structured informational guidance |
-| **Answer Length P95** | 489 words | Detailed monographs and multi-symptom descriptions |
-| **Multi-Answer Question Groups** | 1,396 | Questions associated with multiple distinct answers |
-| **Divergent Groups (Jaccard < 0.35)** | 1,128 | Question groups exhibiting conflicting clinical statements |
-| **Quarantined Rows** | 3,535 | Excluded from training to protect gradient descent |
+| Dataset Metric | Count / Measured Value | Proportion | Context & Clinical Significance |
+|:---|---:|---:|:---|
+| **Total Processed Rows** | 16,412 | 100.00% | Complete corpus imported from source CSV |
+| **Valid Pairs** | 16,407 | 99.97% | Pairs possessing non-null question and answer text |
+| **Missing Answer Rows** | 5 | 0.03% | Dropped rows due to empty answer strings |
+| **Unique Normalized Questions** | 14,345 | 87.41% | Distinct questions after whitespace normalization |
+| **Unique QA Pairs** | 16,359 | 99.68% | Unique question-answer pairs |
+| **Question Length Median** | 7 words | — | Concise medical inquiries |
+| **Question Length P95** | 11 words | — | Long-tail descriptive questions |
+| **Answer Length Median** | 132 words | — | Structured informational guidance |
+| **Answer Length P95** | 489 words | — | Detailed monographs and multi-symptom descriptions |
+| **Multi-Answer Question Groups** | 1,396 | 9.73% | Questions associated with $\ge 2$ distinct answers |
+| **Divergent Groups (Jaccard < 0.35)** | 1,128 | 7.86% | Question groups exhibiting conflicting clinical statements |
+| **Quarantined Rows** | 3,535 | 21.54% | Excluded from training to protect gradient descent |
+
+### 3.1 Question Intent Taxonomy
+
+```
+========================================================================================================================
+                                     QUESTION INTENT TAXONOMY (analyze_dataset.py)
+========================================================================================================================
+
+  Definitions: [What is/are...?]             ████████████████████████ 7,790 (47.5%)
+  Other General Health Inquiries:            █████████████ 4,123 (25.1%)
+  Symptoms & Clinical Signs:                 █████████ 2,749 (16.8%)
+  Etiology & Underlying Causes:              ██ 736 (4.5%)
+  Risk Factors & Complications:              █ 378 (2.3%)
+  Prognosis & Clinical Outlook:              █ 358 (2.2%)
+  Prevention & Disease Avoidance:            █ 221 (1.3%)
+  Treatment & Drug Therapies:                ▏ 45 (0.3%)
+  Diagnostic Testing & Screening:            ▏ 7 (0.04%)
+========================================================================================================================
+```
+
+| Question Category | Intent Regex / Definition | Count | Share (%) |
+|:---|:---|---:|---:|
+| **Definition** | `^what\s+(?:is\|are)\b` | 7,790 | 47.48% |
+| **Symptoms** | `\b(?:symptoms?\|signs?)\b` | 2,749 | 16.76% |
+| **Causes** | `\b(?:causes?\|etiology\|why)\b` | 736 | 4.49% |
+| **Risk Factors** | `\b(?:risk\|complications?\|side effects?)\b` | 378 | 2.30% |
+| **Prognosis** | `\b(?:prognosis\|outlook\|recover\|survival)\b` | 358 | 2.18% |
+| **Prevention** | `\b(?:prevent\|prevention\|avoid)\b` | 221 | 1.35% |
+| **Treatment** | `\b(?:treat\|treatment\|therapy\|medicine\|drug)\b` | 45 | 0.27% |
+| **Diagnosis** | `\b(?:diagnos\|tests?\|screening)\b` | 7 | 0.04% |
+| **Other General** | Inquiries falling outside explicit keyword regexes | 4,123 | 25.13% |
 
 ---
 

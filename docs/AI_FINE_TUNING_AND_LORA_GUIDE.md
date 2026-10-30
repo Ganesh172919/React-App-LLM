@@ -167,9 +167,95 @@ def run_isolated_inference(adapter_path, prompt):
     return tokenizer.decode(outputs[0][tokens["input_ids"].shape[1]:], skip_special_tokens=True)
 ```
 
+### 4.4 Ambiguity Quarantine & Package Manifest (`Model and Dataset/lora/build_lora_package.py`)
+
+```python
+# Implementation Snippet: Model and Dataset/lora/build_lora_package.py
+def build(source: Path, output: Path) -> dict:
+    source = source.resolve()
+    output = output.resolve()
+    if output == source.parent or source == output:
+        raise ValueError("Choose a separate output directory.")
+
+    variants = defaultdict(set)
+    with source.open(encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            question = " ".join((row.get("question") or "").split())
+            answer = " ".join((row.get("answer") or "").split())
+            if question and answer:
+                variants[leakage_key(question)].add(answer.casefold())
+
+    # Quarantine any question associated with divergent answers
+    ambiguous = {key for key, values in variants.items() if len(values) > 1}
+    records, cleaning = load_and_clean(source, 5)
+    accepted = [row for row in records if leakage_key(row["question"]) not in ambiguous]
+
+    output.mkdir(parents=True, exist_ok=True)
+    splits = {name: [row for row in accepted if stable_split(row["question"]) == name]
+              for name in ("train", "validation", "test")}
+
+    for name, rows in splits.items():
+        write_split(output / (name + ".csv"), rows)
+        convert_csv(output / (name + ".csv"), output / (name + ".jsonl"))
+
+    source_hash = file_sha256(source)
+    manifest = {
+        "schema_version": 1,
+        "source_file": source.name,
+        "source_sha256": source_hash,
+        "method": "Canonical question SHA-256 groups, approximate 80/10/10",
+        "cleaning": cleaning,
+        "quarantined_question_groups": len(ambiguous),
+        "splits": {name: len(rows) for name, rows in splits.items()},
+        "split_sha256": {name: file_sha256(output / (name + ".csv")) for name in splits},
+        "jsonl_sha256": {name: file_sha256(output / (name + ".jsonl")) for name in splits},
+        "clinical_review_approved": False,
+        "license_review_approved": False,
+        "reviewer": None,
+        "training_performed": False,
+    }
+
+    (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest
+```
+
+### 4.5 Clinical Board Approval Enforcement (`Model and Dataset/lora/train_lora.py`)
+
+```python
+# Implementation Snippet: Model and Dataset/lora/train_lora.py
+def enforce_training_guardrails(manifest, execute_training=False):
+    if not execute_training:
+        print("SAFE MODE: Dry-run manifest inspection complete. Zero GPU allocation or gradient descent.")
+        return False
+
+    if not manifest.get("clinical_review_approved"):
+        raise PermissionError(
+            "TRAINING HALTED: Dataset manifest lacks verified clinical board approval. "
+            "Supervised fine-tuning cannot proceed on unreviewed biomedical data."
+        )
+
+    if not manifest.get("license_review_approved"):
+        raise PermissionError(
+            "TRAINING HALTED: Source data license has not been signed off for ML training."
+        )
+
+    return True
+```
+
 ---
 
-## 5. Execution & Verification Commands
+## 5. Parameter-Efficient Fine-Tuning (PEFT) Paradigm Comparison
+
+| Adaptation Technique | Trainable Parameters | Optimizer Memory Overhead | Storage per Task | Latency Overhead | Catastrophic Forgetting Risk |
+|:---|---:|---:|---:|:---:|:---:|
+| **Full Fine-Tuning (FFT)** | 100% ($|\theta|$) | $16\times |\theta|$ bytes ($>112\text{ GB}$) | $100\%$ ($\approx 14\text{ GB}$) | None | High |
+| **Prompt Tuning / Prefix** | $< 0.05\%$ | Minimal ($< 1\text{ GB}$) | $< 5\text{ MB}$ | Minor (consumes context tokens) | Very Low |
+| **Low-Rank Adaptation (LoRA)** | **0.12% (147,456)** | **$16\times |P_{\text{adapter}}|$ ($< 2.4\text{ MB}$)** | **0.281 MB** | **Zero (Linear Fold into $W_0$)** | **Minimal** |
+| **Quantized LoRA (QLoRA)** | 0.12% (NF4 base) | Minimal (4-bit dequantization) | 0.281 MB | Slight (Dequantization overhead) | Minimal |
+
+---
+
+## 6. Execution & Verification Commands
 
 ```powershell
 # 1. Build LoRA package: quarantine ambiguous groups & partition splits
@@ -184,3 +270,12 @@ python "Model and Dataset/lora/validate_lora_setup.py" --output "Model and Datas
 # 4. Run automated test suites
 python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
 ```
+
+---
+
+## 7. Safety & Clinical Invariants
+
+1. **Air-Gapped Decoupling**: LoRA scripts run offline in standalone Python environments; they are never imported, required, or executed by the Express/Node.js web backend.
+2. **Deterministic Manifest Verification**: Training scripts calculate SHA-256 digests of all split CSV and JSONL files and match them strictly against `manifest.json`.
+3. **Loss Gradient Masking**: Prompts are masked with $-100$ so cross-entropy loss is computed strictly on response tokens, preventing memorization of user phrasing.
+4. **Clinical Gate Invariant**: Untrusted or unreviewed dataset records cannot trigger model backpropagation without programmatic clinical approval flags.
