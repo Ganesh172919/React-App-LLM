@@ -977,3 +977,155 @@ useEffect(() => {
   return () => { window.removeEventListener("keydown", handleKeyDown); previousFocus?.focus(); };
 }, [isOpen]);
 ```
+
+
+---
+
+## 12. Client-Side Untrusted JSON Conversation Import Sandbox Architecture
+
+MedAssist AI implements a client-side sandboxed conversation import preview workflow (`frontend/src/lib/conversationImport.js`) designed to protect users against anti-forgery attacks, spoofed verification badges, forged PubMed citations, and prompt injection into subsequent LLM conversational context windows.
+
+```
+========================================================================================================================
+                          UNTRUSTED CONVERSATION JSON IMPORT: SECURITY & DATA FLOW
+========================================================================================================================
+
+    [ External Untrusted .json File ] (Drag & Drop or File Input Picker)
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 1. BOUNDARY VALIDATION (< 512 KB)                               │
+    │ - File size checked in browser before JSON deserialization       │
+    │ - file.size <= MAX_IMPORT_BYTES (512 * 1024 = 524,288 bytes)    │
+    │ - Immediate rejection if file size exceeds threshold            │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 2. SCHEMA & TURN INTEGRITY CHECKS                               │
+    │ - JSON.parse() executed within sandboxed browser memory         │
+    │ - Root object must contain a non-empty `messages` array         │
+    │ - Max 100 complete Q&A pairs (200 messages total)               │
+    │ - Max 20,000 characters per message text                        │
+    │ - Alternating order: User (isUser: true) -> AI (isUser: false)  │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 3. ANTI-FORGERY METADATA STRIPPING                              │
+    │ - Strip all client-supplied `verification` badges               │
+    │ - Strip all client-supplied `modelReview` badges                │
+    │ - Strip all client-supplied `references` (PubMed citations)    │
+    │ - Discard any remote `sessionId` or user-defined message IDs    │
+    │ - Assign synthetic ephemeral client IDs: `import-${index}`      │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 4. SANDBOXED READ-ONLY PREVIEW STATE                            │
+    │ - Appends "(Imported conversation preview)" banner              │
+    │ - Labels AI turns as "Imported answer · unverified"             │
+    │ - Sets `importPreview = true` in active chat state              │
+    │ - Disables composer submission (prevents context injection)     │
+    │ - Zero persistence: No writes to backend or MongoDB database    │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Import Sandbox))
+    ::icon(fa fa-shield-alt)
+    (01 Size & Schema Limits)
+      Max 512 KB File Size
+      Max 100 Q&A Pairs (200 msgs)
+      Max 20k Characters per Text
+      Alternating Role Verification
+    (02 Anti-Forgery Stripping)
+      Drop verification Objects
+      Drop modelReview Badges
+      Drop references Arrays
+      Synthetic ID Injection
+    (03 UI Sandbox Enclosure)
+      Read-Only Preview State
+      Disabled Prompt Composer
+      Zero MongoDB Persistence
+      Clear Memory on Navigation
+```
+
+### 12.1 Security & Sanitization Implementation (`frontend/src/lib/conversationImport.js`)
+
+```javascript
+// Excerpt from frontend/src/lib/conversationImport.js
+export const MAX_IMPORT_BYTES = 512 * 1024;
+export const MAX_IMPORT_MESSAGES = 200;
+export const MAX_MESSAGE_TEXT_LENGTH = 20000;
+
+export function parseConversationImportJson(rawJson) {
+  if (typeof rawJson !== "string" || !rawJson.trim()) {
+    throw new Error("Choose a valid JSON file to import.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error("The selected file is not valid JSON.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("The imported file does not match the expected conversation format.");
+  }
+  if (!Array.isArray(parsed.messages) || parsed.messages.length === 0) {
+    throw new Error("The imported conversation does not contain any messages.");
+  }
+  if (parsed.messages.length > MAX_IMPORT_MESSAGES) {
+    throw new Error("The imported conversation exceeds the 100 question-and-answer pair limit.");
+  }
+
+  const sanitizedMessages = [];
+  let expectedIsUser = true;
+
+  for (let i = 0; i < parsed.messages.length; i += 1) {
+    const item = parsed.messages[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Message ${i + 1} is not a valid message object.`);
+    }
+    const isUser = Boolean(item.isUser);
+    if (isUser !== expectedIsUser) {
+      throw new Error(`Message ${i + 1} does not follow the expected alternating user and assistant order.`);
+    }
+    const text = typeof item.text === "string" ? item.text.trim() : "";
+    if (!text) {
+      throw new Error(`Message ${i + 1} does not have any text content.`);
+    }
+    if (text.length > MAX_MESSAGE_TEXT_LENGTH) {
+      throw new Error(`Message ${i + 1} exceeds the character limit.`);
+    }
+
+    sanitizedMessages.push({
+      id: `import-${i + 1}`,
+      text,
+      isUser,
+      createdAt: typeof item.createdAt === "string" && !Number.isNaN(Date.parse(item.createdAt))
+        ? item.createdAt
+        : new Date(0).toISOString(),
+    });
+    expectedIsUser = !expectedIsUser;
+  }
+
+  const rawTitle = typeof parsed.title === "string" ? parsed.title.trim() : "";
+  const baseTitle = rawTitle ? rawTitle.slice(0, 100) : "Imported conversation";
+
+  return {
+    title: `${baseTitle} (preview)`,
+    messages: sanitizedMessages,
+    importPreview: true,
+  };
+}
+```
+
+### 12.2 Import Sandbox Security Invariants
+
+1. **Client-Side RAM Isolation**: Imported conversations are never dispatched to `/api/chat`, `/api/generate`, or `/api/save`. Deserialized objects reside strictly within React component state and are wiped upon navigating to another conversation or reloading the browser.
+2. **Anti-Spoofing Strip**: A malicious user or external agent cannot craft a JSON file containing fraudulent `verification` tags (e.g. claiming a dangerous assertion was verified by NCBI PubMed or secondary Gemini review). All evidence and verification metadata are unconditionally dropped during parsing.
+3. **Prompt Injection Prevention**: Because `importPreview` locks the input composer, untrusted text inside an imported transcript can never be forwarded to downstream LLM generation passes as conversational history context.
