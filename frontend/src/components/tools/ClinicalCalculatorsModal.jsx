@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -121,6 +121,11 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [curbRespiratory, setCurbRespiratory] = useState(false);
   const [curbBp, setCurbBp] = useState(false);
   const [curbAge65, setCurbAge65] = useState(false);
+
+  // GCS (Glasgow Coma Scale) State
+  const [gcsEye, setGcsEye] = useState("4");
+  const [gcsVerbal, setGcsVerbal] = useState("5");
+  const [gcsMotor, setGcsMotor] = useState("6");
 
   const titleId = useId();
 
@@ -318,6 +323,21 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     curbStratification = `High / severe risk (30-day mortality ${curbScore === 3 ? "15–20%" : "30–40%"})`;
   }
 
+  // 13. Glasgow Coma Scale (GCS)
+  const eyeNum = parseInt(gcsEye, 10) || 4;
+  const verbalNum = parseInt(gcsVerbal, 10) || 5;
+  const motorNum = parseInt(gcsMotor, 10) || 6;
+  const gcsScore = eyeNum + verbalNum + motorNum;
+
+  let gcsStratification = "";
+  if (gcsScore <= 8) {
+    gcsStratification = "Severe brain injury / Coma (3–8)";
+  } else if (gcsScore <= 12) {
+    gcsStratification = "Moderate brain injury (9–12)";
+  } else {
+    gcsStratification = "Mild brain injury / Alert (13–15)";
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -483,6 +503,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("curb65")}
           >
             CURB-65 (Pneumonia)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-gcs"
+            aria-selected={activeTab === "gcs"}
+            aria-controls="tabpanel-gcs"
+            className={`calc-tab ${activeTab === "gcs" ? "active" : ""}`}
+            onClick={() => setActiveTab("gcs")}
+          >
+            GCS (Coma Scale)
           </button>
         </div>
 
@@ -1474,6 +1505,105 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onClick={() =>
                       handleCopy(
                         `CURB-65 pneumonia score estimate: ${curbScore}/5 points (${curbStratification}; educational risk stratification only; not diagnostic or admission advice)`
+                      )
+                    }
+                  >
+                    {copied ? "Copied" : "Copy result"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 13: Glasgow Coma Scale (GCS) */}
+          {activeTab === "gcs" && (
+            <div id="tabpanel-gcs" role="tabpanel" aria-labelledby="tab-gcs" className="calc-pane">
+              <p className="small-text muted">
+                The Glasgow Coma Scale (GCS) provides a standardized, objective evaluation of level of consciousness following acute neurological injury.
+              </p>
+              <div style={{ marginBottom: "14px" }}>
+                <label htmlFor="gcs-eye-select">
+                  <strong>Eye Opening Response (E)</strong>:
+                  <select
+                    id="gcs-eye-select"
+                    value={gcsEye}
+                    onChange={(e) => setGcsEye(e.target.value)}
+                    style={{ width: "100%", marginTop: "6px" }}
+                  >
+                    <option value="4">4 — Spontaneous (open before stimulus)</option>
+                    <option value="3">3 — To sound (open after spoken request)</option>
+                    <option value="2">2 — To pressure (open after tactile pressure/pain)</option>
+                    <option value="1">1 — None (no eye opening at any time)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div style={{ marginBottom: "14px" }}>
+                <label htmlFor="gcs-verbal-select">
+                  <strong>Verbal Response (V)</strong>:
+                  <select
+                    id="gcs-verbal-select"
+                    value={gcsVerbal}
+                    onChange={(e) => setGcsVerbal(e.target.value)}
+                    style={{ width: "100%", marginTop: "6px" }}
+                  >
+                    <option value="5">5 — Orientated (correctly answers name, place, date)</option>
+                    <option value="4">4 — Confused (not orientated but coherent speech)</option>
+                    <option value="3">3 — Inappropriate words (random or exclamatory words)</option>
+                    <option value="2">2 — Incomprehensible sounds (moaning or groaning only)</option>
+                    <option value="1">1 — None (no verbal response)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div style={{ marginBottom: "14px" }}>
+                <label htmlFor="gcs-motor-select">
+                  <strong>Motor Response (M)</strong>:
+                  <select
+                    id="gcs-motor-select"
+                    value={gcsMotor}
+                    onChange={(e) => setGcsMotor(e.target.value)}
+                    style={{ width: "100%", marginTop: "6px" }}
+                  >
+                    <option value="6">6 — Obeys commands (follows 2-step command)</option>
+                    <option value="5">5 — Localising to pain (brings hand above clavicle to stimulus)</option>
+                    <option value="4">4 — Normal flexion (rapid withdrawal from painful stimulus)</option>
+                    <option value="3">3 — Abnormal flexion / decorticate (slow, patterned adduction/flexion)</option>
+                    <option value="2">2 — Extension / decerebrate (straightening of arm, adduction, internal rotation)</option>
+                    <option value="1">1 — None (no limb movement to painful stimulus)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="calc-result">
+                <div className="calc-result-metric">
+                  <strong>{gcsScore} / 15 points (E{gcsEye}V{gcsVerbal}M{gcsMotor})</strong>
+                  <span className="badge">{gcsStratification}</span>
+                </div>
+                <p className="small-text">
+                  Educational tracking score only. GCS does not replace formal neurological assessment, pupillary exam, airway evaluation, or neuroimaging.
+                </p>
+                <p className="small-text muted">
+                  Assess for confounders prior to scoring: intubation (often documented as V1T), sedation, paralytics, orbital trauma, hypothermia, shock, or language barriers. A GCS ≤ 8 signals critical loss of airway reflexes and severe brain injury. An acute decrease of ≥ 2 points is a medical emergency. <a href="https://www.glasgowcomascale.org" target="_blank" rel="noopener noreferrer">Glasgow Coma Scale guidelines</a>.
+                </p>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() =>
+                      insertAndClose(
+                        `For educational purposes, explain how a Glasgow Coma Scale (GCS) score of ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor} - ${gcsStratification}) is interpreted in emergency neurotrauma triage, the clinical significance of a GCS score ≤ 8 regarding airway protection, and how clinicians document confounding factors like intubation and sedation.`
+                      )
+                    }
+                  >
+                    Ask MedAssist about this GCS score
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    onClick={() =>
+                      handleCopy(
+                        `Glasgow Coma Scale (GCS) estimate: ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor}; ${gcsStratification}; educational reference only; not diagnostic or triage advice)`
                       )
                     }
                   >

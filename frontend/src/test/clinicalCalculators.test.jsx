@@ -143,6 +143,41 @@ it("calculates CURB-65 Pneumonia Severity Score without diagnostic claims and up
   expect(promptCall).toContain("CURB-65 pneumonia score");
 });
 
+it("calculates Glasgow Coma Scale (GCS) without diagnostic claims and updates score dynamically", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "GCS (Coma Scale)" }));
+  expect(screen.getByText(/objective evaluation of level of consciousness/)).toBeTruthy();
+  expect(screen.getByText("15 / 15 points (E4V5M6)")).toBeTruthy();
+  expect(screen.getByText("Mild brain injury / Alert (13–15)")).toBeTruthy();
+  expect(screen.getByText(/GCS does not replace formal neurological assessment/)).toBeTruthy();
+
+  // Change Eye to 1 (None), Verbal to 1 (None), Motor to 1 (None)
+  fireEvent.change(screen.getByLabelText(/Eye Opening Response \(E\)/), { target: { value: "1" } });
+  fireEvent.change(screen.getByLabelText(/Verbal Response \(V\)/), { target: { value: "1" } });
+  fireEvent.change(screen.getByLabelText(/Motor Response \(M\)/), { target: { value: "1" } });
+  expect(screen.getByText("3 / 15 points (E1V1M1)")).toBeTruthy();
+  expect(screen.getByText("Severe brain injury / Coma (3–8)")).toBeTruthy();
+
+  // Change Motor to 5 (Localising) -> total 7 / 15
+  fireEvent.change(screen.getByLabelText(/Motor Response \(M\)/), { target: { value: "5" } });
+  expect(screen.getByText("7 / 15 points (E1V1M5)")).toBeTruthy();
+  expect(screen.getByText("Severe brain injury / Coma (3–8)")).toBeTruthy();
+
+  // Change Verbal to 4 (Confused), Eye to 3 (To sound) -> total 3+4+5 = 12 / 15 -> Moderate
+  fireEvent.change(screen.getByLabelText(/Eye Opening Response \(E\)/), { target: { value: "3" } });
+  fireEvent.change(screen.getByLabelText(/Verbal Response \(V\)/), { target: { value: "4" } });
+  expect(screen.getByText("12 / 15 points (E3V4M5)")).toBeTruthy();
+  expect(screen.getByText("Moderate brain injury (9–12)")).toBeTruthy();
+
+  // Check prompt insertion
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this GCS score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const promptCall = onInsertPrompt.mock.calls[0][0];
+  expect(promptCall).toContain("12/15 (E3V4M5 - Moderate brain injury (9–12))");
+  expect(promptCall).toContain("Glasgow Coma Scale");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -153,11 +188,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (CURB-65) to first (BMI) and back
-  const curbTab = screen.getByRole("tab", { name: "CURB-65 (Pneumonia)" });
-  curbTab.focus();
-  fireEvent.keyDown(curbTab, { key: "ArrowRight" });
+  // Wrapping from last tab (GCS) to first (BMI) and back
+  const gcsTab = screen.getByRole("tab", { name: "GCS (Coma Scale)" });
+  gcsTab.focus();
+  fireEvent.keyDown(gcsTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(curbTab.getAttribute("aria-selected")).toBe("true");
+  expect(gcsTab.getAttribute("aria-selected")).toBe("true");
 });
