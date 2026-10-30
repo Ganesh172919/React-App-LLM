@@ -102,9 +102,10 @@ mindmap
 - [x] **High-Risk Medication Interaction & Answer Safety Screening**: Deterministic output screening detecting emergency symptoms, harmful instructions, prompt injections, unauthorized dosage changes, and AI diagnostic pronouncements (`safetyService.js`), alongside 14 high-risk drug interaction rules covering Statins + CYP3A4 inhibitors/fibrates, Warfarin + azoles, Digoxin + amiodarone/verapamil, MAOIs + serotonergic agents, Allopurinol + Azathioprine/6-Mercaptopurine, and Methotrexate + NSAIDs/High-Dose Aspirin, with preserved medication interaction context even across emergency safety redirects.
 - [x] **Clinical Educational Calculators Suite**: Comprehensive 13-tool suite including Adult BMI, CKD-EPI 2021 eGFR, CHA₂DS₂-VASc, MAP, Cockcroft-Gault CrCl, Payne Corrected Calcium, Serum Anion Gap, Fractional Excretion of Sodium (FeNa), Fractional Excretion of Urea (FeUrea for diuretic states), Maintenance Fluids (Holliday-Segar 4-2-1 rule), Wells' Criteria for Pulmonary Embolism (PE pre-test probability), CURB-65 Pneumonia Severity Score, and Glasgow Coma Scale (GCS level of consciousness) with non-diagnostic disclaimers, prompt insertion, and WAI-ARIA tabpanel semantics.
 - [x] **Accessible Citation Focus, Export Formats & Global Shortcuts**: Programmatic focus management (`tabIndex={-1}`, `el.focus()`), high-contrast focus rings (`:focus-visible`), dual Markdown and structured JSON export, global `Alt+C` modal shortcut (`aria-keyshortcuts="Alt+C"`), arrow-key tab cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and Vancouver citation copy support.
+- [x] **Untrusted Conversation JSON Import Sandbox**: Client-side preview parser (`conversationImport.js`) with hard byte limit ($\le 512\text{ KB}$), max 100 Q&A pairs (200 messages), max 20,000 characters per text, alternating turn validation, anti-forgery metadata stripping (dropping all `verification`, `modelReview`, and `references` tags), synthetic IDs (`import-${index}`), composer submission lock, and zero network persistence.
 - [x] **Offline Data Quarantine**: Isolation of 1,437 ambiguous question groups and zero-leakage SHA-256 modulo 100 splitting.
 - [x] **Analytical LoRA Validation**: Closed-form estimation confirming $147,456$ trainable parameters ($0.281$ MB FP16 footprint).
-- [x] **Automated Verification Matrix**: All 64 backend tests, 46 Vitest component tests, 19 Python research tests, 7 build-serving checks, 20 Playwright smoke workflows, and 21 dark mode/tools accessibility workflows (177+ automated checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
+- [x] **Automated Verification Matrix**: All 64 backend tests, 47 Vitest component tests across 6 files, 19 Python research tests, 7 build-serving checks, 21 Playwright core smoke workflows, and 24 dark mode/tools accessibility workflows (178+ automated checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
 
 ### 3.2 Target Host Deployment Checklist (Pending Host Cutover)
 - [ ] **Docker Engine Verification**: Ensure Docker 24.0+ and Docker Compose v2.20+ are installed on the deployment host.
@@ -197,3 +198,235 @@ docker compose exec mongo mongorestore \
 1. **Monotonic Session Versioning**: Never bypass `sessionVersion` incrementing upon credential change or single-device login.
 2. **Deterministic Fallbacks**: If PubMed E-Utilities or personal API keys return network errors, the system must degrade safely to `references_only` or `emergency_guidance` rather than emitting speculative ungrounded claims.
 3. **Quarantine Inviolability**: Do not merge `quarantine.jsonl` back into training sets without clinical board consensus review.
+
+
+---
+
+## 7. Client-Side Untrusted JSON Conversation Import Preview Sandbox & Security Boundary
+
+MedAssist AI implements a client-side sandboxed conversation import preview workflow (`frontend/src/lib/conversationImport.js`) designed to protect against spoofed verification badges, forged PubMed sources, and unauthorized session injection.
+
+```
+========================================================================================================================
+                     UNTRUSTED CONVERSATION JSON IMPORT: SECURITY & SANITIZATION PIPELINE
+========================================================================================================================
+
+    [ External Untrusted .json File ] (Drag & Drop or File Input Picker)
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 1. BOUNDARY VALIDATION (< 512 KB)                               │
+    │ - Strict file size check: file.size <= MAX_IMPORT_BYTES (512 KB)│
+    │ - Immediate rejection if file size exceeds threshold            │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 2. SCHEMA & TURN INTEGRITY CHECKS                               │
+    │ - JSON.parse() executed within browser memory                   │
+    │ - Root object must contain a non-empty `messages` array         │
+    │ - Max 100 complete Q&A pairs (200 messages total)               │
+    │ - Max 20,000 characters per message                             │
+    │ - Alternating order: User (isUser: true) -> AI (isUser: false)  │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 3. ANTI-FORGERY METADATA STRIPPING                              │
+    │ - Strip all client-supplied `verification` badges               │
+    │ - Strip all client-supplied `modelReview` badges                │
+    │ - Strip all client-supplied `references` (PubMed citations)    │
+    │ - Discard any remote `sessionId` or user-defined message IDs    │
+    │ - Assign synthetic ephemeral client IDs: `import-${index}`      │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 4. SANDBOXED READ-ONLY PREVIEW STATE                            │
+    │ - Appends "(Imported conversation preview)" banner              │
+    │ - Labels AI turns as "Imported answer · unverified"             │
+    │ - Flags `importPreview = true` in active chat state             │
+    │ - Disables composer submission (prevents context injection)     │
+    │ - Zero persistence: No writes to backend or MongoDB database    │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Import Sandbox))
+    ::icon(fa fa-shield-alt)
+    (01 Size & Schema Limits)
+      Max 512 KB File Size
+      Max 100 Q&A Pairs (200 msgs)
+      Max 20k Characters per Text
+      Alternating Role Verification
+    (02 Anti-Forgery Stripping)
+      Drop verification Objects
+      Drop modelReview Badges
+      Drop references Arrays
+      Synthetic ID Injection
+    (03 UI Sandbox Enclosure)
+      Read-Only Preview State
+      Disabled Prompt Composer
+      Zero MongoDB Persistence
+      Clear Memory on Navigation
+```
+
+### 7.1 Import Sanitization Logic (`frontend/src/lib/conversationImport.js`)
+
+```javascript
+// Excerpt from frontend/src/lib/conversationImport.js
+export const MAX_IMPORT_BYTES = 512 * 1024;
+export const MAX_IMPORT_MESSAGES = 200;
+export const MAX_MESSAGE_TEXT_LENGTH = 20000;
+
+export function parseConversationImportJson(rawJson) {
+  if (typeof rawJson !== "string" || !rawJson.trim()) {
+    throw new Error("Choose a valid JSON file to import.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error("The selected file is not valid JSON.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("The imported file does not match the expected conversation format.");
+  }
+  if (!Array.isArray(parsed.messages) || parsed.messages.length === 0) {
+    throw new Error("The imported conversation does not contain any messages.");
+  }
+  if (parsed.messages.length > MAX_IMPORT_MESSAGES) {
+    throw new Error("The imported conversation exceeds the 100 question-and-answer pair limit.");
+  }
+
+  const sanitizedMessages = [];
+  let expectedIsUser = true;
+
+  for (let i = 0; i < parsed.messages.length; i += 1) {
+    const item = parsed.messages[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Message ${i + 1} is not a valid message object.`);
+    }
+    const isUser = Boolean(item.isUser);
+    if (isUser !== expectedIsUser) {
+      throw new Error(`Message ${i + 1} does not follow the expected alternating user and assistant order.`);
+    }
+    const text = typeof item.text === "string" ? item.text.trim() : "";
+    if (!text) {
+      throw new Error(`Message ${i + 1} does not have any text content.`);
+    }
+    if (text.length > MAX_MESSAGE_TEXT_LENGTH) {
+      throw new Error(`Message ${i + 1} exceeds the character limit.`);
+    }
+
+    sanitizedMessages.push({
+      id: `import-${i + 1}`,
+      text,
+      isUser,
+      createdAt: typeof item.createdAt === "string" && !Number.isNaN(Date.parse(item.createdAt))
+        ? item.createdAt
+        : new Date(0).toISOString(),
+    });
+    expectedIsUser = !expectedIsUser;
+  }
+
+  const rawTitle = typeof parsed.title === "string" ? parsed.title.trim() : "";
+  const baseTitle = rawTitle ? rawTitle.slice(0, 100) : "Imported conversation";
+
+  return {
+    title: `${baseTitle} (preview)`,
+    messages: sanitizedMessages,
+    importPreview: true,
+  };
+}
+```
+
+---
+
+## 8. Target Host Cutover, Health Probing & Zero-Downtime Rollout Strategy
+
+To transition from local staging to a hardened production host, the platform utilizes Docker Compose healthcheck dependencies and blue/green zero-downtime Nginx reload procedures:
+
+```
+========================================================================================================================
+                                     PRODUCTION HOST ZERO-DOWNTIME CUTOVER PIPELINE
+========================================================================================================================
+
+    [ Staging Host Verification ] ──► node scripts/verify_project.cjs (178+ Tests Green)
+                                                │
+                                                ▼
+    [ Target Host Provisioning ]  ──► 1. Clone repository to /opt/medassist
+                                      2. Run `node deploy/create_env.cjs` (Provisions 32-byte secrets)
+                                      3. Configure TLS certificates via Certbot / ACME Let's Encrypt
+                                                │
+                                                ▼
+    [ Container Mesh Launch ]     ──► docker compose up -d --build
+                                      ├── Stage 1: mongo starts -> healthcheck passes (mongosh ping)
+                                      ├── Stage 2: backend starts -> healthcheck passes (/api/ready)
+                                      └── Stage 3: frontend starts -> healthcheck passes (/healthz)
+                                                │
+                                                ▼
+    [ Host Edge Proxy Reload ]    ──► Nginx host configuration points upstream to 127.0.0.1:8080
+                                      Command: nginx -t && systemctl reload nginx
+                                                │
+                                                ▼
+    [ Automated Production Smoke ]──► node scripts/browser_verify_dark_and_tools.cjs
+                                      100% End-to-End browser validation passes on public URL
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Cutover Strategy))
+    ::icon(fa fa-rocket)
+    (01 Host Preparation)
+      Docker 24 LTS & Compose v2
+      Node.js 24 Runtime Environment
+      Automated Secret Provisioning
+      UFW Firewall: Ports 80 & 443 Only
+    (02 Container Mesh Lifecycle)
+      mongo-init.js Least-Privilege Role
+      MongoDB Healthcheck mongosh ping
+      Backend Healthcheck /api/ready
+      Frontend Healthcheck /healthz
+    (03 Host Edge Ingress)
+      Let's Encrypt TLS 1.3 Auto-renewal
+      HSTS max-age=31536000
+      Upstream Loopback 127.0.0.1:8080
+      Zero-Downtime systemctl reload nginx
+    (04 Post-Deployment Acceptance)
+      Automated Smoke Test Matrix
+      WebSocket Connectivity Check
+      Database Replication Verification
+      Telemetry Alerting Integration
+```
+
+### 8.1 Zero-Downtime Host Cutover Commands
+
+```bash
+# Step 1: Clone and set directory permissions
+git clone https://github.com/Ganesh172919/React-App-LLM.git /opt/medassist
+cd /opt/medassist
+chmod 700 /opt/medassist
+
+# Step 2: Provision production environment secrets
+node deploy/create_env.cjs
+
+# Step 3: Launch container mesh with explicit build
+docker compose up -d --build
+
+# Step 4: Verify health status of all containers
+docker compose ps
+
+# Step 5: Test local ingress response
+curl -f http://127.0.0.1:8080/healthz || exit 1
+curl -f http://127.0.0.1:8080/api/health || exit 1
+
+# Step 6: Reload external host Nginx proxy
+sudo nginx -t && sudo systemctl reload nginx
+echo "SUCCESS: Host cutover completed with zero downtime."
+```

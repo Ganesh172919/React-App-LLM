@@ -314,3 +314,247 @@ Before any production deployment or pilot program with clinicians or students, t
                                               3. Clear user consent agreements acknowledging educational scope.
 ========================================================================================================================
 ```
+
+
+---
+
+## 7. STRIDE Threat Modeling & Risk Mitigation Topology
+
+MedAssist AI employs the STRIDE threat modeling framework (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) to analyze attack surfaces and enforce architectural mitigations:
+
+```
+========================================================================================================================
+                                     MEDASSIST AI — STRIDE THREAT MODELING TOPOLOGY
+========================================================================================================================
+
+    THREAT CATEGORY          ATTACK VECTOR / RISK                            ARCHITECTURAL MITIGATION INVARIANT
+    ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Spoofing Identity        - Token replay across stolen devices            - Monotonic sessionVersion counter invalidates
+                             - Forged Google OAuth identity tokens             stale tokens instantly; SHA-256 rotating refresh
+                             - Forged verification badges in imports           tokens; PKCE S256 OAuth verification; all
+                                                                               imported verification badges stripped in RAM.
+
+    Tampering with Data      - Modifying clinical prompts in transit         - Strict TLS 1.3 encryption in transit;
+                             - Tampering with personal encrypted API keys    - AES-256-GCM 16-byte authentication tag verifies
+                             - Corrupting MongoDB chat history documents       ciphertext integrity; tampering triggers immediate
+                                                                               KEY_UNAVAILABLE rejection.
+
+    Repudiation              - Denying medical query generation              - UUIDv4 x-request-id correlation logged in stdout;
+                             - Disavowing account deletion or key changes    - Audit logs track authentication events, session
+                                                                               revocations, and key updates with timestamps.
+
+    Information Disclosure   - Plaintext API key leakage in crash logs       - Personal keys encrypted via AES-256-GCM at rest;
+                             - Database snooping across multi-tenant data    - In-memory key lifetime is request-scoped; Express
+                             - Leaking patient data via cross-origin requests  production mode suppresses stack traces; CORS origin
+                                                                               gate rejects unauthorized origins.
+
+    Denial of Service (DoS)  - Flooding expensive LLM / PubMed endpoints     - Tiered express-rate-limiters (auth: 30/15m,
+                             - Memory exhaustion via oversized JSON imports    ai: 20/1m, settings: 12/15m); JSON body limit 32KB;
+                             - WebSocket socket exhaustion / lingering pings   file import hard limit 512KB; 30s WS watchdog.
+
+    Elevation of Privilege   - Bypassing medical safety triage               - Deterministic safetyService.js intercepts emergency
+                             - Forcing unauthorized model parameter overrides  prompts before external API or DB calls; clients
+                             - Client-side database injection                  have zero authority over model routing or DB schema.
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((STRIDE Model))
+    ::icon(fa fa-shield-alt)
+    (Spoofing)
+      Monotonic sessionVersion
+      Rotating SHA-256 Refresh Tokens
+      Google OAuth 2.0 PKCE S256
+      Anti-forgery Badge Stripping
+    (Tampering)
+      AES-256-GCM 16-byte Auth Tag
+      Strict TLS 1.3 Transport
+      Mongoose Schema Casting
+    (Repudiation)
+      UUIDv4 x-request-id Injection
+      Structured JSON Access Logs
+      Audit Trails for Account Deletion
+    (Information Disclosure)
+      Zero Key Logging Invariant
+      Strict CORS Origin Filtering
+      Encrypted Vault At Rest
+    (Denial of Service)
+      Tiered IP Rate Limiters
+      32 KB JSON Body Cap
+      512 KB File Import Cap
+      30s WebSocket Ping Watchdog
+    (Elevation of Privilege)
+      Zero Client Persistence Authority
+      Deterministic Pre-AI Routing
+      Authoritative Two-Phase Save
+```
+
+---
+
+## 8. Server-Side Request Forgery (SSRF) Defense in Custom Model Endpoints
+
+When users or operators configure local or OpenAI-compatible custom inference endpoints (`LOCAL_AI_BASE_URL`), MedAssist AI enforces strict SSRF protections in `backend/services/modelProvider.js`:
+
+```
+========================================================================================================================
+                                     CUSTOM ENDPOINT SSRF DEFENSE PIPELINE
+========================================================================================================================
+
+    [ Operator or User Base URL Input ] (e.g. http://127.0.0.1:8000/v1)
+                    │
+                    ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 1. URL SCHEME & STRUCTURE VALIDATION                            │
+    │ - Strict URL() parsing: disallows username, password, search,   │
+    │   or hash components                                            │
+    │ - Protocol must strictly equal "http:" or "https:"              │
+    └─────────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 2. REMOTE VS LOOPBACK ENFORCEMENT                               │
+    │ - Remote endpoints (non-Groq, non-Together) MUST use HTTPS      │
+    │ - HTTP cleartext is permitted ONLY for local development        │
+    │   loopback hosts: "localhost", "127.0.0.1", "[::1]"             │
+    └─────────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 3. TIMEOUT, REDIRECT & BUFFER BOUNDARIES                        │
+    │ - Hard timeout: 30,000 ms (aborts hung internal connections)    │
+    │ - maxRedirects: 0 (prevents redirect chains to internal AWS/GCP │
+    │   cloud metadata services like 169.254.169.254)                 │
+    │ - maxContentLength: 1 MB (prevents memory-exhaustion bombs)     │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 8.1 SSRF Protection Implementation (`backend/services/modelProvider.js`)
+
+```javascript
+// Excerpt from backend/services/modelProvider.js
+const url = new URL(base);
+if (url.username || url.password || url.search || url.hash || !["http:", "https:"].includes(url.protocol)) {
+  throw new Error("Invalid local AI endpoint.");
+}
+
+// Remote endpoints must use HTTPS; cleartext HTTP allowed only for loopback
+if (!isTogether && !isGroq && url.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+  throw new Error("Remote AI endpoints must use HTTPS.");
+}
+
+const response = await axios.post(
+  url.toString().replace(/\/$/, "") + "/chat/completions",
+  { model, messages, temperature: 0.25, max_tokens: 900 },
+  {
+    timeout: 30000,
+    signal,
+    maxRedirects: 0, // Block SSRF redirection loops
+    maxContentLength: 1024 * 1024, // 1 MB response cap
+    headers: { "Content-Type": "application/json", ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}) },
+  }
+);
+```
+
+---
+
+## 9. Untrusted Conversation JSON Import Threat Model & Anti-Forgery Defense
+
+The conversation import feature allows users to inspect previously exported transcripts without uploading data to the backend. To counter malicious transcript injection, `frontend/src/lib/conversationImport.js` implements a zero-trust sanitization boundary:
+
+```
+========================================================================================================================
+                     UNTRUSTED CONVERSATION JSON IMPORT: THREAT MODEL & MITIGATIONS
+========================================================================================================================
+
+    THREAT SCENARIO                  POTENTIAL EXPLOIT                               ARCHITECTURAL MITIGATION
+    ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Spoofed Medical Verification     Attacker crafts JSON asserting dangerous        All client-supplied `verification`
+                                     dosages and attaches false "PubMed Verified"    objects and `modelReview` badges are
+                                     badges to deceive the user.                     unconditionally deleted during parsing.
+                                                                                     AI turns marked "Imported · unverified".
+
+    Fake PubMed Reference Links      Attacker injects arbitrary external URLs into   All client-supplied `references` arrays
+                                     `references` claiming they are NCBI papers.    are dropped. No external links rendered.
+
+    Prompt Injection Context Smuggling Attacker crafts conversational history        Composer form is locked (`importPreview: true`).
+                                     containing `<|im_start|>` instructions to       Untrusted text cannot be submitted as context
+                                     hijack downstream LLM completions.              to downstream model generation passes.
+
+    Denial of Service (OOM)          Attacker provides a multi-gigabyte JSON         File size is checked before parsing
+                                     file causing browser crash or memory leak.      (`file.size <= 512 KB`). Messages capped at
+                                                                                     100 Q&A pairs (200 msgs) & 20,000 chars.
+========================================================================================================================
+```
+
+### 9.1 Import Sanitization Logic (`frontend/src/lib/conversationImport.js`)
+
+```javascript
+// Excerpt from frontend/src/lib/conversationImport.js
+export const MAX_IMPORT_BYTES = 512 * 1024;
+export const MAX_IMPORT_MESSAGES = 200;
+export const MAX_MESSAGE_TEXT_LENGTH = 20000;
+
+export function parseConversationImportJson(rawJson) {
+  if (typeof rawJson !== "string" || !rawJson.trim()) {
+    throw new Error("Choose a valid JSON file to import.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error("The selected file is not valid JSON.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("The imported file does not match the expected conversation format.");
+  }
+  if (!Array.isArray(parsed.messages) || parsed.messages.length === 0) {
+    throw new Error("The imported conversation does not contain any messages.");
+  }
+  if (parsed.messages.length > MAX_IMPORT_MESSAGES) {
+    throw new Error("The imported conversation exceeds the 100 question-and-answer pair limit.");
+  }
+
+  const sanitizedMessages = [];
+  let expectedIsUser = true;
+
+  for (let i = 0; i < parsed.messages.length; i += 1) {
+    const item = parsed.messages[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Message ${i + 1} is not a valid message object.`);
+    }
+    const isUser = Boolean(item.isUser);
+    if (isUser !== expectedIsUser) {
+      throw new Error(`Message ${i + 1} does not follow the expected alternating user and assistant order.`);
+    }
+    const text = typeof item.text === "string" ? item.text.trim() : "";
+    if (!text) {
+      throw new Error(`Message ${i + 1} does not have any text content.`);
+    }
+    if (text.length > MAX_MESSAGE_TEXT_LENGTH) {
+      throw new Error(`Message ${i + 1} exceeds the character limit.`);
+    }
+
+    sanitizedMessages.push({
+      id: `import-${i + 1}`,
+      text,
+      isUser,
+      createdAt: typeof item.createdAt === "string" && !Number.isNaN(Date.parse(item.createdAt))
+        ? item.createdAt
+        : new Date(0).toISOString(),
+    });
+    expectedIsUser = !expectedIsUser;
+  }
+
+  const rawTitle = typeof parsed.title === "string" ? parsed.title.trim() : "";
+  const baseTitle = rawTitle ? rawTitle.slice(0, 100) : "Imported conversation";
+
+  return {
+    title: `${baseTitle} (preview)`,
+    messages: sanitizedMessages,
+    importPreview: true,
+  };
+}
+```

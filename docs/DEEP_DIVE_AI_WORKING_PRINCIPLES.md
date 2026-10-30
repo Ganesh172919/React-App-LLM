@@ -545,3 +545,368 @@ function detectDrugInteractions(text) {
 
 module.exports = { detectDrugInteractions, HIGH_RISK_INTERACTION_RULES };
 ```
+
+
+---
+
+## 9. Multi-Provider Inference Orchestration & Dynamic Resolution
+
+MedAssist AI supports multi-provider model routing across Google Gemini, Groq, Together AI, and private local OpenAI-compatible endpoints (e.g. vLLM or Ollama). The architecture separates operator deployment configuration from user-managed authenticated API key vaults:
+
+```
+========================================================================================================================
+                                     MULTI-PROVIDER RESOLUTION & INFERENCE TOPOLOGY
+========================================================================================================================
+
+    [ Chat Generation Request (userId, prompt) ]
+                         │
+                         ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ resolveProviderSelection(userId) (providerSelection.js)         │
+    │ ├── 1. Read user.providerChoice ("deployment" vs "personal-*")  │
+    │ ├── 2. If Personal: Query ProviderCredential collection         │
+    │ │      └── Decrypt AES-256-GCM cipher via open(stored)          │
+    │ └── 3. If Deployment: Read process.env credentials & defaults   │
+    └─────────────────────────────────────────────────────────────────┘
+                         │
+                         ▼ Returns { provider, apiKey, model, baseUrl, source }
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ generateAnswer(args) (modelProvider.js)                         │
+    │ ├── provider === "gemini": Dispatch generateWithGemini()        │
+    │ └── provider in ["groq", "together", "local"]:                  │
+    │      Dispatch generateWithOpenAICompatible()                    │
+    └─────────────────────────────────────────────────────────────────┘
+                         │
+        ┌────────────────┼──────────────────────────────┐
+        ▼                ▼                              ▼
+  [ Gemini 2.5 Flash ] [ Groq Cloud ]          [ Local vLLM / Together ]
+  - Direct SDK API     - openai/gpt-oss-20b    - Strict HTTPS validation
+  - Schema Guard       - Temp=0.25, Max=900    - Loopback HTTP exception
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Model Providers))
+    ::icon(fa fa-server)
+    (01 Deployment Managed)
+      Google Gemini 2.5 Flash
+        Default Cloud Inference
+        Direct SDK Integration
+      Groq Cloud
+        openai/gpt-oss-20b
+        Ultra-low latency inference
+      Together AI
+        Open-source LLM hosting
+      Local Private vLLM
+        OpenAI-compatible /v1
+        Loopback HTTP exemption
+    (02 User Personal Keys)
+      AES-256-GCM Cipher Vault
+      Decrypted on-the-fly in RAM
+      Never written to disk or logs
+      Per-user custom models
+    (03 Execution Guardrails)
+      Strict Timeout 30,000ms
+      Temperature Locked at 0.25
+      Max Response Tokens 900
+      Single-choice Validation
+```
+
+### 9.1 Production Implementation (`backend/services/modelProvider.js`)
+
+```javascript
+// Excerpt from backend/services/modelProvider.js
+const axios = require("axios");
+const { generateWithGemini } = require("./aiService");
+const { configured, defaultProvider } = require("./providerSelection");
+
+const generateWithOpenAICompatible = async ({ prompt, systemInstruction, history = [], signal, providerConfig }) => {
+  const provider = providerConfig?.provider || defaultProvider();
+  const isTogether = provider === "together";
+  const isGroq = provider === "groq";
+  const base = isTogether
+    ? "https://api.together.xyz/v1"
+    : isGroq
+      ? "https://api.groq.com/openai/v1"
+      : providerConfig?.baseUrl || process.env.LOCAL_AI_BASE_URL;
+  const model = providerConfig?.model || (isTogether ? process.env.TOGETHER_MODEL : isGroq ? process.env.GROQ_MODEL || "openai/gpt-oss-20b" : process.env.LOCAL_AI_MODEL);
+  const apiKey = providerConfig?.apiKey || (isTogether ? process.env.TOGETHER_API_KEY : isGroq ? process.env.GROQ_API_KEY : process.env.LOCAL_AI_API_KEY);
+
+  if (!base || !model || ((isTogether || isGroq) && !apiKey)) {
+    const error = new Error("The selected AI provider is not configured.");
+    error.code = "AI_NOT_CONFIGURED";
+    throw error;
+  }
+
+  const url = new URL(base);
+  if (url.username || url.password || url.search || url.hash || !["http:", "https:"].includes(url.protocol)) {
+    throw new Error("Invalid local AI endpoint.");
+  }
+  if (!isTogether && !isGroq && url.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+    throw new Error("Remote AI endpoints must use HTTPS.");
+  }
+
+  const messages = [
+    { role: "system", content: systemInstruction },
+    ...history.filter((item) => item?.text).slice(-8).map((item) => ({
+      role: item.role === "assistant" ? "assistant" : "user",
+      content: item.text.slice(0, 2000),
+    })),
+    { role: "user", content: prompt },
+  ];
+
+  const response = await axios.post(
+    url.toString().replace(/\/$/, "") + "/chat/completions",
+    { model, messages, temperature: 0.25, max_tokens: 900 },
+    {
+      timeout: 30000,
+      signal,
+      maxRedirects: 0,
+      maxContentLength: 1024 * 1024,
+      headers: { "Content-Type": "application/json", ...(apiKey ? { Authorization: "Bearer " + apiKey } : {}) },
+    }
+  );
+
+  const choice = response.data?.choices?.[0];
+  const text = typeof choice?.message?.content === "string" ? choice.message.content.trim() : "";
+  if (choice?.finish_reason !== "stop" || !text) {
+    const error = new Error("The AI provider did not complete the answer.");
+    error.code = "AI_INCOMPLETE_RESPONSE";
+    throw error;
+  }
+  return { text, model, provider: isTogether ? "Together AI" : isGroq ? "Groq" : "Local/OpenAI-compatible" };
+};
+
+const generateAnswer = (args) => {
+  const provider = args.providerConfig?.provider || defaultProvider();
+  if (provider === "gemini") return generateWithGemini(args);
+  if (["groq", "together", "local"].includes(provider)) return generateWithOpenAICompatible(args);
+  const error = new Error("Unsupported AI_PROVIDER.");
+  error.code = "AI_NOT_CONFIGURED";
+  throw error;
+};
+```
+
+---
+
+## 10. Client-Side Untrusted JSON Conversation Import Sandbox Architecture
+
+The conversation import pipeline (`frontend/src/lib/conversationImport.js`) enforces strict defense-in-depth sanitization on untrusted transcript files before displaying them in browser memory:
+
+```
+========================================================================================================================
+                          UNTRUSTED CONVERSATION JSON IMPORT: SECURITY & DATA FLOW
+========================================================================================================================
+
+    [ External Untrusted .json File ] (Drag & Drop or File Input Picker)
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 1. BOUNDARY VALIDATION (< 512 KB)                               │
+    │ - File size checked in browser before JSON deserialization       │
+    │ - file.size <= MAX_IMPORT_BYTES (512 * 1024 = 524,288 bytes)    │
+    │ - Immediate rejection if file size exceeds threshold            │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 2. SCHEMA & TURN INTEGRITY CHECKS                               │
+    │ - JSON.parse() executed within sandboxed browser memory         │
+    │ - Root object must contain a non-empty `messages` array         │
+    │ - Max 100 complete Q&A pairs (200 messages total)               │
+    │ - Max 20,000 characters per message text                        │
+    │ - Alternating order: User (isUser: true) -> AI (isUser: false)  │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 3. ANTI-FORGERY METADATA STRIPPING                              │
+    │ - Strip all client-supplied `verification` badges               │
+    │ - Strip all client-supplied `modelReview` badges                │
+    │ - Strip all client-supplied `references` (PubMed citations)    │
+    │ - Discard any remote `sessionId` or user-defined message IDs    │
+    │ - Assign synthetic ephemeral client IDs: `import-${index}`      │
+    └─────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 4. SANDBOXED READ-ONLY PREVIEW STATE                            │
+    │ - Appends "(Imported conversation preview)" banner              │
+    │ - Labels AI turns as "Imported answer · unverified"             │
+    │ - Sets `importPreview = true` in active chat state              │
+    │ - Disables composer submission (prevents context injection)     │
+    │ - Zero persistence: No writes to backend or MongoDB database    │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Import Sandbox))
+    ::icon(fa fa-shield-alt)
+    (01 Size & Schema Limits)
+      Max 512 KB File Size
+      Max 100 Q&A Pairs (200 msgs)
+      Max 20k Characters per Text
+      Alternating Role Verification
+    (02 Anti-Forgery Stripping)
+      Drop verification Objects
+      Drop modelReview Badges
+      Drop references Arrays
+      Synthetic ID Injection
+    (03 UI Sandbox Enclosure)
+      Read-Only Preview State
+      Disabled Prompt Composer
+      Zero MongoDB Persistence
+      Clear Memory on Navigation
+```
+
+### 10.1 Security & Sanitization Implementation (`frontend/src/lib/conversationImport.js`)
+
+```javascript
+// Excerpt from frontend/src/lib/conversationImport.js
+export const MAX_IMPORT_BYTES = 512 * 1024;
+export const MAX_IMPORT_MESSAGES = 200;
+export const MAX_MESSAGE_TEXT_LENGTH = 20000;
+
+export function parseConversationImportJson(rawJson) {
+  if (typeof rawJson !== "string" || !rawJson.trim()) {
+    throw new Error("Choose a valid JSON file to import.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch {
+    throw new Error("The selected file is not valid JSON.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("The imported file does not match the expected conversation format.");
+  }
+  if (!Array.isArray(parsed.messages) || parsed.messages.length === 0) {
+    throw new Error("The imported conversation does not contain any messages.");
+  }
+  if (parsed.messages.length > MAX_IMPORT_MESSAGES) {
+    throw new Error("The imported conversation exceeds the 100 question-and-answer pair limit.");
+  }
+
+  const sanitizedMessages = [];
+  let expectedIsUser = true;
+
+  for (let i = 0; i < parsed.messages.length; i += 1) {
+    const item = parsed.messages[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Message ${i + 1} is not a valid message object.`);
+    }
+    const isUser = Boolean(item.isUser);
+    if (isUser !== expectedIsUser) {
+      throw new Error(`Message ${i + 1} does not follow the expected alternating user and assistant order.`);
+    }
+    const text = typeof item.text === "string" ? item.text.trim() : "";
+    if (!text) {
+      throw new Error(`Message ${i + 1} does not have any text content.`);
+    }
+    if (text.length > MAX_MESSAGE_TEXT_LENGTH) {
+      throw new Error(`Message ${i + 1} exceeds the character limit.`);
+    }
+
+    sanitizedMessages.push({
+      id: `import-${i + 1}`,
+      text,
+      isUser,
+      createdAt: typeof item.createdAt === "string" && !Number.isNaN(Date.parse(item.createdAt))
+        ? item.createdAt
+        : new Date(0).toISOString(),
+    });
+    expectedIsUser = !expectedIsUser;
+  }
+
+  const rawTitle = typeof parsed.title === "string" ? parsed.title.trim() : "";
+  const baseTitle = rawTitle ? rawTitle.slice(0, 100) : "Imported conversation";
+
+  return {
+    title: `${baseTitle} (preview)`,
+    messages: sanitizedMessages,
+    importPreview: true,
+  };
+}
+```
+
+---
+
+## 11. Evidence-Based Clinical Calculators: Physiological Boundary Clamping & WAI-ARIA Trapping
+
+Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the suite implements 13 validated evidence-based medical formulas with explicit boundary checking:
+
+| Tool Name | Input Parameters | Formula / Scoring Logic | Physiological Bounds | Clinical Interpretation |
+|:---|:---|:---|:---:|:---|
+| **Body Mass Index (BMI)** | Weight (kg or lbs), Height (cm or in) | $\text{BMI} = \frac{\text{kg}}{\text{m}^2}$ or $\frac{\text{lbs}}{\text{in}^2} \times 703$ | Weight: 20–300 kg<br>Height: 50–250 cm | Underweight (<18.5), Normal (18.5–24.9), Overweight (25–29.9), Obese (≥30). |
+| **CKD-EPI 2021 eGFR** | Age, Biological Sex, Serum Creatinine (mg/dL) | $142 \times \min(S_{\text{cr}}/\kappa, 1)^\alpha \times \max(S_{\text{cr}}/\kappa, 1)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$ | Age: 18–120 yr<br>Creatinine: 0.1–20 mg/dL | G1 (≥90), G2 (60–89), G3a (45–59), G3b (30–44), G4 (15–29), G5 (<15 Kidney Failure). |
+| **CHA₂DS₂-VASc** | CHF (1), HTN (1), Age ≥75 (2), Diabetes (1), Stroke/TIA (2), Vascular (1), Age 65–74 (1), Sex Female (1) | Point summation (Range: 0–9) | Binary toggles (0 or 1) | Score 0 (Men) / 1 (Women): Low risk.<br>Score ≥2 (Men) / ≥3 (Women): Oral anticoagulation recommended. |
+| **Mean Arterial Pressure (MAP)** | Systolic BP (mmHg), Diastolic BP (mmHg) | $\text{MAP} = \text{DBP} + \frac{1}{3}(\text{SBP} - \text{DBP}) = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock indicator. |
+| **Cockcroft-Gault CrCl** | Age, Biological Sex, Weight (kg), Serum Creatinine (mg/dL) | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age: 18–120 yr<br>Weight: 30–250 kg<br>Cr: 0.2–15 mg/dL | Used for pharmacological renal dose adjustments (DOACs, antimicrobials). |
+| **Payne Corrected Calcium** | Measured Total Calcium (mg/dL), Serum Albumin (g/dL) | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts for hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
+| **Serum Anion Gap** | Sodium (mEq/L), Chloride (mEq/L), Bicarbonate (mEq/L) | $\text{AG} = \text{Na}^+ - (\text{Cl}^- + \text{HCO}_3^-)$ | Na: 100–180 mEq/L<br>Cl: 60–140 mEq/L<br>HCO3: 2–50 mEq/L | Normal: 8–12 mEq/L.<br>>12 mEq/L: High Anion Gap Metabolic Acidosis (MUDPILES / GOLDMARK). |
+| **Fractional Excretion of Sodium (FeNa)** | Serum Na, Urine Na, Serum Cr, Urine Cr | $\text{FeNa} = \frac{U_{\text{Na}} \times S_{\text{cr}}}{S_{\text{Na}} \times U_{\text{cr}}} \times 100\%$ | Creatinine: 0.1–20 mg/dL<br>Sodium: 5–200 mEq/L | <1%: Prerenal azotemia.<br>>2%: Acute Tubular Necrosis (ATN). (Invalid if diuretics active). |
+| **Fractional Excretion of Urea (FeUrea)** | Serum BUN, Urine Urea, Serum Cr, Urine Cr | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking loop or thiazide diuretics.<br>>50%: Intrinsic renal failure. |
+| **Maintenance Fluids (4-2-1)** | Body Weight (kg) | $4 \text{ mL/kg/hr for first 10 kg} + 2 \text{ mL/kg/hr for 11–20 kg} + 1 \text{ mL/kg/hr for each kg > 20 kg}$ | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
+| **Wells' Criteria for PE** | DVT signs (3), Alternative less likely (3), HR >100 (1.5), Immobilization/Surgery (1.5), Prior DVT/PE (1.5), Hemoptysis (1), Malignancy (1) | Point summation (Range: 0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Proceed to D-dimer).<br>>4.0: PE Likely (Proceed directly to CT Pulmonary Angiography). |
+| **CURB-65 Pneumonia Score** | Confusion (+1), Urea >19 mg/dL (+1), RR ≥30 (+1), Low BP SBP <90 or DBP ≤60 (+1), Age ≥65 (+1) | Point summation (Range: 0–5) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient management).<br>2: Intermediate risk (~9% mortality, short inpatient admission).<br>3–5: High / severe risk (15–40% mortality, urgent admission/ICU). |
+| **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
+
+### 11.1 Glasgow Coma Scale (GCS) Implementation & Keyboard Accessibility
+
+```jsx
+// Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+export function ClinicalCalculatorsModal({ isOpen, onClose }) {
+  // GCS Calculation & Stratification
+  const gcsEyeScore = parseInt(gcsEye, 10) || 4;
+  const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
+  const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
+  const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
+
+  let gcsStratification = "Mild brain injury / Alert (13–15)";
+  if (gcsScore <= 8) {
+    gcsStratification = "Severe brain injury / Coma (3–8)";
+  } else if (gcsScore <= 12) {
+    gcsStratification = "Moderate brain injury (9–12)";
+  }
+
+  // WAI-ARIA Focus Trapping and Tab Cycling
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousFocus = document.activeElement;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.getAttribute("role") === "tab") {
+        const curTabId = activeEl.id.replace(/^tab-/, "");
+        const curIndex = tabList.indexOf(curTabId);
+        if (curIndex !== -1) {
+          let nextIndex = -1;
+          if (e.key === "ArrowRight" || e.key === "ArrowDown") nextIndex = (curIndex + 1) % tabList.length;
+          else if (e.key === "ArrowLeft" || e.key === "ArrowUp") nextIndex = (curIndex - 1 + tabList.length) % tabList.length;
+          else if (e.key === "Home") nextIndex = 0;
+          else if (e.key === "End") nextIndex = tabList.length - 1;
+          if (nextIndex !== -1) {
+            e.preventDefault();
+            const nextTab = tabList[nextIndex];
+            setActiveTab(nextTab);
+            document.getElementById("tab-" + nextTab)?.focus();
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [isOpen]);
+}
+```
