@@ -164,7 +164,7 @@ backend/
 │   ├── config.js                   # Startup environment variable validation & key checks
 │   ├── emailService.js             # Brevo transactional email dispatcher
 │   ├── historySearch.js            # Conversational turn relevance ranking via token overlap
-│   ├── interactionService.js       # Deterministic 12-pair FDA black-box drug interaction scanner
+│   ├── interactionService.js       # Deterministic 14-pair FDA black-box drug interaction scanner
 │   ├── modelProvider.js            # Multi-provider client (Gemini, Groq, Together, Local)
 │   ├── providerCredentials.js      # AES-256-GCM authenticated cipher vault (seal/open)
 │   ├── providerSelection.js        # Resolves operator deployment vs personal encrypted keys
@@ -179,7 +179,7 @@ backend/
     ├── chatTitle.test.js           # Conversation auto-titling and markdown stripping tests
     ├── citationService.test.js     # Unit tests for citation parsing and coverage math
     ├── historySearch.test.js       # Unit tests for conversational history selection
-    ├── interactionService.test.js  # Unit tests for 12 high-risk drug interaction pairs
+    ├── interactionService.test.js  # Unit tests for 14 high-risk drug interaction pairs
     ├── modelProvider.test.js       # Unit tests for multi-provider API resolution
     ├── providers.test.js           # Unit tests for PubMed sorting, XML parsing, Gemini
     ├── pubmedService.test.js       # Unit tests for PubMed query string generation
@@ -338,6 +338,111 @@ const detectDrugInteractions = (text) => {
   return matches;
 };
 ```
+
+### 4.5 Three-Stage NCBI Entrez PubMed Harvester (`backend/services/pubmedService.js`)
+
+Retrieves matching biomedical literature through a rate-throttled 3-stage HTTP protocol (110ms with NCBI key, 350ms without key):
+
+```javascript
+// Implementation snippet from backend/services/pubmedService.js:
+const buildPubMedQuery = (prompt) => {
+  const tokens = String(prompt || "").toLowerCase().match(/[a-z][a-z0-9-]+/g) || [];
+  return [...new Set(tokens.filter((token) => token.length > 2 && !STOP.has(token)))].slice(0, 12).join(" ") || String(prompt || "").trim();
+};
+
+const parseAbstracts = (xml) => {
+  const parsed = new XMLParser({ ignoreAttributes: false, processEntities: false, parseTagValue: false }).parse(xml);
+  const result = new Map();
+  for (const article of array(parsed?.PubmedArticleSet?.PubmedArticle)) {
+    const citation = article.MedlineCitation;
+    const pmid = typeof citation?.PMID === "object" ? citation.PMID["#text"] : citation?.PMID;
+    const flatten = (value) => typeof value === "string" ? value : Array.isArray(value) ? value.map(flatten).join(" ") : value && typeof value === "object" ? Object.entries(value).filter(([key]) => !key.startsWith("@_")).map(([, item]) => flatten(item)).join(" ") : "";
+    const abstract = array(citation?.Article?.Abstract?.AbstractText).map(flatten).join("\n").trim();
+    if (pmid && abstract) result.set(String(pmid), abstract.slice(0, 10000));
+  }
+  return result;
+};
+```
+
+### 4.6 Deterministic Citation Set-Partitioning Auditor (`backend/services/citationService.js`)
+
+Scans generated LLM completions for bracketed numbers `[N]`, validates multi-range citations (e.g. `[1-3]`), and partitions cited numbers into valid and invalid sets:
+
+```javascript
+// Implementation snippet from backend/services/citationService.js:
+const CITATION_PATTERN = /\[(\d+)\]/g;
+const MULTI_CITATION_PATTERN = /\[(\d+(?:\s*(?:[-–]|,)\s*\d+)*)\]/g;
+
+const assessCitationGrounding = (text, sourceCount = 0) => {
+  const safeSourceCount = Math.max(0, Number(sourceCount) || 0);
+  const rawString = String(text || "");
+  const extractedNumbers = [];
+  for (const match of rawString.matchAll(MULTI_CITATION_PATTERN)) {
+    for (const part of match[1].split(",")) {
+      const trimmed = part.trim();
+      const rangeMatch = trimmed.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (rangeMatch) {
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        if (start <= end && end - start <= 20) {
+          for (let i = start; i <= end; i++) extractedNumbers.push(i);
+        } else {
+          extractedNumbers.push(start, end);
+        }
+      } else {
+        const num = Number(trimmed);
+        if (Number.isInteger(num)) extractedNumbers.push(num);
+      }
+    }
+  }
+  const citedNumbers = [
+    ...new Set(
+      extractedNumbers.length
+        ? extractedNumbers
+        : Array.from(rawString.matchAll(CITATION_PATTERN), (match) => Number(match[1]))
+    ),
+  ].sort((left, right) => left - right);
+
+  const validCitations = citedNumbers.filter((n) => n >= 1 && n <= safeSourceCount);
+  const invalidCitations = citedNumbers.filter((n) => n < 1 || n > safeSourceCount);
+
+  let status = "ungrounded";
+  if (safeSourceCount > 0 && citedNumbers.length === 0) status = "sources_supplied";
+  if (safeSourceCount > 0 && validCitations.length > 0) status = "citation_checked";
+  if (invalidCitations.length > 0) status = "invalid_citations";
+
+  return {
+    status,
+    sourceCount: safeSourceCount,
+    validCitationCount: validCitations.length,
+    invalidCitationCount: invalidCitations.length,
+    citationCoverage: safeSourceCount ? Number(((validCitations.length / safeSourceCount) * 100).toFixed(1)) : 0,
+    citedSourceNumbers: validCitations,
+    invalidSourceNumbers: invalidCitations,
+    citationNumbersValid: validCitations.length > 0 && invalidCitations.length === 0,
+    grounded: false,
+  };
+};
+```
+
+### 4.7 Complete 14 FDA Black-Box Medication Interaction Inventory
+
+| # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Clinical Risk & Pharmacology |
+|:---|:---|:---|:---|:---:|:---|
+| **01** | Anticoagulants + NSAIDs | Warfarin, Eliquis, Xarelto, Plavix, Heparin | Ibuprofen, Naproxen, Aspirin, Ketorolac | **CRITICAL** | Synergy of platelet inhibition and GI mucosal damage causes massive hemorrhage. |
+| **02** | PDE5 Inhibitors + Nitrates | Sildenafil (Viagra), Tadalafil (Cialis) | Nitroglycerin, Isosorbide Mononitrate | **CRITICAL** | Synergistic cGMP accumulation causes profound, refractory hypotension and collapse. |
+| **03** | Opioids + Serotonergic Agents | Tramadol, Meperidine, Methadone | Fluoxetine, Sertraline, Paroxetine, Venlafaxine | **HIGH** | Intrasynaptic serotonin accumulation triggers Serotonin Syndrome and seizures. |
+| **04** | RAAS Blockers + K-Sparing | Lisinopril, Enalapril, Losartan, Valsartan | Spironolactone, Eplerenone, K+ supplements | **HIGH** | Additive aldosterone suppression triggers fatal hyperkalemia ($K^+ > 5.5\text{ mEq/L}$). |
+| **05** | Methotrexate + TMP-SMX | Methotrexate (Trexall, Rasuvo) | Trimethoprim-Sulfamethoxazole (Bactrim) | **CRITICAL** | Competitive tubular secretion blockade precipitates lethal pancytopenia. |
+| **06** | Fluoroquinolones + Steroids | Ciprofloxacin, Levofloxacin, Moxifloxacin | Prednisone, Dexamethasone, Methylprednisolone| **HIGH** | Synergistic collagen degradation markedly elevates risk of Achilles tendon rupture. |
+| **07** | Benzodiazepines + Opioids | Alprazolam, Diazepam, Lorazepam, Clonazepam | Oxycodone, Morphine, Fentanyl, Hydromorphone | **CRITICAL** | Concurrent $\text{GABA}_A$ and $\mu$-opioid receptor depression causes fatal respiratory arrest. |
+| **08** | Lithium + NSAIDs / ACEIs | Lithium (Eskalith, Lithobid) | Ibuprofen, Naproxen, Lisinopril, Enalapril | **HIGH** | Renal prostaglandin inhibition reduces lithium clearance by up to 40%, causing neurotoxicity. |
+| **09** | Statins + CYP3A4 Inhibitors | Simvastatin, Atorvastatin, Lovastatin | Clarithromycin, Gemfibrozil, Ketoconazole | **CRITICAL** | CYP3A4 inhibition elevates plasma statin AUC up to 20-fold, precipitating rhabdomyolysis. |
+| **10** | Warfarin + Azole Antifungals | Warfarin (Coumadin, Jantoven) | Fluconazole, Voriconazole, Ketoconazole | **CRITICAL** | CYP2C9 inhibition halts S-warfarin clearance, causing supratherapeutic INR and bleeding. |
+| **11** | Digoxin + P-gp Inhibitors | Digoxin (Lanoxin) | Amiodarone, Verapamil, Diltiazem | **HIGH** | P-glycoprotein transport blockade doubles serum digoxin concentrations, inducing heart block. |
+| **12** | MAOIs + Serotonergic Agents | Phenelzine, Tranylcypromine, Selegiline | SSRIs, SNRIs, Pseudoephedrine, Amphetamines | **CRITICAL** | Monoamine degradation blockade triggers malignant hypertensive crisis and hyperthermia. |
+| **13** | Xanthine Oxidase + Thiopurines| Allopurinol (Zyloprim), Febuxostat (Uloric)| Azathioprine (Imuran), 6-MP (Purixan) | **CRITICAL** | Xanthine oxidase inhibition suppresses thiopurine degradation, causing severe pancytopenia. |
+| **14** | Methotrexate + NSAIDs / Aspirin| Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Aspirin | **CRITICAL** | Tubular secretion inhibition reduces methotrexate clearance, precipitating fatal marrow suppression. |
 
 ---
 
