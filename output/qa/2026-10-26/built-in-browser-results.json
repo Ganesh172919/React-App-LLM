@@ -1,0 +1,130 @@
+{
+  "completedAt": "2026-10-26T05:20:30.229Z",
+  "date": "26 October 2026",
+  "mode": "Built-in browser only; production dist; real isolated MongoDB, HTTP and WebSockets; synthetic generation, literature and local email inbox",
+  "base": "http://127.0.0.1:4173",
+  "results": [
+    {
+      "name": "Production landing and navigation",
+      "passed": true
+    },
+    {
+      "name": "Invalid sign-in feedback",
+      "passed": true
+    },
+    {
+      "name": "Verified sign-in and live WebSocket status",
+      "passed": true
+    },
+    {
+      "name": "Medical message, sources, evidence labels and pending navigation guard",
+      "passed": true
+    },
+    {
+      "name": "Injected save failure and recovered answer after route change",
+      "passed": true
+    },
+    {
+      "name": "Save-only retry and answer clipboard confirmation",
+      "passed": true
+    },
+    {
+      "name": "Fresh conversation and general-query route",
+      "passed": true
+    },
+    {
+      "name": "Deterministic urgent response and persistence",
+      "passed": true
+    },
+    {
+      "name": "No-literature-results fallback",
+      "passed": true
+    },
+    {
+      "name": "Provider error and return-to-draft recovery",
+      "passed": true
+    },
+    {
+      "name": "Load, rename and filtered-history active title",
+      "passed": true
+    },
+    {
+      "name": "Parsed conversation export and accessible delete-dialog cancellation",
+      "passed": true
+    },
+    {
+      "name": "7/30/90-day dashboard, accessible table and parsed export",
+      "passed": true
+    },
+    {
+      "name": "390px chat/history client-width checks",
+      "passed": true
+    },
+    {
+      "name": "Account privacy and sign-out",
+      "passed": true
+    },
+    {
+      "name": "320px registration and resend verification",
+      "passed": true
+    },
+    {
+      "name": "Local email verification and idempotent replay",
+      "passed": true
+    },
+    {
+      "name": "New verified account with separate empty history",
+      "passed": true
+    },
+    {
+      "name": "Password recovery acknowledgement and reset-form rendering",
+      "passed": true
+    },
+    {
+      "name": "Incomplete token links and missing-page recovery",
+      "passed": true
+    },
+    {
+      "name": "Metadata-only records produce references-only answer",
+      "passed": true
+    },
+    {
+      "name": "320px scrollbar-width fix and page-position reset",
+      "passed": true
+    }
+  ],
+  "layouts": [
+    {
+      "page": "account",
+      "client": 305,
+      "scroll": 305,
+      "scrollY": 0,
+      "viewport": 320
+    },
+    {
+      "page": "chat",
+      "client": 375,
+      "scroll": 375,
+      "viewport": 390
+    },
+    {
+      "page": "chat with history",
+      "client": 375,
+      "scroll": 375,
+      "viewport": 390
+    },
+    {
+      "page": "dashboard",
+      "client": 1265,
+      "scroll": 1265,
+      "scrollY": 0,
+      "viewport": 1280
+    }
+  ],
+  "observedConsoleWarningsAndErrors": [],
+  "normalScreenshotUnavailable": true,
+  "mobileCapture": "Built-in CDP viewport capture succeeded at 320px",
+  "captureLimitations": "Full-page commands timed out. Desktop CDP capture tiled the viewport and is excluded from the report.",
+  "permanentDeletionAndPasswordChange": "Automated disposable-account API tests; browser checked guards/cancellation and reset form only",
+  "credentialsAndDocker": "Real Gemini, Brevo delivery, Docker, public TLS and restore were not exercised"
+}

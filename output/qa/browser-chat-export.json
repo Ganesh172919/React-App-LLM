@@ -1,0 +1,51 @@
+{
+  "exportedAt": "2026-10-30T00:52:59.361Z",
+  "id": "c684fb92-15fa-4c22-9db9-40bedbe8ff97",
+  "sessionId": "c684fb92-15fa-4c22-9db9-40bedbe8ff97",
+  "title": "Browser smoke 1793321578970",
+  "isMedical": true,
+  "isPinned": false,
+  "timestamp": "2026-10-30T00:52:59.077Z",
+  "createdAt": "2026-10-30T00:52:58.474Z",
+  "messages": [
+    {
+      "id": "70a01c50-d90a-4742-8039-39002964cc74-user",
+      "text": "What are migraine triggers? slow response [unreviewed](https://example.invalid/track) ![pixel](https://example.invalid/pixel)",
+      "isUser": true,
+      "timestamp": "2026-10-30T00:52:58.395Z",
+      "isMedical": true
+    },
+    {
+      "id": "70a01c50-d90a-4742-8039-39002964cc74-assistant",
+      "text": "This is a synthetic educational test answer [1]. Review the linked source with a qualified clinician. This checks the chat workflow, not clinical accuracy.",
+      "isUser": false,
+      "timestamp": "2026-10-30T00:52:58.395Z",
+      "isMedical": true,
+      "references": [
+        {
+          "title": "Synthetic PubMed record for browser workflow testing",
+          "authors": [],
+          "journal": "QA fixture",
+          "pubdate": "2026",
+          "pmid": "123",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/123/",
+          "evidenceType": "abstract"
+        }
+      ],
+      "verification": {
+        "status": "citation_checked",
+        "provider": "Gemini",
+        "model": "built-browser-fixture",
+        "modelReview": "not_configured",
+        "sourceCount": 1,
+        "grounded": false,
+        "citationNumbersValid": true,
+        "validCitationCount": 1,
+        "invalidCitationCount": 0,
+        "citationCoverage": 100,
+        "evidenceLevel": "abstracts_supplied",
+        "drugInteractions": []
+      }
+    }
+  ]
+}

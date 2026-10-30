@@ -8,147 +8,48 @@
  *   or general conversational inquiries to the Gemini chat endpoint (`/api/ai/chat`).
  *
  * Classification Criteria:
- *   - Matches against a curated lexicon of clinical keywords (e.g. "symptom",
- *     "dosage", "treatment", "contraindication", "migraine", "asthma", "trial").
- *   - Checks for question phrasing prefixes (e.g. "what is", "how to treat").
- *   - Validates question context (question marks, interrogative question words,
- *     detailed queries with > 3 words, or contextual words like "doctor", "health").
- *
- * ----------------------------------------------------------------------------
- * MINDMAP FLOW: MEDICAL QUERY DETECTION RULES
- * ----------------------------------------------------------------------------
- * [isMedicalQuery(text)]
- *   │
- *   ├── 1. Sanitization & Normalization
- *   │     └── Cleans text: toLowerCase(), strips non-word characters except hyphens
- *   │
- *   ├── 2. Medical Keyword & Prefix Matching (MEDICAL_REGEX)
- *   │     ├── MEDICAL_KEYWORDS: 70+ clinical terms (pubmed, therapy, side effect, etc.)
- *   │     └── MEDICAL_QUESTION_PREFIXES: "how to treat", "what are the symptoms of", etc.
- *   │
- *   ├── 3. Context & Sentence Structure Evaluation
- *   │     ├── isQuestion: ends with "?" OR starts with (what|how|why|when|where|who|can|should|is)
- *   │     ├── isDetailedQuery: token word count > 3
- *   │     └── hasMedicalContext: contains "medical", "health", "doctor", "hospital", "treatment"
- *   │
- *   └── 4. Routing Decision
- *         └── Returns: (hasMedicalTerm || hasMedicalContext) && (isQuestion || isDetailedQuery)
- *
- * ----------------------------------------------------------------------------
- * ASCII FLOW: QUERY ROUTING CLASSIFIER
- * ----------------------------------------------------------------------------
- *  [User Prompt] ──► Text Normalization
- *                          │
- *                          ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ 1. Match Clinical Keyword or Question Prefix?          │
- *  │ 2. Has Interrogative Syntax or > 3 Words?              │
- *  └────────────────────────────────────────────────────────┘
- *                          │
- *                 ┌────────┴────────┐
- *                 ▼                 ▼
- *               [True]           [False]
- *                 │                 │
- *                 ▼                 ▼
- *          Route to PubMed    Route to General
- *         API (/api/medical)  AI (/api/ai/chat)
+ *   - Matches against an evidence-based lexicon of clinical conditions, anatomy,
+ *     pharmacological terms, and symptoms (e.g. "migraine", "asthma", "dosage").
+ *   - Matches clinical question prefixes (e.g. "how to treat", "side effects of").
+ *   - Detects contextual healthcare inquiries (e.g. queries referencing "doctor",
+ *     "physician", or "health") while preventing non-health false positives.
  * ============================================================================
  */
 const MEDICAL_KEYWORDS = [
-  "pubmed",
-  "nih",
-  "clinical",
-  "study",
-  "research",
-  "trial",
-  "patient",
-  "diagnose",
-  "prognosis",
-  "therapy",
-  "medication",
-  "dosage",
-  "side effect",
-  "contraindication",
-  "allergy",
-  "inflammation",
-  "infection",
-  "bacteria",
-  "virus",
-  "pathology",
-  "radiology",
-  "surgery",
-  "procedure",
-  "test",
-  "scan",
-  "x-ray",
-  "mri",
-  "ct",
-  "blood test",
-  "biopsy",
-  "treatment",
-  "medicine",
-  "drug",
-  "pharmacy",
-  "hospital",
-  "pain",
-  "illness",
-  "condition",
-  "prescription",
-  "covid",
-  "vaccine",
-  "blood",
-  "pressure",
-  "heart",
-  "lung",
-  "cancer",
-  "diabetes",
-  "fever",
-  "headache",
-  "migraine",
-  "symptom",
-  "symptoms",
-  "nausea",
-  "dizziness",
-  "rash",
-  "asthma",
-  "cholesterol",
-  "antibiotic",
-  "antibiotics",
-  "pregnancy",
-  "pregnant",
-  "mental health",
-  "anxiety",
-  "depression",
-  "injury",
-  "swelling",
-  "vomiting",
-  "breathing",
-  "seizure",
-  "stroke",
+  "pubmed", "nih", "clinical", "diagnos\\w*", "prognosis", "therapy", "therapies",
+  "medication", "medications", "dosage", "side effect", "side effects", "contraindication",
+  "allergy", "allergies", "allergic", "inflammation", "infection", "infections",
+  "bacteria", "virus", "viral", "pathology", "radiology", "surgery", "surgical",
+  "blood test", "biopsy", "treatment", "treatments", "medicine", "medicines",
+  "drug", "drugs", "pharmacy", "pharmacist", "hospital", "clinic", "pain",
+  "illness", "prescription", "covid", "vaccine", "vaccines", "vaccination",
+  "blood pressure", "hypertension", "hypotension", "heart", "cardiac", "lung", "pulmonary",
+  "cancer", "tumor", "tumour", "diabetes", "diabetic", "insulin", "fever",
+  "headache", "headaches", "migraine", "migraines", "symptom", "symptoms",
+  "nausea", "dizziness", "dizzy", "rash", "asthma", "asthmatic", "cholesterol",
+  "antibiotic", "antibiotics", "pregnancy", "pregnant", "mental health",
+  "anxiety", "depression", "depressed", "injury", "swelling", "vomiting", "vomit",
+  "breathing", "breath", "seizure", "seizures", "stroke", "kidney", "renal",
+  "liver", "hepatic", "fatigue", "faint", "fainting", "syncope", "creatinine",
+  "chest pain", "shortness of breath", "warfarin", "aspirin", "ibuprofen",
+  "statin", "atorvastatin", "simvastatin", "metformin", "lisinopril",
+  "amoxicillin", "penicillin", "paracetamol", "acetaminophen", "omeprazole",
+  "interaction"
 ];
 
 const MEDICAL_QUESTION_PREFIXES = [
-  "what is",
   "how to treat",
   "what are the symptoms of",
   "how is diagnosed",
-  "what causes",
-  "is contagious",
-  "how long does last",
   "what are the treatments for",
   "what medicine for",
   "side effects of",
   "dose for",
-  "interaction between",
   "clinical trial for",
-  "should i take",
-  "can i mix",
-  "is safe",
-  "risks of",
-  "benefits of",
+  "interaction between",
 ];
 
-const MEDICAL_REGEX = new RegExp(
+const CLINICAL_REGEX = new RegExp(
   `(?:^|\\b)(${MEDICAL_KEYWORDS.join("|")})\\b|` +
     `^(?:${MEDICAL_QUESTION_PREFIXES.join("|")})`,
   "i"
@@ -162,42 +63,27 @@ const MEDICAL_REGEX = new RegExp(
  * literature retrieval or general conversational AI.
  *
  * @param {string} text - Raw user prompt string.
- * @returns {boolean} True if query contains clinical terms and question/detail syntax.
- *
- * MINDMAP FLOW:
- * [isMedicalQuery]
- *   ├── Input Validation: string check
- *   ├── Sanitization: toLowerCase(), strip non-word/hyphen chars
- *   ├── Term Matching: MEDICAL_REGEX.test(cleanText)
- *   ├── Syntactic Context: isQuestion OR isDetailedQuery (words > 3)
- *   ├── Semantic Context: hasMedicalContext ("doctor", "hospital", "health", etc.)
- *   └── Return: (hasMedicalTerm || hasMedicalContext) && (isQuestion || isDetailedQuery)
+ * @returns {boolean} True if query contains clinical terms or contextual health questions.
  * ----------------------------------------------------------------------------
  */
 export const isMedicalQuery = (text) => {
   if (!text || typeof text !== "string") return false;
 
-  const cleanText = text.toLowerCase().replace(/[^\w\s-]/g, "");
+  const cleanText = text.toLowerCase().replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
+  if (!cleanText || cleanText.length < 2) return false;
 
-  // Check for medical terms
-  const hasMedicalTerm = MEDICAL_REGEX.test(cleanText);
+  // Direct match for explicit clinical keywords or specific medical prefixes
+  if (CLINICAL_REGEX.test(cleanText)) return true;
 
-  // Check if it's a question or detailed query
+  // Question syntax or multi-word structure with health context
   const isQuestion =
     text.trim().endsWith("?") ||
-    /^(what|how|why|when|where|who|can|should|is|are|does)/i.test(cleanText);
-  const isDetailedQuery = cleanText.split(/\s+/).length > 3;
+    /^(?:what|how|why|when|where|who|can|should|is|are|does)\b/i.test(cleanText);
+  const isDetailedQuery = cleanText.split(/\s+/).length > 2;
 
-  // Additional context checks
   const hasMedicalContext =
-    cleanText.includes("medical") ||
-    cleanText.includes("health") ||
-    cleanText.includes("doctor") ||
-    cleanText.includes("hospital") ||
-    cleanText.includes("treatment");
+    /\b(?:medical|doctor|nurse|physician|patient|prescriber)\b/i.test(cleanText) ||
+    (/\bhealth\b/i.test(cleanText) && !/\b(?:financial|economic|fiscal|market)\b/i.test(cleanText));
 
-  // Return true if it's a medical query with sufficient context
-  return (
-    (hasMedicalTerm || hasMedicalContext) && (isQuestion || isDetailedQuery)
-  );
+  return Boolean(hasMedicalContext && (isQuestion || isDetailedQuery));
 };

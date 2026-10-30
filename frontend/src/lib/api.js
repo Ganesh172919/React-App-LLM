@@ -1,109 +1,83 @@
-/**
- * ============================================================================
- * MEDASSIST AI - CLIENT API & WEBSOCKET CLIENT UTILITIES (api.js)
- * ============================================================================
- * Role:
- *   Centralized HTTP fetch client and WebSocket URL resolver for the frontend.
- *   Enforces cookie inclusion (`credentials: "include"`) for JWT transmission,
- *   auto-configures JSON headers, parses JSON responses, and normalizes error objects.
- *
- * Functions:
- *   - `API_BASE_URL`: Resolves `import.meta.env.VITE_API_URL` or defaults to `http://localhost:5000/api`.
- *   - `apiRequest(path, options)`: Wrapper around `fetch()` that standardizes credentials,
- *     Content-Type headers, error status unwrapping, and JSON parsing.
- *   - `getWebSocketUrl()`: Automatically maps the HTTP API URL to its WebSocket counterpart
- *     (`http -> ws`, `https -> wss`, `/api -> /ws`).
- *
- * ----------------------------------------------------------------------------
- * MINDMAP FLOW: API CLIENT ARCHITECTURE
- * ----------------------------------------------------------------------------
- * [api.js Utility]
- *   │
- *   ├── 1. URL Configuration
- *   │     ├── API_BASE_URL: VITE_API_URL || "http://localhost:5000/api"
- *   │     └── getWebSocketUrl(): VITE_WS_URL || replaces http/api with ws
- *   │
- *   └── 2. apiRequest(path, options)
- *         ├── Injects credentials: "include" (transmits accessToken cookie)
- *         ├── Conditionally attaches "Content-Type": "application/json" if body is present
- *         ├── Executes window.fetch(`${API_BASE_URL}${path}`)
- *         ├── Parses JSON payload if content-type header indicates JSON
- *         ├── If response.ok === false: throws Error with status and data attached
- *         └── Returns parsed data payload
- *
- * ----------------------------------------------------------------------------
- * ASCII FLOW: CLIENT HTTP REQUEST PIPELINE
- * ----------------------------------------------------------------------------
- *  Component ──► apiRequest('/history')
- *                      │
- *                      ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ fetch(`${API_BASE_URL}/history`, {                     │
- *  │   credentials: "include",                              │
- *  │   headers: { "Content-Type": "application/json" }      │
- *  │ })                                                     │
- *  └────────────────────────────────────────────────────────┘
- *                      │
- *                      ▼
- *          (response.ok === true?)
- *                      │
- *             ┌────────┴────────┐
- *             ▼                 ▼
- *           [Yes]             [No]
- *             │                 │
- *             ▼                 ▼
- *        return data    throw Error(status, data)
- * ============================================================================
- */
 export const API_BASE_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
-
-/**
- * ----------------------------------------------------------------------------
- * FUNCTION: apiRequest
- * ----------------------------------------------------------------------------
- * Unified fetch wrapper with credentials: "include", JSON headers, and status unwrapping.
- *
- * @param {string} path - API endpoint path (e.g. "/history").
- * @param {RequestInit} [options] - Standard fetch options.
- * @returns {Promise<any>} Parsed JSON response payload.
- */
-export const apiRequest = async (path, options = {}) => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
-
-  const isJson = response.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await response.json() : null;
-
+let refreshPromise;
+async function request(path, options) {
+  const response = await fetch(API_BASE_URL + path, { credentials: "include", ...options, headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers } });
+  const data = response.headers.get("content-type")?.includes("application/json") ? await response.json() : null;
   if (!response.ok) {
-    const error = new Error(data?.message || data?.error || `Request failed (${response.status})`);
-    error.status = response.status;
-    error.data = data;
+    const error = new Error(data?.message || "Request failed (" + response.status + ").");
+    Object.assign(error, { status: response.status, code: data?.code, data, requestId: data?.requestId, retryAfter: Number(response.headers.get("retry-after")) || 0 });
     throw error;
   }
-
   return data;
-};
-
-/**
- * ----------------------------------------------------------------------------
- * FUNCTION: getWebSocketUrl
- * ----------------------------------------------------------------------------
- * Derives the active WebSocket server URL from VITE_WS_URL or VITE_API_URL.
- *
- * @returns {string} WebSocket URL (ws://... or wss://...).
- */
-export const getWebSocketUrl = () => {
-  const configured = import.meta.env.VITE_WS_URL;
-  if (configured) return configured;
-  if (API_BASE_URL.startsWith("http")) {
-    return API_BASE_URL.replace(/^http/, "ws").replace(/\/api$/, "/ws");
+}
+export async function refreshSession() {
+  if (!refreshPromise) {
+    const refresh = () => request("/auth/refresh-token", { method: "POST" });
+    refreshPromise = (navigator.locks ? navigator.locks.request("medassist-session-refresh", refresh) : refresh())
+      .then((data) => { window.dispatchEvent(new Event("session-renewed")); return data; })
+      .catch((error) => { window.dispatchEvent(new Event("session-ended")); throw error; })
+      .finally(() => { refreshPromise = null; });
   }
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/ws`;
+  return refreshPromise;
+}
+export async function apiRequest(path, options = {}) {
+  try { return await request(path, options); }
+  catch (error) {
+    if (error.status === 401 && (!path.startsWith("/auth/") || path === "/auth/check")) {
+      await refreshSession();
+      return request(path, options);
+    }
+    throw error;
+  }
+}
+export const getWebSocketUrl = () => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  if (API_BASE_URL.startsWith("http")) return API_BASE_URL.replace(/^http/, "ws").replace(/\/api$/, "/ws");
+  return (window.location.protocol === "https:" ? "wss:" : "ws:") + "//" + window.location.host + "/ws";
 };
+export function downloadJson(filename, value) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a"); link.href = url; link.download = filename; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadText(filename, content, mimeType = "text/markdown;charset=utf-8") {
+  const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+  const link = document.createElement("a"); link.href = url; link.download = filename; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function formatChatAsMarkdown(chat) {
+  const title = chat.title || "Health Q&A Conversation";
+  const lines = [
+    `# ${title}`,
+    `*MedAssist AI Evidence Report · Exported ${new Date().toLocaleDateString(undefined, { dateStyle: "long" })}*`,
+    "",
+    "---",
+    "",
+  ];
+  const messages = chat.messages || [];
+  for (const msg of messages) {
+    if (msg.isUser) {
+      lines.push("### Question");
+      lines.push(msg.text);
+      lines.push("");
+    } else {
+      lines.push("### MedAssist AI Response");
+      lines.push(msg.text);
+      lines.push("");
+      if (msg.references && msg.references.length > 0) {
+        lines.push("#### PubMed Literature References");
+        msg.references.forEach((ref, idx) => {
+          const authors = ref.authors?.length ? ref.authors.slice(0, 3).join(", ") + (ref.authors.length > 3 ? " et al." : "") : "";
+          const meta = [authors, ref.journal, ref.pubdate].filter(Boolean).join(" · ");
+          lines.push(`${idx + 1}. [${ref.title}](${ref.url}) - ${meta} (PMID: ${ref.pmid})`);
+        });
+        lines.push("");
+      }
+    }
+  }
+  lines.push("---");
+  lines.push("*Disclaimer: MedAssist AI provides educational health assistance grounded in PubMed biomedical literature. PubMed indexing alone does not establish peer review or clinical accuracy. It does not provide medical diagnoses, treatment prescriptions, or clinical verification. Always consult a qualified clinician for personal health concerns.*");
+  return lines.join("\n");
+}

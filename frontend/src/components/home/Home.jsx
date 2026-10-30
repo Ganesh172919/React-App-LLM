@@ -1,101 +1,21 @@
 import { Link } from "react-router-dom";
-
-const features = [
-  ["Medical chat", "Ask health questions and review relevant PubMed sources with the answer."],
-  ["Saved history", "Keep your conversations, search them, rename them, and export a copy."],
-  ["Safety checks", "The backend checks harmful prompts and adds medical safety reminders."],
-  ["Simple dashboard", "View chat activity, citation coverage, and dataset statistics."],
-];
-
-function Home() {
-  return (
-    <main className="min-h-[calc(100vh-64px)] bg-slate-950 text-white">
-      <section className="mx-auto grid max-w-6xl items-center gap-10 px-6 py-16 lg:grid-cols-2 lg:py-20">
-        <div>
-          <p className="mb-4 text-sm font-semibold text-blue-400">Student full-stack project</p>
-          <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
-            MedAssist AI
-          </h1>
-          <p className="mt-3 text-xl text-slate-300">
-            A medical question-and-answer app with PubMed references.
-          </p>
-          <p className="mt-5 max-w-xl leading-7 text-slate-400">
-            This project combines a React chat interface, Node.js API, MongoDB chat history,
-            basic safety checks, medical source retrieval, and a small analytics dashboard.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link to="/register" className="rounded-md bg-blue-600 px-5 py-3 font-semibold hover:bg-blue-500">
-              Try the project
-            </Link>
-            <Link to="/login" className="rounded-md border border-slate-600 px-5 py-3 font-semibold hover:bg-slate-800">
-              Sign in
-            </Link>
-          </div>
-          <p className="mt-5 text-xs text-slate-500">
-            Educational use only. It does not diagnose conditions or replace a doctor.
-          </p>
-        </div>
-
-        <div className="rounded-lg border border-slate-700 bg-slate-900 p-6">
-          <div className="mb-5 flex items-center justify-between border-b border-slate-700 pb-3">
-            <div>
-              <p className="font-semibold">Example chat</p>
-              <p className="text-xs text-slate-500">Medical response preview</p>
-            </div>
-            <span className="rounded bg-emerald-950 px-2 py-1 text-xs text-emerald-300">Sources attached</span>
-          </div>
-          <div className="ml-auto max-w-[88%] rounded-lg bg-blue-600 p-4 text-sm">
-            What should I track before speaking to a doctor about migraines?
-          </div>
-          <div className="mt-3 rounded-lg border border-slate-700 bg-slate-800 p-4 text-sm leading-6 text-slate-300">
-            Note the timing, symptoms, possible triggers, medicines, and the effect on daily
-            activities. Share this history with a qualified clinician.
-            <p className="mt-3 border-t border-slate-700 pt-3 text-xs text-blue-300">
-              PubMed references appear here
-            </p>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="rounded-md bg-slate-800 p-3"><strong className="block text-base">16.4K</strong><span className="text-slate-500">Q&amp;A rows</span></div>
-            <div className="rounded-md bg-slate-800 p-3"><strong className="block text-base">CRUD</strong><span className="text-slate-500">chat history</span></div>
-            <div className="rounded-md bg-slate-800 p-3"><strong className="block text-base">Live</strong><span className="text-slate-500">dashboard</span></div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-y border-slate-800 bg-slate-900/50">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <h2 className="text-2xl font-bold">What I built</h2>
-          <p className="mt-2 text-sm text-slate-400">Main features included in this project upgrade.</p>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map(([title, description]) => (
-              <article key={title} className="rounded-lg border border-slate-700 bg-slate-900 p-5">
-                <h3 className="font-semibold text-blue-300">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">{description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-6xl px-6 py-14">
-        <h2 className="text-2xl font-bold">How a medical question works</h2>
-        <div className="mt-7 grid gap-4 md:grid-cols-3">
-          {[
-            ["1", "Check", "Validate the prompt and apply the safety filter."],
-            ["2", "Search", "Find relevant medical records using PubMed."],
-            ["3", "Show sources", "Return the response with references and citation status."],
-          ].map(([step, title, description]) => (
-            <article key={step} className="rounded-lg border border-slate-700 p-5">
-              <span className="text-sm font-bold text-blue-400">Step {step}</span>
-              <h3 className="mt-2 font-semibold">{title}</h3>
-              <p className="mt-2 text-sm text-slate-400">{description}</p>
-            </article>
-          ))}
-        </div>
-        <p className="mt-10 text-sm text-slate-500">Developed by J Ganesh kumar reddy.</p>
-      </section>
-    </main>
-  );
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+export default function Home() {
+  const { user } = useContext(AuthContext);
+  return <main className="page home">
+    <p className="eyebrow">EVIDENCE-LED HEALTH EXPLAINER</p>
+    <h1>Health questions, with the sources in view.</h1>
+    <p className="lead">Ask a question, explore a clear response, and see the PubMed records used to support medical answers.</p>
+    <p>Keep your conversations organized and return to what you learned. You stay in control of your saved history.</p>
+    <div className="actions"><Link className="button" to={user ? "/chat" : "/register"}>{user ? "Open chat" : "Create an account"}</Link><Link className="button secondary" to={user ? "/dashboard" : "/login"}>{user ? "View dashboard" : "Sign in"}</Link></div>
+    <div className="notice">Educational use only. This project does not diagnose conditions or replace a qualified clinician. For urgent symptoms, contact local emergency services.</div>
+    <section><h2>Built for informed exploration</h2><div className="feature-grid">
+      {[["01", "Ask in plain language", "Start with a health topic or symptom question. Urgent messages receive immediate care guidance."], ["02", "Check the evidence", "Medical answers show PubMed links and an honest label when source support is limited."], ["03", "Pick up where you left off", "Search, rename, export, or delete your conversations from one workspace."]].map(([step, title, detail]) => <article className="card feature-card" key={title}><span className="feature-step">{step}</span><h3>{title}</h3><p>{detail}</p></article>)}
+    </div></section>
+    <section className="card trust-card"><div><span className="eyebrow">HOW IT WORKS</span><h2>Clear boundaries for every answer</h2></div><div><p>The server screens questions, retrieves PubMed literature for medical topics, and saves the completed exchange to your account. Provider keys stay on the server.</p><p>Source links and citation numbers help you inspect an answer; they do not prove clinical correctness. The LoRA research tools are separate from this app.</p></div></section>
+    <section><h2>Frequently asked questions</h2><div className="feature-grid">
+      {[["Is this a clinical diagnostic tool?", "No. MedAssist AI helps you explore health information and PubMed records. Discuss personal diagnosis, prescriptions, and care decisions with a qualified clinician."], ["How are PubMed records retrieved?", "For medical topics, the server searches NCBI PubMed and links the matching records beneath the answer. PubMed indexing does not guarantee that every record is peer reviewed or that an answer is clinically correct."], ["What happens to my questions and keys?", "Conversations are stored in the application database and scoped to your account. Medical search terms go to PubMed; prompts may go to your selected model provider. Personal API keys are encrypted on the server. You can export or delete your saved conversations."]].map(([question, answer]) => <article className="card feature-card" key={question}><h3>{question}</h3><p className="muted small-text">{answer}</p></article>)}
+    </div></section>
+  </main>;
 }
-
-export default Home;

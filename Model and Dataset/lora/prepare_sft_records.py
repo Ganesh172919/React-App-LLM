@@ -82,6 +82,10 @@ def convert_csv(source: Path, output: Path, limit: int | None = None) -> dict[st
     Returns:
         dict[str, object]: Generation statistics and provenance hash.
     """
+    if source.resolve() == output.resolve():
+        raise ValueError("Output must not overwrite the source CSV")
+    if limit is not None and limit < 1:
+        raise ValueError("limit must be at least 1")
     _, raw_config = load_lora_config()
     dataset = raw_config["dataset"]
     question_column = dataset["question_column"]
@@ -92,28 +96,32 @@ def convert_csv(source: Path, output: Path, limit: int | None = None) -> dict[st
     source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
     written = 0
     skipped = 0
-    with source.open("r", encoding="utf-8-sig", newline="") as handle, output.open(
-        "w", encoding="utf-8", newline="\n"
-    ) as target:
-        reader = csv.DictReader(handle)
-        missing = {question_column, answer_column} - set(reader.fieldnames or [])
-        if missing:
-            raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
-        for row in reader:
-            question = clean(row.get(question_column))
-            answer = clean(row.get(answer_column))
-            if not question or not answer:
-                skipped += 1
-                continue
-            record = {
-                "text": template.format(question=question, answer=answer),
-                "question": question,
-                "answer": answer,
-            }
-            target.write(json.dumps(record, ensure_ascii=False) + "\n")
-            written += 1
-            if limit is not None and written >= limit:
-                break
+    import os
+    import tempfile
+    temporary = None
+    try:
+        with source.open("r", encoding="utf-8-sig", newline="") as handle:
+            reader = csv.DictReader(handle)
+            missing = {question_column, answer_column} - set(reader.fieldnames or [])
+            if missing:
+                raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
+            with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", newline="\n", dir=output.parent, prefix=output.name + ".", suffix=".tmp", delete=False) as target:
+                temporary = Path(target.name)
+                for row in reader:
+                    question = clean(row.get(question_column))
+                    answer = clean(row.get(answer_column))
+                    if not question or not answer:
+                        skipped += 1
+                        continue
+                    record = {"text": template.format(question=question, answer=answer), "question": question, "answer": answer}
+                    target.write(json.dumps(record, ensure_ascii=False) + "\n")
+                    written += 1
+                    if limit is not None and written >= limit:
+                        break
+        os.replace(temporary, output)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
     return {
         "source": str(source),
         "source_sha256": source_hash,

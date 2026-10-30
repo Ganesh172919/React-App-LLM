@@ -1,81 +1,25 @@
-/**
- * ============================================================================
- * MEDASSIST AI - AUTHENTICATION ROUTER (authRoute.js)
- * ============================================================================
- * Role:
- *   Defines endpoint paths and rate-limiting policies for user authentication,
- *   email verification, token refreshing, and password recovery.
- *
- * Rate Limiting Policy:
- *   - Applies `authLimiter`: 30 requests per 15-minute sliding window across all
- *     auth endpoints to prevent brute-force attacks and credential stuffing.
- *
- * ----------------------------------------------------------------------------
- * MINDMAP FLOW: AUTHENTICATION ROUTE MAPPING
- * ----------------------------------------------------------------------------
- * [authRoute.js (Router: /api/auth)]
- *   │
- *   ├── [Rate Limiter Middleware: 30 requests / 15 minutes]
- *   │
- *   ├── POST /register             ──► authController.register
- *   ├── POST /login                ──► authController.login
- *   ├── GET  /check                ──► authController.checkAuth
- *   ├── POST /logout               ──► authController.logout
- *   ├── POST /refresh-token        ──► authController.refreshToken
- *   ├── POST /resend-verification  ──► authController.resendVerification
- *   ├── POST /forgot-password      ──► authController.forgotPassword
- *   ├── POST /reset-password       ──► authController.resetPassword
- *   ├── POST /verify-email         ──► authController.verifyEmail
- *   └── GET  /verify-email         ──► authController.verifyEmail
- *
- * ----------------------------------------------------------------------------
- * ASCII FLOW: ROUTE DISPATCH & PROTECTION
- * ----------------------------------------------------------------------------
- *  Incoming Request to /api/auth/*
- *                 │
- *                 ▼
- *  ┌──────────────────────────────────────────────┐
- *  │ authLimiter (max 30 requests / 15 minutes)   │
- *  └──────────────────────────────────────────────┘
- *                 │ [Within limit]
- *                 ▼
- *  ┌──────────────────────────────────────────────┐
- *  │ Dispatch to matched authController handler   │
- *  └──────────────────────────────────────────────┘
- * ============================================================================
- */
-const express = require("express");
-const router = express.Router();
-const authController = require("../controllers/authController");
-const rateLimit = require("express-rate-limit");
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 30,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
+const router = require("express").Router();
+const controller = require("../controllers/authController");
+const auth = require("../middleware/authToken");
+const oauth = require("../controllers/oauthController");
+const limit = (name) => (req, res, next) => req.app.locals[name](req, res, next);
+const allowedFields = { "/register": ["email", "password"], "/login": ["email", "password"], "/resend-verification": ["email"], "/forgot-password": ["email"], "/reset-password": ["token", "newPassword"], "/verify-email": ["token"], "/account": ["confirmation"], "/logout": [], "/refresh-token": [], "/export-data": [] };
+router.use((req, res, next) => {
+  try { if (allowedFields[req.path]) require("../services/validation").keys(req.body || {}, allowedFields[req.path]); next(); } catch (error) { next(error); }
 });
-
-router.use(authLimiter);
-
-router.post("/register", authController.register);
-
-router.post("/login", authController.login);
-
-router.get("/check", authController.checkAuth);
-
-router.post("/logout", authController.logout);
-
-router.post("/refresh-token", authController.refreshToken);
-
-router.post("/resend-verification", authController.resendVerification);
-
-router.post("/forgot-password", authController.forgotPassword);
-
-router.post("/reset-password", authController.resetPassword);
-
-router.post("/verify-email", authController.verifyEmail);
-
-router.get("/verify-email", authController.verifyEmail);
-
+router.post("/register", limit("authLimiter"), controller.register);
+router.get("/providers", oauth.status);
+router.get("/google", limit("authLimiter"), oauth.start);
+router.get("/google/callback", limit("authLimiter"), oauth.callback);
+router.post("/login", limit("authLimiter"), controller.login);
+router.get("/check", auth, controller.checkAuth);
+router.post("/logout", controller.logout);
+router.post("/refresh-token", controller.refreshToken);
+router.get("/export-data", auth, controller.exportData);
+router.post("/resend-verification", limit("recoveryLimiter"), controller.resendVerification);
+router.post("/forgot-password", limit("recoveryLimiter"), controller.forgotPassword);
+router.post("/reset-password", limit("authLimiter"), controller.resetPassword);
+router.post("/verify-email", limit("authLimiter"), controller.verifyEmail);
+router.get("/verify-email", limit("authLimiter"), controller.verifyEmail);
+router.delete("/account", auth, controller.deleteAccount);
 module.exports = router;

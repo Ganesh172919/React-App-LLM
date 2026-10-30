@@ -1,0 +1,57 @@
+- banner:
+  - navigation "Main navigation":
+    - link "MedAssist AI":
+      - /url: /
+    - link "Chat":
+      - /url: /chat
+    - link "Dashboard":
+      - /url: /dashboard
+    - link "Account":
+      - /url: /account
+    - button "Sign out"
+- main:
+  - heading "Health Q&A" [level=1]
+  - status: Live updates connected
+  - complementary "Conversation history":
+    - heading "Conversations" [level=2]
+    - button "New conversation"
+    - text: Search history
+    - searchbox "Search history"
+    - list:
+      - button "What are migraine triggers? metadata only"
+      - time: 10/26/2026
+      - button "Rename"
+      - button "Export"
+      - button "Delete"
+      - button "What are common migraine triggers? slow response"
+      - time: 10/26/2026
+      - button "Rename"
+      - button "Export"
+      - button "Delete"
+    - button "Refresh history"
+  - region "Chat workspace":
+    - heading "What are common migraine triggers? slow response" [level=2]
+    - paragraph: Educational information. Avoid entering personal identifying details.
+    - generic "Messages":
+      - article:
+        - strong: You
+        - time: 10:36 AM
+        - paragraph: What are common migraine triggers? slow response
+      - article:
+        - strong: MedAssist AI
+        - time: 10:36 AM
+        - paragraph: This is a synthetic educational test answer [1]. Review the linked source with a qualified clinician. This checks the chat workflow, not clinical accuracy.
+        - button "Copy answer"
+        - paragraph: Citation numbers checked
+        - paragraph: Citation numbers match supplied sources. Claims have not been independently verified.
+        - strong: PubMed records
+        - list:
+          - link "Synthetic PubMed record for browser workflow testing":
+            - /url: https://pubmed.ncbi.nlm.nih.gov/123/
+          - generic: · QA fixture 2026
+    - generic: Your question
+    - textbox "Your question":
+      - /placeholder: Type a question...
+    - generic: 0/4000 · Shift + Enter for a new line
+    - button "Send question" [disabled]
+- contentinfo: MedAssist AI · Student project by J Ganesh kumar reddy · Educational information only

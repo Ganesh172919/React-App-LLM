@@ -1,198 +1,231 @@
-# MedAssist AI - Dataset Profiling, Auditing & Preparation Pipeline
+# MedAssist AI — Dataset Profiling, Auditing & Engineering Pipeline
 
-Welcome to the dataset utilities documentation for **MedAssist AI**, developed by **J Ganesh kumar reddy**.
+Developed by **J Ganesh kumar reddy**
 
-This directory contains standalone, deterministic Python tools designed to profile, audit, clean, split, and validate the medical question-and-answer dataset without requiring heavy ML frameworks or performing model training.
-
----
-
-## 1. Pipeline Architecture Overview
-
-```
-                          +-------------------------------------------------------+
-                          | Source Dataset:                                       |
-                          | Final data set for llm based health assitance (1).csv |
-                          | (16,412 rows: question, answer)                       |
-                          +-------------------------------------------------------+
-                                        /                       \
-                                       /                         \
-                                      v                           v
-                      +-----------------------------+   +-----------------------------+
-                      |     analyze_dataset.py      |   |      audit_dataset.py       |
-                      |   (Descriptive Profiler)    |   |  (Multi-Answer Similarity)  |
-                      +-----------------------------+   +-----------------------------+
-                                     |                                 |
-                                     v                                 v
-                         reports/dataset_analysis.json     reports/dataset_audit.json
-                         reports/dataset_analysis.md       reports/dataset_audit.md
-                                     \                                 /
-                                      \                               /
-                                       v                             v
-                                  +---------------------------------------+
-                                  |         prepare_dataset.py            |
-                                  | (Deterministic SHA-256 Partitioning)  |
-                                  +---------------------------------------+
-                                                     |
-                                                     v
-                                  +---------------------------------------+
-                                  | Target Split Directory (prepared/)    |
-                                  | - train.csv      (80%)                |
-                                  | - validation.csv (10%)                |
-                                  | - test.csv       (10%)                |
-                                  | - manifest.json  (SHA-256, counts)    |
-                                  +---------------------------------------+
-                                                     |
-                                                     v
-                                  +---------------------------------------+
-                                  |          verify_splits.py             |
-                                  |  (Cross-Partition Leakage Validator)  |
-                                  +---------------------------------------+
-                                                     |
-                                                     v
-                                          validation_report.json
-                                          (0 Overlaps, 0 Contamination)
-```
+*Full-Stack Educational Health Assistance, Biomedical Evidence Grounding, & Machine Learning Research Platform*
 
 ---
 
-## 2. Dataset Pipeline Mindmap Flow
+## 1. Pipeline Architecture & Data Flow
+
+The MedAssist AI dataset engineering pipeline operates via standalone, deterministic Python tools designed to profile, audit, clean, partition, and validate the medical question-and-answer dataset (`Final data set for llm based health assitance (1).csv`). Built exclusively with Python's standard library, these tools guarantee 100% reproducibility across environments without requiring GPU acceleration or external ML frameworks.
 
 ```
-[Dataset Utilities]
-  │
-  ├── 1. Analysis Tool (analyze_dataset.py)
-  │     ├── Descriptive statistical profiling
-  │     ├── Word length percentiles (min, p25, median, mean, p75, p95, max)
-  │     ├── Rule-based question intent classifier (symptoms, causes, etc.)
-  │     ├── Answer length distribution bins (< 20, 20-99, 100-249, etc.)
-  │     ├── Frequent medical terminology extraction
-  │     └── Outputs: dataset_analysis.json & dataset_analysis.md
-  │
-  ├── 2. Variant Auditor (audit_dataset.py)
-  │     ├── Pairwise Jaccard token similarity for repeated questions
-  │     ├── Identifies divergent multi-answer groups (similarity < 0.35)
-  │     ├── Content flags: HTML markup, URLs, non-ASCII characters
-  │     ├── Cryptographic file hashing (SHA-256)
-  │     └── Outputs: dataset_audit.json & dataset_audit.md
-  │
-  ├── 3. Deterministic Preparer (prepare_dataset.py)
-  │     ├── Drops empty questions and answers
-  │     ├── Drops answers under 5 words
-  │     ├── Deduplicates questions: retains the longest answer
-  │     ├── Stable question splitting via SHA-256 modulo 100:
-  │     │     ├── [0..79]  ──► train.csv (80%)
-  │     │     ├── [80..89] ──► validation.csv (10%)
-  │     │     └── [90..99] ──► test.csv (10%)
-  │     └── Outputs: train.csv, validation.csv, test.csv, manifest.json
-  │
-  ├── 4. Split Leakage Validator (verify_splits.py)
-  │     ├── Verifies completeness of split files on disk
-  │     ├── Asserts zero missing rows and zero intra-split duplicates
-  │     ├── Asserts zero cross-split question leakage:
-  │     │     ├── train ∩ validation == 0
-  │     │     ├── train ∩ test == 0
-  │     │     └── validation ∩ test == 0
-  │     └── Outputs: validation_report.json (exits 0 on pass, 1 on fail)
-  │
-  ├── 5. Automated Unit Tests (test_dataset_tools.py)
-  │     └── Standard library unittest discovering tool correctness
-  │
-  └── 6. Legacy Colab Experiment (Fine-tunned model.py)
-        └── Historical reference script for parameter-efficient GPT-2 LoRA fine-tuning
+========================================================================================================================
+                                     MEDASSIST AI — DATASET ENGINEERING PIPELINE
+========================================================================================================================
+
+                ┌─────────────────────────────────────────────────────────────┐
+                │ Source Dataset: Final data set...csv (16,412 rows)          │
+                └─────────────────────────────────────────────────────────────┘
+                               │                               │
+                               ▼                               ▼
+                ┌─────────────────────────────┐ ┌─────────────────────────────┐
+                │     analyze_dataset.py      │ │      audit_dataset.py       │
+                │  (Descriptive Profiler)     │ │  (Multi-Answer Divergence)  │
+                │  - Length metrics & P95     │ │  - Pairwise Jaccard metric  │
+                │  - Question classifications │ │  - URL & non-ASCII scan     │
+                └─────────────────────────────┘ └─────────────────────────────┘
+                               │                               │
+                               ▼                               ▼
+                   reports/dataset_analysis.md     reports/dataset_audit.md
+                   reports/dataset_analysis.json   reports/dataset_audit.json
+                               │                               │
+                               └──────────────┬────────────────┘
+                                              ▼
+                ┌─────────────────────────────────────────────────────────────┐
+                │                     prepare_dataset.py                      │
+                │  - Collapses whitespace & drops empty-answer rows           │
+                │  - Filters truncated answers (< 5 words)                    │
+                │  - Quarantines 1,437 multi-answer ambiguous questions       │
+                │  - Deterministic SHA-256 Modulo 100 Hashing:                │
+                │    ├── [0..79]  ──► train.csv / train.jsonl (80%)           │
+                │    ├── [80..89] ──► validation.csv / validation.jsonl (10%) │
+                │    └── [90..99] ──► test.csv / test.jsonl (10%)             │
+                └─────────────────────────────────────────────────────────────┘
+                                              │
+                                              ▼
+                ┌─────────────────────────────────────────────────────────────┐
+                │ Target Split Directory: prepared/                           │
+                │ ├── train.csv & train.jsonl (10,238 records)                │
+                │ ├── validation.csv & validation.jsonl (1,291 records)       │
+                │ ├── test.csv & test.jsonl (1,318 records)                   │
+                │ ├── quarantine.jsonl (1,437 ambiguous groups / 3,535 rows)  │
+                │ └── manifest.json (Cryptographic SHA-256 checksums)         │
+                └─────────────────────────────────────────────────────────────┘
+                                              │
+                                              ▼
+                ┌─────────────────────────────────────────────────────────────┐
+                │                      verify_splits.py                       │
+                │  - Asserts complete partition file presence                 │
+                │  - Enforces zero cross-split question leakage               │
+                │  - Validates 80% / 10% / 10% expected proportions           │
+                └─────────────────────────────────────────────────────────────┘
+========================================================================================================================
 ```
 
 ---
 
-## 3. Core ASCII Flows
+## 2. Dataset Pipeline Mindmap
 
-### Flow A: Deterministic Question-Level Hashing Split
-
-```
-[Clean Normalized Question: "What are symptoms of asthma?"]
-                         │
-                         ▼
-           SHA-256 Hash of Question String
-         (e.g., "7f83b1657ff1fc53b92dc18...")
-                         │
-                         ▼
-        Extract First 8 Hex Characters: "7f83b165"
-                         │
-                         ▼
-          Convert to Integer: 2,139,337,061
-                         │
-                         ▼
-                   Modulo 100: 61
-                         │
-           ┌─────────────┼─────────────┐
-           ▼             ▼             ▼
-        [0..79]       [80..89]      [90..99]
-     (Train: 80%)  (Valid: 10%)   (Test: 10%)
-           │
-           ▼
-  Assigned to train.csv (Deterministic: same question ALWAYS lands in same split)
-```
-
----
-
-### Flow B: Cross-Split Zero-Leakage Validation
-
-```
-Train Split Questions Set       Validation Questions Set       Test Split Questions Set
-   (e.g. 11,476 items)             (e.g. 1,435 items)            (e.g. 1,434 items)
-           │                               │                             │
-           ├───────────────────────────────┼─────────────────────────────┤
-           ▼                               ▼                             ▼
-   [Train ∩ Validation]            [Train ∩ Test]              [Validation ∩ Test]
-           │                               │                             │
-           ▼                               ▼                             ▼
-       Overlap: 0                      Overlap: 0                    Overlap: 0
-           │                               │                             │
-           └───────────────────────────────┼─────────────────────────────┘
-                                           ▼
-                    Passed: True (Strict Zero Cross-Contamination)
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Dataset Pipeline))
+    ::icon(fa fa-database)
+    (01 Profiling & Analysis)
+      analyze_dataset.py
+        16,412 Total Rows Processed
+        16,407 Valid Question-Answer Pairs
+        5 Excluded Missing Answer Rows
+        Percentile Word Length Metrics
+        Regex Intent Classification
+    (02 Multi-Answer Auditing)
+      audit_dataset.py
+        1,396 Multi-Answer Question Groups
+        1,128 Groups with Jaccard < 0.35
+        0.192 Mean Pairwise Similarity
+        Embedded URL & Unicode Character Scan
+    (03 Hash Partitioning)
+      prepare_dataset.py
+        SHA-256 Modulo 100 Hashing
+        Zero Data Leakage Guarantee
+        10,238 Train Records 80%
+        1,291 Validation Records 10%
+        1,318 Test Records 10%
+    (04 Verification & Validation)
+      verify_splits.py
+        Strict Duplicate Detection
+        Disjoint Split Intersection Check
+        Cryptographic Manifest Validation
 ```
 
 ---
 
-## 4. Dataset Profile & Audit Summary
+## 3. Dataset Summary & Statistical Breakdown
 
-Based on the committed reports generated from `Final data set for llm based health assitance (1).csv`:
-
-| Metric | Source Finding |
-| :--- | :--- |
-| **Total Source Rows** | 16,412 rows |
-| **Valid Q&A Pairs** | 16,407 rows (5 missing answers dropped) |
-| **Unique Normalized Questions** | 14,345 unique questions |
-| **Exact Duplicate Rows** | 48 duplicate pairs |
-| **Repeated Question Rows** | 2,062 repeated question instances |
-| **Median Question Length** | 7 words (min: 3, max: 26) |
-| **Median Answer Length** | 132 words (min: 1, max: 4,133) |
-| **Multi-Answer Question Groups** | 1,396 question keys mapping to > 1 distinct answer |
-| **Divergent Groups (< 0.35 similarity)**| 1,128 groups requiring clinical review |
-| **Answers with URLs** | 159 answers |
-| **Answers with Non-ASCII Characters** | 61 answers |
+| Dataset Metric | Count / Measured Value | Context & Clinical Significance |
+|:---|---:|:---|
+| **Total Processed Rows** | 16,412 | Complete corpus imported from source CSV |
+| **Valid Pairs** | 16,407 | Pairs possessing non-null question and answer text |
+| **Missing Answer Rows** | 5 | Dropped rows due to empty answer strings |
+| **Unique Normalized Questions** | 14,345 | Distinct questions after whitespace normalization |
+| **Question Length Median** | 7 words | Concise medical inquiries |
+| **Question Length P95** | 11 words | Long-tail descriptive questions |
+| **Answer Length Median** | 132 words | Structured informational guidance |
+| **Answer Length P95** | 489 words | Detailed monographs and multi-symptom descriptions |
+| **Multi-Answer Question Groups** | 1,396 | Questions associated with multiple distinct answers |
+| **Divergent Groups (Jaccard < 0.35)** | 1,128 | Question groups exhibiting conflicting clinical statements |
+| **Quarantined Rows** | 3,535 | Excluded from training to protect gradient descent |
 
 ---
 
-## 5. Running Dataset Scripts & Tests
+## 4. Key Implementation Code Snippets
 
-### Run Automated Unit Tests
+### 4.1 Intent Classification Engine (`analyze_dataset.py`)
+
+```python
+# Implementation Snippet: Model and Dataset/analyze_dataset.py
+import re
+
+QUESTION_TYPES = (
+    ("symptoms", re.compile(r"\b(?:symptoms?|signs?)\b", re.I)),
+    ("causes", re.compile(r"\b(?:causes?|etiology|why)\b", re.I)),
+    ("treatment", re.compile(r"\b(?:treat|treatment|therapy|medicine|drug)\b", re.I)),
+    ("diagnosis", re.compile(r"\b(?:diagnos|tests?|screening)\b", re.I)),
+    ("prevention", re.compile(r"\b(?:prevent|prevention|avoid)\b", re.I)),
+    ("risk", re.compile(r"\b(?:risk|complications?|side effects?)\b", re.I)),
+    ("prognosis", re.compile(r"\b(?:prognosis|outlook|recover|survival)\b", re.I)),
+    ("definition", re.compile(r"^what\s+(?:is|are)\b", re.I)),
+)
+
+def classify_question(question: str) -> str:
+    for label, pattern in QUESTION_TYPES:
+        if pattern.search(question):
+            return label
+    return "other"
+```
+
+### 4.2 Jaccard Divergence Calculation (`audit_dataset.py`)
+
+```python
+# Implementation Snippet: Model and Dataset/audit_dataset.py
+TOKEN_PATTERN = re.compile(r"[a-z][a-z'-]+")
+
+def token_set(value: str) -> set[str]:
+    return set(TOKEN_PATTERN.findall(value.casefold()))
+
+def jaccard_similarity(left: str, right: str) -> float:
+    left_tokens = token_set(left)
+    right_tokens = token_set(right)
+    if not left_tokens and not right_tokens:
+        return 1.0
+    union = left_tokens | right_tokens
+    return len(left_tokens & right_tokens) / len(union) if union else 0.0
+```
+
+### 4.3 Zero-Leakage Hash Partitioning (`prepare_dataset.py`)
+
+```python
+# Implementation Snippet: Model and Dataset/prepare_dataset.py
+import hashlib
+
+def split_hash(key_str: str) -> int:
+    """Returns integer 0..99 from SHA-256 digest to enforce deterministic splits."""
+    return int(hashlib.sha256(key_str.encode("utf-8")).hexdigest()[:8], 16) % 100
+
+def assign_split(question_key: str) -> str:
+    bucket = split_hash(question_key)
+    if bucket < 80:
+        return "train"
+    elif bucket < 90:
+        return "validation"
+    else:
+        return "test"
+```
+
+### 4.4 Disjoint Partition Leakage Validation (`verify_splits.py`)
+
+```python
+# Implementation Snippet: Model and Dataset/verify_splits.py
+def assert_zero_leakage(train_keys, val_keys, test_keys):
+    train_val = train_keys.intersection(val_keys)
+    train_test = train_keys.intersection(test_keys)
+    val_test = val_keys.intersection(test_keys)
+
+    if train_val or train_test or val_test:
+        raise AssertionError(
+            f"Cross-partition leakage detected! "
+            f"Train/Val: {len(train_val)}, Train/Test: {len(train_test)}, Val/Test: {len(val_test)}"
+        )
+    print("Zero-leakage proof confirmed: All evaluation partitions are strictly disjoint.")
+```
+
+---
+
+## 5. Execution Commands & Pipeline Verification
+
 ```powershell
+# 1. Profile dataset lengths, word statistics, and question intent
+python "Model and Dataset/analyze_dataset.py"
+
+# 2. Audit multi-answer semantic divergence and content flags
+python "Model and Dataset/audit_dataset.py"
+
+# 3. Clean records, quarantine ambiguous groups, and construct 80/10/10 splits
+python "Model and Dataset/prepare_dataset.py"
+
+# 4. Verify split completeness, record counts, and zero data leakage
+python "Model and Dataset/verify_splits.py"
+
+# 5. Execute all dataset automated unit tests
 python -m unittest discover -s "Model and Dataset" -p "test_*.py"
 ```
 
-### Generate Analysis & Audit Reports
-```powershell
-python "Model and Dataset/analyze_dataset.py"
-python "Model and Dataset/audit_dataset.py"
-```
+---
 
-### Deterministically Clean & Split the Dataset
-```powershell
-python "Model and Dataset/prepare_dataset.py" --output-dir .\prepared-data
-```
+## 6. Data Hygiene Invariants
 
-### Verify Splits for Zero Leakage
-```powershell
-python "Model and Dataset/verify_splits.py" --input-dir .\prepared-data
-```
+1. **Deterministic Hashing**: Partitions are never assigned randomly. Hashing the normalized question string guarantees identical assignments across every run.
+2. **Ambiguity Isolation**: Questions with contradictory answer texts are stored in `quarantine.jsonl` and excluded from model training to prevent conflicting gradient updates.
+3. **Immutability of Source**: The source CSV is treated as read-only; all outputs are written to dedicated `reports/` and `prepared/` directories.

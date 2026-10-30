@@ -1,0 +1,85 @@
+- banner:
+  - navigation "Main navigation":
+    - link "MedAssist AI":
+      - /url: /
+    - link "Chat":
+      - /url: /chat
+    - link "Dashboard":
+      - /url: /dashboard
+    - link "Account":
+      - /url: /account
+    - button "Sign out"
+- main:
+  - heading "Activity dashboard" [level=1]
+  - paragraph: Your saved conversations and descriptive dataset statistics.
+  - button "Export JSON"
+  - generic: Activity range
+  - combobox "Activity range":
+    - option "Last 7 days" [selected]
+    - option "Last 30 days"
+    - option "Last 90 days"
+  - button "Refresh"
+  - heading "Lifetime totals" [level=2]
+  - article:
+    - generic: Conversations
+    - strong: "2"
+  - article:
+    - generic: Q&A exchanges
+    - strong: "2"
+  - article:
+    - generic: Medical responses
+    - strong: "2"
+  - article:
+    - generic: Source links attached
+    - strong: "2"
+  - article:
+    - generic: Medical answers with sources
+    - strong: 100%
+  - paragraph: Totals cover all saved history. Source attachment measures available links, not factual correctness.
+  - heading "Recent activity · 7 days" [level=2]
+  - paragraph: Saved exchanges per day. Dates use UTC.
+  - img "Saved exchanges in the last 7 days":
+    - 'generic "2026-10-20: 0 exchanges"': 10-20
+    - 'generic "2026-10-21: 0 exchanges"': 10-21
+    - 'generic "2026-10-22: 0 exchanges"': 10-22
+    - 'generic "2026-10-23: 0 exchanges"': 10-23
+    - 'generic "2026-10-24: 0 exchanges"': 10-24
+    - 'generic "2026-10-25: 0 exchanges"': 10-25
+    - 'generic "2026-10-26: 2 exchanges"':
+      - text: "2"
+      - text: 10-26
+  - generic "View activity as a table"
+  - heading "Answer outcomes" [level=2]
+  - table:
+    - rowgroup:
+      - row "Outcome Responses":
+        - columnheader "Outcome"
+        - columnheader "Responses"
+    - rowgroup:
+      - row "references only 1":
+        - cell "references only"
+        - cell "1"
+      - row "citation checked 1":
+        - cell "citation checked"
+        - cell "1"
+  - heading "Dataset quality" [level=2]
+  - paragraph: Offline descriptive reports. These counts do not establish clinical accuracy.
+  - table:
+    - rowgroup:
+      - row "Source rows 16,412":
+        - rowheader "Source rows"
+        - cell "16,412"
+      - row "Valid Q&A pairs 16,407":
+        - rowheader "Valid Q&A pairs"
+        - cell "16,407"
+      - row "Missing answers 5":
+        - rowheader "Missing answers"
+        - cell "5"
+      - row "Exact duplicate pairs 48":
+        - rowheader "Exact duplicate pairs"
+        - cell "48"
+      - row "Multi-answer question groups 1,396":
+        - rowheader "Multi-answer question groups"
+        - cell "1,396"
+  - paragraph: "Report generated: 10/25/2026, 5:33:12 AM"
+- contentinfo: MedAssist AI · Student project by J Ganesh kumar reddy · Educational information only

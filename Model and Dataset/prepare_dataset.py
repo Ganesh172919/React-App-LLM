@@ -76,6 +76,7 @@ import csv
 import hashlib
 import json
 import re
+import unicodedata
 from collections import Counter
 from pathlib import Path
 
@@ -99,6 +100,10 @@ def normalize(value: str | None) -> str:
     return WHITESPACE_PATTERN.sub(" ", value or "").strip()
 
 
+def leakage_key(question: str) -> str:
+    return re.sub(r"[^\w]+", " ", unicodedata.normalize("NFKC", question).casefold()).strip()
+
+
 def stable_split(question: str) -> str:
     """Deterministically assign a normalized question to train (80%), validation (10%), or test (10%).
 
@@ -114,7 +119,7 @@ def stable_split(question: str) -> str:
     ASCII FLOW:
     Question ──► SHA-256 ──► Hex Prefix ──► Modulo 100 ──► (Train / Validation / Test)
     """
-    bucket = int(hashlib.sha256(question.casefold().encode("utf-8")).hexdigest()[:8], 16) % 100
+    bucket = int(hashlib.sha256(leakage_key(question).encode("utf-8")).hexdigest()[:8], 16) % 100
     if bucket < 80:
         return "train"
     if bucket < 90:
@@ -156,7 +161,7 @@ def load_and_clean(dataset_path: Path, minimum_answer_words: int) -> tuple[list[
                 counters["dropped_short_answer"] += 1
                 continue
 
-            key = question.casefold()
+            key = leakage_key(question)
             current = best_by_question.get(key)
             if current:
                 counters["duplicate_questions_resolved"] += 1
@@ -211,6 +216,7 @@ def main() -> int:
         "minimum_answer_words": args.minimum_answer_words,
         "cleaning": cleaning,
         "splits": {name: len(values) for name, values in split_records.items()},
+        "split_sha256": {name: file_sha256(output_dir / f"{name}.csv") for name in split_records},
         "split_percentages": {
             name: round((len(values) / len(records)) * 100, 2) if records else 0
             for name, values in split_records.items()

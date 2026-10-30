@@ -1,87 +1,64 @@
-# ============================================================================
-# MEDASSIST AI - DOCKER COMPOSE MULTI-CONTAINER TOPOLOGY (docker-compose.yml)
-# ============================================================================
-# Architecture:
-#   Orchestrates a three-tier production environment:
-#     1. `mongo`: MongoDB 7 persistent database with mongosh healthcheck.
-#     2. `backend`: Express API and WebSocket server on port 5000 with healthcheck.
-#     3. `frontend`: High-performance Nginx web server serving Vite SPA and
-#        reverse-proxying /api/ and /ws to the backend on external port 8080.
-#
-# ----------------------------------------------------------------------------
-# MINDMAP FLOW: CONTAINER ORCHESTRATION & DEPENDENCIES
-# ----------------------------------------------------------------------------
-# [docker-compose up]
-#        │
-#        ├── 1. Service: mongo (mongo:7-jammy)
-#        │     ├── Volume: medassist-mongo -> /data/db
-#        │     └── Healthcheck: mongosh ping every 10s
-#        │
-#        ├── 2. Service: backend (Node 20 Alpine)
-#        │     ├── Depends On: mongo (service_healthy)
-#        │     ├── Healthcheck: GET /api/health every 30s
-#        │     └── Config: JWT secrets, Mongo URI, Gemini, Brevo SMTP
-#        │
-#        └── 3. Service: frontend (Nginx Alpine)
-#              ├── Depends On: backend (service_healthy)
-#              ├── Port Forwarding: 8080:80
-#              └── Routes: / (SPA), /api/ (backend:5000), /ws (WebSocket backend:5000)
-#
-# ----------------------------------------------------------------------------
-# ASCII FLOW: CONTAINER NETWORK & TRAFFIC ROUTING
-# ----------------------------------------------------------------------------
-#  User Browser (http://localhost:8080)
-#        │
-#        ▼
-#  ┌───────────────────────────────┐
-#  │ frontend container (Nginx:80) │
-#  └───────┬───────────────┬───────┘
-#          │               │
-#          │ / (Static)    │ /api/ & /ws (Reverse Proxy)
-#          ▼               ▼
-#     [Vite Dist]  ┌────────────────────────────────┐
-#                  │ backend container (Node:5000)  │
-#                  └───────────────┬────────────────┘
-#                                  │
-#                                  ▼ mongodb://mongo:27017/medassist
-#                  ┌────────────────────────────────┐
-#                  │ mongo container (MongoDB:27017)│
-#                  └────────────────────────────────┘
-# ============================================================================
 services:
   mongo:
     image: mongo:7-jammy
     restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: medassist_root
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set a random Mongo root password}
+      MONGO_APP_PASSWORD: ${MONGO_APP_PASSWORD:?set a different random hex app password}
     volumes:
       - medassist-mongo:/data/db
+      - ./deploy/mongo-init.js:/docker-entrypoint-initdb.d/app.js:ro
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD-SHELL", "mongosh --quiet --username medassist_root --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\""]
       interval: 10s
       timeout: 5s
       retries: 10
-
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     depends_on:
       mongo:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     environment:
       PORT: 5000
       NODE_ENV: production
-      MONGO_URI: mongodb://mongo:27017/medassist
+      MONGO_URI: mongodb://medassist_app:${MONGO_APP_PASSWORD}@mongo:27017/medassist
       CLIENT_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8080}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      JWT_ACCESS_TOKEN: ${JWT_ACCESS_TOKEN:?set JWT_ACCESS_TOKEN in .env}
-      JWT_REFRESH_TOKEN: ${JWT_REFRESH_TOKEN:?set JWT_REFRESH_TOKEN in .env}
-      JWT_VERIFICATION_TOKEN: ${JWT_VERIFICATION_TOKEN:?set JWT_VERIFICATION_TOKEN in .env}
-      JWT_RESET_TOKEN: ${JWT_RESET_TOKEN:?set JWT_RESET_TOKEN in .env}
+      TRUST_PROXY: uniquelocal
+      STRUCTURED_LOGS: "true"
+      JWT_ACCESS_TOKEN: ${JWT_ACCESS_TOKEN:?set JWT_ACCESS_TOKEN}
+      JWT_REFRESH_TOKEN: ${JWT_REFRESH_TOKEN:?set JWT_REFRESH_TOKEN}
+      JWT_VERIFICATION_TOKEN: ${JWT_VERIFICATION_TOKEN:?set JWT_VERIFICATION_TOKEN}
+      JWT_RESET_TOKEN: ${JWT_RESET_TOKEN:?set JWT_RESET_TOKEN}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-20b}
+      TOGETHER_API_KEY: ${TOGETHER_API_KEY:-}
+      TOGETHER_MODEL: ${TOGETHER_MODEL:-}
+      LOCAL_AI_BASE_URL: ${LOCAL_AI_BASE_URL:-}
+      LOCAL_AI_MODEL: ${LOCAL_AI_MODEL:-}
+      LOCAL_AI_API_KEY: ${LOCAL_AI_API_KEY:-}
+      USER_API_KEY_ENCRYPTION_KEY: ${USER_API_KEY_ENCRYPTION_KEY:-}
+      GEMINI_VERIFY_ANSWERS: ${GEMINI_VERIFY_ANSWERS:-false}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
+      NCBI_API_KEY: ${NCBI_API_KEY:-}
       BREVO_API_KEY: ${BREVO_API_KEY:-}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@example.com}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-MedAssist AI}
-
   frontend:
     build: ./frontend
     restart: unless-stopped
@@ -90,6 +67,5 @@ services:
         condition: service_healthy
     ports:
       - "8080:80"
-
 volumes:
   medassist-mongo:

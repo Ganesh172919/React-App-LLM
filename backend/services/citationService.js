@@ -69,6 +69,7 @@
  * ============================================================================
  */
 const CITATION_PATTERN = /\[(\d+)\]/g;
+const MULTI_CITATION_PATTERN = /\[(\d+(?:\s*(?:[-–]|,)\s*\d+)*)\]/g;
 
 /**
  * ----------------------------------------------------------------------------
@@ -98,11 +99,31 @@ const CITATION_PATTERN = /\[(\d+)\]/g;
  */
 const assessCitationGrounding = (text, sourceCount = 0) => {
   const safeSourceCount = Math.max(0, Number(sourceCount) || 0);
+  const rawString = String(text || "");
+  const extractedNumbers = [];
+  for (const match of rawString.matchAll(MULTI_CITATION_PATTERN)) {
+    for (const part of match[1].split(",")) {
+      const trimmed = part.trim();
+      const rangeMatch = trimmed.match(/^(\d+)\s*[-–]\s*(\d+)$/);
+      if (rangeMatch) {
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        if (start <= end && end - start <= 20) {
+          for (let i = start; i <= end; i++) extractedNumbers.push(i);
+        } else {
+          extractedNumbers.push(start, end);
+        }
+      } else {
+        const num = Number(trimmed);
+        if (Number.isInteger(num)) extractedNumbers.push(num);
+      }
+    }
+  }
   const citedNumbers = [
     ...new Set(
-      Array.from(String(text || "").matchAll(CITATION_PATTERN), (match) =>
-        Number(match[1])
-      )
+      extractedNumbers.length
+        ? extractedNumbers
+        : Array.from(rawString.matchAll(CITATION_PATTERN), (match) => Number(match[1]))
     ),
   ].sort((left, right) => left - right);
   const validCitations = citedNumbers.filter(
@@ -127,7 +148,8 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
       : 0,
     citedSourceNumbers: validCitations,
     invalidSourceNumbers: invalidCitations,
-    grounded: validCitations.length > 0 && invalidCitations.length === 0,
+    citationNumbersValid: validCitations.length > 0 && invalidCitations.length === 0,
+    grounded: false,
   };
 };
 

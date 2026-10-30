@@ -1,0 +1,98 @@
+{
+  "pages": 13,
+  "all_pages_substantive": true,
+  "all_horizontal_bounds_valid": true,
+  "metrics": [
+    {
+      "page": 1,
+      "body_words": 331,
+      "content_bottom": 759.7,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 2,
+      "body_words": 299,
+      "content_bottom": 774.5,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 3,
+      "body_words": 338,
+      "content_bottom": 738.1,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 4,
+      "body_words": 298,
+      "content_bottom": 779.9,
+      "images": 1,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 5,
+      "body_words": 181,
+      "content_bottom": 736.3,
+      "images": 3,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 6,
+      "body_words": 386,
+      "content_bottom": 762.5,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 7,
+      "body_words": 332,
+      "content_bottom": 747.3,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 8,
+      "body_words": 329,
+      "content_bottom": 761.3,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 9,
+      "body_words": 362,
+      "content_bottom": 777.7,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 10,
+      "body_words": 349,
+      "content_bottom": 744.9,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 11,
+      "body_words": 448,
+      "content_bottom": 773.7,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 12,
+      "body_words": 472,
+      "content_bottom": 760.1,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    },
+    {
+      "page": 13,
+      "body_words": 301,
+      "content_bottom": 665.1,
+      "images": 0,
+      "outside_horizontal_bounds": 0
+    }
+  ]
+}

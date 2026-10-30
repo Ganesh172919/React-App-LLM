@@ -1,0 +1,7 @@
+# Optional offline experiment dependencies. Not required by the app or dry-run tools.
+torch>=2.6,<3
+transformers>=4.51,<5
+peft>=0.15,<1
+datasets>=3,<5
+accelerate>=1,<2
+safetensors>=0.5,<1

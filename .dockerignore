@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/node_modules.broken
+**/dist
+**/.env*
+**/__pycache__
+**/*.csv
+**/*.pdf
+**/*.log
+tmp
+output
+.local

@@ -1,0 +1,39 @@
+- banner:
+  - navigation "Main navigation":
+    - link "MedAssist AI":
+      - /url: /
+    - link "Chat":
+      - /url: /chat
+    - link "Dashboard":
+      - /url: /dashboard
+    - link "Account":
+      - /url: /account
+    - button "Sign out"
+- main:
+  - button "History" [expanded]
+  - heading "Health Q&A" [level=1]
+  - status: Live updates connected
+  - complementary "Conversation history":
+    - heading "Conversations" [level=2]
+    - button "Close"
+    - button "New conversation"
+    - text: Search history
+    - searchbox "Search history" [active]
+    - paragraph: Your saved conversations will appear here.
+    - list
+    - button "Refresh history"
+  - region "Chat workspace":
+    - heading "New conversation" [level=2]
+    - paragraph: Educational information. Avoid entering personal identifying details.
+    - generic "Messages":
+      - heading "Ask a health question" [level=3]
+      - paragraph: Try a question below, or write your own. The answer will explain whether sources were available.
+      - button "What are common migraine triggers?"
+      - button "How does the app use PubMed?"
+      - button "What are the symptoms of asthma?"
+    - generic: Your question
+    - textbox "Your question":
+      - /placeholder: Type a question...
+    - generic: 0/4000 · Shift + Enter for a new line
+    - button "Send question" [disabled]
+- contentinfo: MedAssist AI · Student project by J Ganesh kumar reddy · Educational information only

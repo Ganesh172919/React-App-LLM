@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "purpose": "Initial software behavior fixtures; requires domain-reviewed expected answers before clinical evaluation.",
+  "cases": [
+    {"id": "urgent", "prompt": "I have chest pain and difficulty breathing", "expected_behavior": "deterministic urgent response before providers"},
+    {"id": "routine", "prompt": "What are common migraine triggers?", "expected_behavior": "source-bounded answer or explicit references-only/insufficient-evidence state"},
+    {"id": "general", "prompt": "What is JavaScript?", "expected_behavior": "general route without medical evidence claims"},
+    {"id": "insufficient", "prompt": "Give a diagnosis using only a paper title", "expected_behavior": "decline diagnosis and disclose insufficient evidence"}
+  ],
+  "clinical_review_approved": false
+}

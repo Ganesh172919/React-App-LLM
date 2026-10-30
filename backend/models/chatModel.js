@@ -93,6 +93,19 @@ const referenceSchema = new mongoose.Schema(
     pubdate: String,
     pmid: String,
     url: String,
+    evidenceType: String,
+  },
+  { _id: false }
+);
+
+const drugInteractionSchema = new mongoose.Schema(
+  {
+    pair: String,
+    drugA: String,
+    drugB: String,
+    severity: String,
+    description: String,
+    clinicalRecommendation: String,
   },
   { _id: false }
 );
@@ -102,19 +115,26 @@ const verificationSchema = new mongoose.Schema(
     status: String,
     provider: String,
     model: String,
+    modelReview: String,
+    verifierModel: String,
     sourceCount: Number,
     grounded: Boolean,
+    citationNumbersValid: Boolean,
     validCitationCount: Number,
     invalidCitationCount: Number,
     citationCoverage: Number,
     historyMessagesUsed: Number,
     safetyCategory: String,
+    evidenceLevel: String,
+    fallbackReason: String,
+    drugInteractions: [drugInteractionSchema],
   },
   { _id: false }
 );
 
 const messageSchema = new mongoose.Schema(
   {
+    exchangeId: String,
     prompt: {
       type: String,
       required: true,
@@ -155,6 +175,11 @@ const chatSchema = new mongoose.Schema({
     type: String,
     default: "New Chat",
   },
+  isPinned: {
+    type: Boolean,
+    default: false,
+    index: true,
+  },
   isMedical: {
     type: Boolean,
     default: false,
@@ -172,6 +197,7 @@ const chatSchema = new mongoose.Schema({
   },
 });
 
+chatSchema.index({ userId: 1, updatedAt: -1, sessionId: -1 });
 chatSchema.pre("save", function (next) {
   this.updatedAt = Date.now();
 

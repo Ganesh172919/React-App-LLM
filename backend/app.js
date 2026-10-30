@@ -1,208 +1,66 @@
-/**
- * ============================================================================
- * MEDASSIST AI - EXPRESS APPLICATION CONFIGURATION (app.js)
- * ============================================================================
- * Role:
- *   Configures and bootstraps the Express REST application layer. Establishes
- *   security headers, CORS whitelisting, rate limiting policies, JSON payload
- *   guards, cookie parsing, MongoDB database connectivity, route mounting, and
- *   centralized error handling with request tracing.
- *
- * Security & Reliability Highlights:
- *   - Header Hardening: Sets X-Request-ID (UUID), X-Content-Type-Options (nosniff),
- *     Referrer-Policy (no-referrer), and strict Permissions-Policy. Disables X-Powered-By.
- *   - Payload Guard: Limits incoming JSON bodies to 32kb to eliminate DOS via memory exhaustion.
- *   - Rate Limiting: Applies `aiLimiter` (20 requests / 60 seconds) strictly on
- *     `/api/medical` and `/api/ai` endpoints to safeguard LLM quotas and PubMed API limits.
- *   - Health Endpoint: Exposes `/api/health` with process uptime, MongoDB connection
- *     state, Gemini configuration status, and server version.
- *
- * ----------------------------------------------------------------------------
- * MINDMAP FLOW: EXPRESS MIDDLEWARE & ROUTING PIPELINE
- * ----------------------------------------------------------------------------
- * [Inbound HTTP Request]
- *   │
- *   ├── 1. Global Security & Tracing Middleware
- *   │     ├── Assigns or retains req.requestId (UUID v4)
- *   │     ├── Sets security headers (nosniff, no-referrer, permissions-policy)
- *   │     └── Removes x-powered-by header
- *   │
- *   ├── 2. CORS Validation Layer
- *   │     ├── Validates Origin header against app.locals.allowedOrigins
- *   │     ├── Rejects unauthorized origins with 403 status
- *   │     └── Enables credentials support for HTTP-only cookies
- *   │
- *   ├── 3. Body Parsing & Cookie Parser
- *   │     ├── express.json({ limit: "32kb" }) -> Enforces body size restriction
- *   │     └── cookieParser() -> Extracts accessToken and refreshToken
- *   │
- *   ├── 4. Routing & Rate-Limiting Layer
- *   │     ├── /api/auth       ──> Auth Routes (register, login, tokens, password reset)
- *   │     ├── /api            ──> Chat Routes (save, history, delete, rename)
- *   │     ├── /api/medical    ──> aiLimiter (20 req/min) ──> Medical PubMed Routes
- *   │     ├── /api/ai         ──> aiLimiter (20 req/min) ──> General Gemini Chat Routes
- *   │     ├── /api/analytics  ──> Analytics Routes (dashboard overview & dataset profile)
- *   │     └── /api/health     ──> System Health & Service Readiness
- *   │
- *   ├── 5. 404 Route Fallback
- *   │     └── Emits 404 JSON with message: "API route not found" + req.requestId
- *   │
- *   └── 6. Centralized Error Boundary Middleware
- *         ├── SyntaxError (Malformed JSON) ──> 400 Bad Request
- *         ├── entity.too.large              ──> 413 Payload Too Large
- *         ├── CORS Origin Rejection         ──> 403 Forbidden
- *         └── Default Server Exception      ──> 500 Internal Server Error
- *
- * ----------------------------------------------------------------------------
- * ASCII FLOW: REQUEST PROCESSING LIFECYCLE
- * ----------------------------------------------------------------------------
- *  [Client Request]
- *         │
- *         ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ 1. Tracing: Set req.requestId & Security Headers       │
- *  └────────────────────────────────────────────────────────┘
- *         │
- *         ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ 2. CORS Whitelist: matches CLIENT_ORIGIN / FRONTEND_URL│
- *  └────────────────────────────────────────────────────────┘
- *         │ [Pass]
- *         ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ 3. Body Parser (limit: 32kb) & Cookie Parser           │
- *  └────────────────────────────────────────────────────────┘
- *         │
- *         ├──► [Exceeds 32kb] ──► 413 "Request body is too large"
- *         ├──► [Malformed]    ──► 400 "Request body contains invalid JSON"
- *         │
- *         ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ 4. Route Dispatcher                                    │
- *  │    ├── /api/auth       ──► authRouter                  │
- *  │    ├── /api            ──► chatRouter                  │
- *  │    ├── /api/medical    ──► [RateLimit: 20/min] ──► med │
- *  │    ├── /api/ai         ──► [RateLimit: 20/min] ──► ai  │
- *  │    ├── /api/analytics  ──► analyticsRouter             │
- *  │    └── /api/health     ──► Health Status JSON          │
- *  └────────────────────────────────────────────────────────┘
- *         │
- *         ▼
- *  ┌────────────────────────────────────────────────────────┐
- *  │ 5. Error Boundary: Uniform JSON error with requestId   │
- *  └────────────────────────────────────────────────────────┘
- * ============================================================================
- */
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
 const { randomUUID } = require("crypto");
+const authenticate = require("./middleware/authToken");
 const { version } = require("./package.json");
 
-dotenv.config();
-
-const app = express();
-app.disable("x-powered-by");
-
-const allowedOrigins = (process.env.CLIENT_ORIGIN || process.env.FRONTEND_URL || "http://localhost:5173")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-app.locals.allowedOrigins = allowedOrigins;
-
-app.use((req, res, next) => {
-  req.requestId = req.get("x-request-id") || randomUUID();
-  res.setHeader("x-request-id", req.requestId);
-  res.setHeader("x-content-type-options", "nosniff");
-  res.setHeader("referrer-policy", "no-referrer");
-  res.setHeader("permissions-policy", "camera=(), microphone=(), geolocation=()");
-  next();
-});
-
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(new Error("Origin is not allowed by CORS"));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-  })
-);
-
-app.use(express.json({ limit: "32kb" }));
-app.use(cookieParser());
-
-const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 20,
-  standardHeaders: "draft-7",
-  legacyHeaders: false,
-  message: { message: "Too many AI requests; please wait and try again" },
-});
-
-const chatRoutes = require("./routes/chatRoute");
-const authRoutes = require("./routes/authRoute");
-const medicalRoutes = require("./routes/medicalRoute");
-const aiRoutes = require("./routes/aiRoute");
-const analyticsRoutes = require("./routes/analyticsRoute");
-
-app.use("/api/auth", authRoutes);
-app.use("/api", chatRoutes);
-app.use("/api/medical", aiLimiter, medicalRoutes);
-app.use("/api/ai", aiLimiter, aiRoutes);
-app.use("/api/analytics", analyticsRoutes);
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    version,
-    timestamp: new Date().toISOString(),
-    uptimeSeconds: Math.round(process.uptime()),
-    requestId: req.requestId,
-    database: ["disconnected", "connected", "connecting", "disconnecting"]
-      [mongoose.connection.readyState] || "unknown",
-    aiConfigured: Boolean(process.env.GEMINI_API_KEY),
+function createApp({ services = {}, limits = true } = {}) {
+  const app = express();
+  app.disable("x-powered-by");
+  if (process.env.TRUST_PROXY) app.set("trust proxy", process.env.TRUST_PROXY.split(",").map((value) => value.trim()));
+  const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173").split(",").map((origin) => origin.trim()).filter(Boolean);
+  app.locals.allowedOrigins = allowedOrigins; app.locals.services = services;
+  app.use((req, res, next) => {
+    const supplied = req.get("x-request-id");
+    req.requestId = supplied && /^[a-zA-Z0-9-]{8,80}$/.test(supplied) ? supplied : randomUUID();
+    res.set({ "x-request-id": req.requestId, "x-content-type-options": "nosniff", "x-frame-options": "DENY", "referrer-policy": "no-referrer", "permissions-policy": "camera=(), microphone=(), geolocation=()", "cache-control": "no-store" });
+    if (process.env.STRUCTURED_LOGS === "true") {
+      const start = Date.now();
+      res.on("finish", () => console.log(JSON.stringify({ requestId: req.requestId, method: req.method, route: req.route?.path || req.baseUrl || "unmatched", status: res.statusCode, durationMs: Date.now() - start })));
+    }
+    next();
   });
-});
-
-if (process.env.MONGO_URI) {
-  mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => {
-      console.log("MongoDB connected");
-    })
-    .catch((error) => {
-      console.error("MongoDB connection failed:", error.message);
-    });
-} else {
-  console.warn("MONGO_URI is not configured; database-backed routes will be unavailable");
+  app.use(cors({ origin(origin, callback) { callback(origin && !allowedOrigins.includes(origin) ? Object.assign(new Error("Origin is not allowed."), { status: 403, code: "ORIGIN_DENIED" }) : null, true); }, credentials: true, methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "X-Request-Id"], exposedHeaders: ["x-request-id", "retry-after"] }));
+  app.use(express.json({ limit: "32kb" })); app.use(cookieParser());
+  app.use((req, res, next) => {
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      const origin = req.get("origin");
+      const fetchSite = req.get("sec-fetch-site");
+      if ((origin && !allowedOrigins.includes(origin)) || fetchSite === "cross-site") return res.status(403).json({ code: "ORIGIN_DENIED", message: "Origin is not allowed.", requestId: req.requestId });
+      // Cookie-authenticated browser writes require an exact Origin in production.
+      // This also covers a browser or proxy that omits Origin but sends cookies.
+      if (process.env.NODE_ENV === "production" && req.get("cookie") && !origin) return res.status(403).json({ code: "ORIGIN_REQUIRED", message: "A same-origin request is required.", requestId: req.requestId });
+    }
+    next();
+  });
+  app.get("/api/health", (req, res) => res.json({ status: "ok", version }));
+  app.get("/api/ready", (req, res) => {
+    const ready = mongoose.connection.readyState === 1;
+    res.status(ready ? 200 : 503).json({ status: ready ? "ready" : "unavailable", database: ready ? "connected" : "disconnected", aiConfigured: require("./services/modelProvider").providerConfigured(), emailConfigured: Boolean(process.env.BREVO_API_KEY), requestId: req.requestId });
+  });
+  const pass = (req, res, next) => next();
+  const limiter = (limit, windowMs, keyGenerator) => limits ? rateLimit({ limit, windowMs, ...(keyGenerator ? { keyGenerator } : {}), standardHeaders: "draft-7", legacyHeaders: false, message: { code: "RATE_LIMIT", message: "Too many requests. Please wait and try again." } }) : pass;
+  app.locals.authLimiter = limiter(30, 15 * 60000);
+  app.locals.recoveryLimiter = limiter(5, 15 * 60000);
+  app.use("/api/auth", require("./routes/authRoute"));
+  app.use("/api", require("./routes/chatRoute"));
+  app.locals.settingsLimiter = limiter(12, 15 * 60000, (req) => req.user.id);
+  app.use("/api/settings", authenticate, require("./routes/settingsRoute"));
+  const aiLimiter = limiter(20, 60000, (req) => req.user.id);
+  app.use("/api/ai", authenticate, aiLimiter, require("./routes/aiRoute"));
+  app.use("/api/medical", authenticate, aiLimiter, require("./routes/medicalRoute"));
+  app.use("/api/analytics", require("./routes/analyticsRoute"));
+  app.use((req, res) => res.status(404).json({ code: "NOT_FOUND", message: "API route not found.", requestId: req.requestId }));
+  app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    const status = error.type === "entity.too.large" ? 413 : error instanceof SyntaxError && error.status === 400 ? 400 : error.status || 500;
+    if (status >= 500 && process.env.STRUCTURED_LOGS === "true") console.error(JSON.stringify({ requestId: req.requestId, code: error.code || "INTERNAL", status }));
+    res.status(status).json({ code: error.code || (status === 413 ? "BODY_TOO_LARGE" : status === 400 ? "INVALID_INPUT" : "INTERNAL"), message: status === 413 ? "Request body is too large." : status < 500 || error.code === "AI_UNAVAILABLE" ? error.message : "Service unavailable. Please try again.", requestId: req.requestId });
+  });
+  return app;
 }
-
-app.use((req, res) => {
-  res.status(404).json({ message: "API route not found", requestId: req.requestId });
-});
-
-app.use((error, req, res, next) => {
-  if (res.headersSent) return next(error);
-  const badJson = error instanceof SyntaxError && error.status === 400 && "body" in error;
-  const tooLarge = error.type === "entity.too.large";
-  const corsError = error.message === "Origin is not allowed by CORS";
-  const status = badJson ? 400 : tooLarge ? 413 : corsError ? 403 : 500;
-  console.error(`[${req.requestId}] Request error:`, error.message);
-  return res.status(status).json({
-    message: badJson
-      ? "Request body contains invalid JSON"
-      : tooLarge
-        ? "Request body is too large"
-        : corsError
-          ? "Origin is not allowed"
-          : "Unexpected server error",
-    requestId: req.requestId,
-  });
-});
-
-module.exports = app;
+module.exports = createApp();
+module.exports.createApp = createApp;

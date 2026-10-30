@@ -66,6 +66,8 @@ import argparse
 import csv
 import json
 import re
+import hashlib
+from prepare_dataset import leakage_key
 from collections import Counter
 from pathlib import Path
 
@@ -135,7 +137,16 @@ def validate_splits(input_dir: Path) -> dict[str, object]:
                 question_sets[left] & question_sets[right]
             )
 
+    canonical_sets = {name: {leakage_key(value) for value in values} for name, values in question_sets.items()}
+    near_overlaps = {f"{left}_vs_{right}": len(canonical_sets[left] & canonical_sets[right]) for index, left in enumerate(SPLIT_NAMES) for right in SPLIT_NAMES[index + 1:]}
+    manifest_path = input_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+    manifest_matches = all(split_metrics[name].get("rows", 0) == manifest.get("splits", {}).get(name, split_metrics[name].get("rows", 0)) for name in SPLIT_NAMES)
+    hashes_match = all(hashlib.sha256((input_dir / f"{name}.csv").read_bytes()).hexdigest() == digest for name, digest in manifest.get("split_sha256", {}).items() if name in SPLIT_NAMES)
     passed = (
+        all(metrics.get("rows", 0) > 0 for metrics in split_metrics.values())
+        and manifest_matches and hashes_match and all(value == 0 for value in near_overlaps.values())
+        and
         all(value == 0 for value in overlaps.values())
         and all(metrics.get("missing_rows", 0) == 0 for metrics in split_metrics.values())
         and all(
@@ -147,6 +158,9 @@ def validate_splits(input_dir: Path) -> dict[str, object]:
         "input_directory": str(input_dir),
         "splits": split_metrics,
         "cross_split_question_overlap": overlaps,
+        "canonical_question_overlap": near_overlaps,
+        "manifest_counts_match": manifest_matches,
+        "manifest_hashes_match": hashes_match,
         "passed": passed,
         "training_performed": False,
     }

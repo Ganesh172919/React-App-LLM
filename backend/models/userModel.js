@@ -81,6 +81,16 @@ const userSchema = new mongoose.Schema({
   verificationTokenExpiry: Date,
   resetToken: String,
   resetTokenExpiry: Date,
+  refreshTokenHash: String,
+  refreshTokenExpiry: Date,
+  sessionVersion: { type: Number, default: 0 },
+  recoveryRequestedAt: Date,
+  verificationRequestedAt: Date,
+  googleSubject: { type: String, unique: true, sparse: true },
+  providerChoice: { type: String, default: "deployment" },
+  answerStyle: { type: String, enum: ["balanced", "brief", "detailed"], default: "balanced" },
+  audienceProfile: { type: String, enum: ["general", "student", "clinician"], default: "general" },
+  usePastChats: { type: Boolean, default: false },
 });
 
 userSchema.pre("save", async function (next) {

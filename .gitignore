@@ -11,3 +11,6 @@ __pycache__/
 .venv/
 venv/
 tmp/
+.local/
+Model and Dataset/prepared/
+Model and Dataset/lora/adapter-output/

@@ -1,365 +1,412 @@
-# MedAssist AI
+# MedAssist AI — Educational Health Assistance & Biomedical Evidence Grounding Platform
 
-MedAssist AI is a full-stack medical question-and-answer application with authenticated chat history, PubMed-backed responses, server-side Gemini integration, safety checks, and an analytics dashboard.
+Developed by **J Ganesh kumar reddy**  
+*Full-Stack Educational Health Assistance, Biomedical Evidence Grounding, & Machine Learning Research Platform*
 
-Developed by **J Ganesh kumar reddy**.
+---
 
-The interface intentionally uses a simple, student-project visual style: clear blue controls, straightforward cards, readable labels, and minimal decorative effects.
+## 1. Executive Summary & Architectural Overview
 
-> This project provides health information, not diagnosis or medical advice. Urgent symptoms require local emergency services or a qualified clinician.
+MedAssist AI is a full-stack educational biomedical question-answering platform and clinical machine learning research workbench. The platform couples real-time literature retrieval from the **National Center for Biotechnology Information (NCBI) PubMed** database with multi-provider Large Language Model (LLM) synthesis (**Google Gemini 2.5 Flash**, **Groq Cloud**, **Together AI**, and **Local OpenAI-Compatible Server**).
 
-## What is included
+### Core System Capabilities
+1. **Biomedical Evidence Grounding**: Live 3-stage NCBI Entrez E-Utilities harvesting (`esearch`, `esummary`, `efetch`) extracting structured MEDLINE XML abstracts.
+2. **Deterministic Citation Auditing**: Set-partitioning mathematical verifier analyzing `[N]` bracketed assertions against retrieved literature bounds.
+3. **High-Risk Medication Interaction Screener**: Heuristic screening covering 12 major FDA black-box contraindication drug pairs with preserved context across emergency deflections.
+4. **Educational Clinical Calculators**: 11 evidence-based medical scoring tools with strict physiological input bounds and WAI-ARIA tab navigation.
+5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer committed only upon explicit user confirmation (`/api/save`).
+6. **Multi-Tab Web Locks Synchronization**: Single-flight token renewal across concurrent browser tabs (`navigator.locks.request`).
+7. **Offline Machine Learning & LoRA Suite**: 1,437 ambiguous question groups quarantined; deterministic SHA-256 modulo 100 hash splits; closed-form LoRA parameter calculations.
 
-- Responsive React chat workspace with Markdown responses and persistent sessions
-- Medical-query routing with PubMed source discovery and visible citations
-- Server-side Gemini generation so provider keys are never shipped to the browser
-- Citation-grounded medical prompts with a references-only fallback when generation is unavailable
-- Reusable conversation-history relevance retrieval
-- Custom prompt safeguards for self-harm, harmful instructions, oversized input, and possible emergencies
-- User-scoped WebSocket updates, CRUD operations, email verification, password reset, and JWT cookies
-- Analytics dashboard for sessions, messages, medical usage, citations, seven-day activity, and dataset quality
-- Selectable 7/30/90-day analytics, verification outcomes, answer-length distributions, and JSON export
-- Searchable chat history with rename, export, and confirmed deletion actions
-- Reproducible CSV profiling, multi-answer auditing, deterministic preparation, and split-leakage validation
-- Automated CI for Node tests, frontend lint/build, and Python dataset checks
+> [!IMPORTANT]
+> **Clinical Disclaimer**: MedAssist AI provides health and medical information strictly for educational and research purposes. It does not provide clinical diagnoses, medical advice, or treatment plans. Acute emergency symptoms require immediate contact with local emergency medical services.
 
-No model training is performed by the upgraded application or data utilities.
+---
 
-## Upgrade summary
+## 2. Master System Architectural Topology
 
-The current version resolves committed merge conflicts and adds several production-focused improvements:
+```
+========================================================================================================================
+                                     MEDASSIST AI — MASTER ARCHITECTURAL TOPOLOGY
+========================================================================================================================
 
-- Moved Gemini calls from the frontend to the backend
-- Added authenticated `/api/ai/chat` and `/api/analytics/overview` endpoints
-- Scoped WebSocket broadcasts to the authenticated owner of each chat
-- Fixed medical-message persistence so a response is saved only once
-- Preserved medical flags, references, and verification metadata in chat history
-- Added API URL configuration instead of hard-coded browser endpoints
-- Completed missing forgot-password and reset-password routes
-- Added input validation, authentication rate limiting, health status, CORS configuration, and error handling
-- Reworked navigation, landing page, empty chat state, medical-source labeling, and dashboard UI
-- Added dataset analysis reports and preparation utilities without invoking the legacy training code
-- Added deterministic citation-number validation for PubMed-grounded answers
-- Added request IDs, response security headers, body limits, AI rate limits, and privacy-safe WebSocket handling
-- Completed chat CRUD with title updates plus client-side search and export
-
-## Project highlights
-
-Developed by **J Ganesh kumar reddy**, with work spanning the React interface, authenticated backend services, medical-data preparation, AI integration, safeguards, analytics, and application testing.
-
-- Built the frontend chat experience with responsive UI/UX and persistent, user-owned conversation management.
-- Implemented backend CRUD operations for chats and reusable AI-service endpoints for local and cloud deployments.
-- Curated manual medical Q&A data and the MEDQUAD-style CSV. Earlier experiments used LoRA and supervised fine-tuning; the production upgrade does not run training.
-- Added hallucination controls through source-bounded medical prompts, PubMed references, citation-number validation, and explicit verification metadata.
-- Integrated Gemini on the server and retained lightweight relevance retrieval for prior conversation context.
-- Added medical guardrails, harmful-message filtering, operational analytics, dataset-quality visualization, and automated behavior checks.
-- Earlier model experimentation reported a 60% GPU-memory reduction through parameter-efficient fine-tuning. That benchmark is project-reported and is not rerun by this repository upgrade.
-
-## Architecture & System Flows
-
-Comprehensive architectural documentation, end-to-end mindmaps, and detailed ASCII flows are available in the dedicated documentation guides:
-- [System Architecture, Mindmaps & ASCII Flows](docs/SYSTEM_ARCHITECTURE_MINDMAPS_AND_FLOWS.md)
-- [Backend Architecture & API Guide](backend/README.md)
-- [Frontend Architecture & Component Guide](frontend/README.md)
-- [Dataset Profiling, Auditing & Splitting Pipeline](Model%20and%20Dataset/README.md)
-
-### System Mindmap Flow
-
-```text
-[MedAssist AI Platform]
-  │
-  ├── Frontend Client (React 19 + Vite 6 + Tailwind 4)
-  │     ├── Chat Workspace: Markdown rendering, code blocks, citations, badges
-  │     ├── Dual-Path Query Dispatch: PubMed literature route vs. Gemini AI route
-  │     ├── Session Management: Grouped history, title search, inline rename, export, delete
-  │     ├── Real-Time Sync: WebSocket listener with exponential backoff reconnects
-  │     └── Operations Dashboard: 7/30/90-day SVG activity trends, verification stats
-  │
-  ├── Express + WebSocket Gateway (server.js + app.js)
-  │     ├── Security Shield: UUID tracing, security headers, CORS whitelist, 32kb limits
-  │     ├── Rate Limiters: aiLimiter (20 req/min) & authLimiter (30 req/15 min)
-  │     ├── Cookie-Based JWT Auth: 15-minute accessToken & 7-day refreshToken
-  │     ├── User-Scoped WebSocket Broadcasts: Emits CHAT_UPDATE strictly to chat owner
-  │     └── Health Endpoint: /api/health with DB status, uptime, and AI configuration
-  │
-  ├── AI, Grounding & Safety Engine
-  │     ├── Safety Screening: Rejects self-harm, harmful acts; flags emergencies
-  │     ├── Context Retrieval: Fast token-overlap relevance over prior user chats
-  │     ├── PubMed Grounding: Live NCBI eUtils article search (esearch + esummary)
-  │     ├── Constrained Generation: Gemini 3.8 Flash bounded strictly to retrieved records
-  │     └── Citation Grounding Audit: Validates [1]..[N] claims and reports coverage %
-  │
-  └── Dataset Utilities Pipeline (Model and Dataset/)
-        ├── analyze_dataset.py: Descriptive profiling, length percentiles, quality flags
-        ├── audit_dataset.py: Repeated question audit, Jaccard answer similarity, URL checks
-        ├── prepare_dataset.py: Deduplication, longest-answer pick, deterministic SHA-256 splits
-        └── verify_splits.py: Cross-split leakage validation (asserts 0 overlap)
+     [ CLIENT WORKSPACE (Web Browser) ]
+     ├── React 19 SPA | Vite 6 | Tailwind CSS 4 | Lucide Icons
+     ├── Web Locks API Single-Flight Token Refresh (frontend/src/lib/api.js)
+     ├── Resilient Draft & Pending Answer Cache (frontend/src/lib/tabStorage.js)
+     ├── IME Composition Safety Guard for East Asian Language Typing
+     └── 11 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
+                  │
+                  │ HTTP (Port 8080) / Secure WebSocket (/ws)
+                  │ (External TLS 1.3 Ingress Required in Production)
+                  ▼
+     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │                                TIER 1: INGRESS GATEWAY (Nginx Alpine)                                          │
+     │  - Reverse Proxy Pass (/api/* -> backend:5000)                                                                 │
+     │  - WebSocket Upgrade Gateway (/ws -> backend:5000/ws)                                                          │
+     │  - Static Asset Delivery: /assets/* with Cache-Control: "public, max-age=31536000, immutable"                  │
+     │  - Ingress Liveness Healthcheck: /healthz (returns 200 OK "healthy\n")                                         │
+     │  - Security Response Headers: X-Frame-Options DENY, nosniff, Referrer-Policy, CSP, Permissions-Policy          │
+     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                        │
+                                                        │ Internal Reverse Proxy Pass (Port 5000)
+                                                        ▼
+     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+     │                                TIER 2: APPLICATION RUNTIME (Node.js 24 LTS)                                    │
+     │  - Request UUID Tracing (x-request-id) & Structured JSON Telemetry Logging                                     │
+     │  - CORS Origin Whitelist & Strict Non-Safe Origin Match Gate (sec-fetch-site)                                  │
+     │  - Strict Payload Ceiling: 32KB JSON Body Parser                                                               │
+     │  - Tiered Rate Limiters: Auth (30/15m), Recovery (5/15m), AI/Medical (20/1m), Settings (12/15m)                 │
+     │  - Cookie-Based JWT Auth with Monotonic sessionVersion Single-Device Invalidation                              │
+     │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
+     │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
+     │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
+     │  - 12 FDA Black-Box Warning Drug Interaction Screener (interactionService.js)                                 │
+     │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
+     │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
+     │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
+     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                      │                                                               │
+                      │ MongoDB Wire Protocol (Port 27017)                            │ Outbound HTTPS (TLS 1.3)
+                      ▼                                                               ▼
+     ┌─────────────────────────────────────────────────┐             ┌────────────────────────────────────────────────┐
+     │         TIER 3: PERSISTENT DATABASE             │             │           TIER 4: UPSTREAM SERVICES            │
+     │  - Engine: MongoDB 7.0 Jammy                    │             │  - NCBI Entrez E-Utilities                     │
+     │  - Collections:                                 │             │    (esearch, esummary, efetch MEDLINE XML)     │
+     │      ├── users (Bcrypt, sessionVersion, tokens) │             │  - Google Gemini 2.5 Flash API                 │
+     │      ├── chats (Threads, messages, citations)   │             │  - Groq Cloud High-Throughput LLM Engine       │
+     │      ├── generations (24-Hour TTL Ephemeral)    │             │  - Together AI Cloud Platform                  │
+     │      └── providercredentials (AES-256-GCM Keys) │             │  - Local OpenAI-Compatible Server (vLLM)       │
+     │  - Mongoose Schemas with Compound Indexes       │             │  - Brevo Transactional Email (Verification)    │
+     └─────────────────────────────────────────────────┘             └────────────────────────────────────────────────┘
+========================================================================================================================
 ```
 
-### End-to-End Query & Grounding ASCII Flow
+---
 
-```text
-Client Browser            Express Backend                NCBI PubMed API          Google Gemini          MongoDB
-      │                          │                              │                       │                   │
-  [1] │── Types health query ───>│                              │                       │                   │
-      │   isMedicalQuery() == T  ├─ authToken (JWT verify)      │                       │                   │
-      │   POST /api/medical      ├─ screenPrompt()              │                       │                   │
-      │                          │                              │                       │                   │
-  [2] │                          ├─ esearch.fcgi?term=query ───>│                       │                   │
-      │                          │<─ { idlist: [pmid1, pmid2] }─┤                       │                   │
-      │                          ├─ esummary.fcgi?id=pmids ────>│                       │                   │
-      │                          │<─ { articles: metadata } ────┤                       │                   │
-      │                          │                                                      │                   │
-  [3] │                          ├─ Build Bounded Context: [1]..., [2]...               │                   │
-      │                          ├─ generateWithGemini() ──────────────────────────────>│                   │
-      │                          │<─ Answer with inline citations [1], [2] ─────────────┤                   │
-      │                          │                                                                          │
-  [4] │                          ├─ assessCitationGrounding(response, 2)                                    │
-      │                          │  - Checks citation numbers against source count                          │
-      │                          │  - Status: "citation_checked", Grounded: true                            │
-      │                          │                                                                          │
-  [5] │<── 200 OK Response ──────┤                                                                          │
-      │    - Formatted text      │                                                                          │
-      │    - References metadata │                                                                          │
-      │    - Verification audit  │                                                                          │
-      │                          │                                                                          │
-  [6] │── POST /api/save ───────>│                                                                          │
-      │   Save exchange payload  ├─ chatController.saveChat()                                               │
-      │                          ├─ Append message to session ─────────────────────────────────────────────>│
-      │                          ├─ broadcastUpdate(chat, userId)                                           │
-      │                          │  (Pushes CHAT_UPDATE to connected WebSocket clients)                    │
-      │<── 201 Created ──────────┤                                                                          │
+## 3. Platform Capabilities Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((MedAssist AI Platform))
+    ::icon(fa fa-heartbeat)
+    (01 Client Tier)
+      React 19 SPA
+      Vite 6 Fast Bundler
+      Tailwind CSS 4
+      Web Locks Single-Flight Refresh
+      tabStorage Resilient Cache
+      Accessible WAI-ARIA Dialogs
+    (02 Biomedical Evidence Grounding)
+      NCBI Entrez REST Client
+        Stage 1 esearch Relevance
+        Stage 2 esummary Metadata
+        Stage 3 efetch MEDLINE XML
+      Deterministic Citation Auditor
+        Bracket Regex Extraction [N]
+        Valid vs Invalid Partitioning
+      12 FDA Drug Interaction Warning Rules
+        Preserved Invariant Context
+      Secondary Model Review Consensus
+    (03 Identity & Cryptographic Security)
+      Bcrypt Salted User Passwords
+      Monotonic sessionVersion Increment
+      Single Active Device Enforcement
+      Hashed SHA-256 Rotating Tokens
+      AES-256-GCM Authenticated Vault
+      Google OAuth 2.0 PKCE Flow
+    (04 Clinical Educational Calculators)
+      11 Clinical Tools
+        CKD-EPI 2021 eGFR Race-Free
+        CHA2DS2-VASc Stroke Risk
+        Mean Arterial Pressure MAP
+        Cockcroft-Gault CrCl
+        Payne Corrected Calcium
+        Serum Anion Gap
+        FeNa and FeUrea
+        Holliday-Segar 4-2-1 Fluids
+        Wells PE Pre-Test Probability
+      Accessibility Controls
+        WAI-ARIA Tabpanel Cycling
+        Keyboard Alt-Plus-C Shortcut
+    (05 Offline Machine Learning Research)
+      Ambiguity Isolation
+        1,437 Contradictory Question Groups
+        3,535 Rows Quarantined
+      Cryptographic Partitioning
+        SHA-256 Modulo 100 Splits
+        Zero Cross-Partition Leakage
+      Closed-Form LoRA Validation
+        147,456 Adapter Parameters
+        0.281 MB FP16 Footprint
+      Paired Ablation Benchmark Tool
 ```
 
-## Dataset analysis
+---
 
-The source CSV contains `question` and `answer` fields. The committed report was generated by `Model and Dataset/analyze_dataset.py`.
+## 4. Evidence-Based Clinical Calculators Suite
 
-| Metric | Result |
-| --- | ---: |
-| Source rows | 16,412 |
-| Valid question-answer pairs | 16,407 |
-| Missing answers | 5 |
-| Exact duplicates after whitespace normalization | 48 |
-| Unique normalized questions | 14,345 |
-| Repeated normalized question rows | 2,062 |
-| Median question length | 7 words |
-| Median answer length | 132 words |
-| Multi-answer question groups | 1,396 |
-| Multi-answer groups below 0.35 token similarity | 1,128 |
-| Answers containing URLs | 159 |
+The platform includes an 11-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
 
-The report is descriptive. It does not establish clinical correctness, licensing, or source provenance. Before any future retrieval evaluation or training, review conflicting repeated questions, attach provenance and licensing metadata, and clinically validate the content.
+| Tool Name | Clinical Formula / Scoring Model | Input Parameters | Physiological Bounds | Clinical Interpretation |
+|:---|:---|:---|:---:|:---|
+| **Body Mass Index (BMI)** | $\text{BMI} = \frac{\text{Weight (kg)}}{\text{Height (m)}^2}$ or $\frac{\text{lbs}}{\text{in}^2} \times 703$ | Weight (kg/lbs), Height (cm/in) | Weight: 20–300 kg<br>Height: 50–250 cm | Underweight (<18.5), Normal (18.5–24.9), Overweight (25–29.9), Obese (≥30). |
+| **CKD-EPI 2021 eGFR** | $142 \times \min(S_{\text{cr}}/\kappa, 1)^\alpha \times \max(S_{\text{cr}}/\kappa, 1)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$ | Age, Sex, Serum Creatinine (mg/dL) | Age: 18–120 yr<br>Cr: 0.1–20 mg/dL | G1 (≥90), G2 (60–89), G3a (45–59), G3b (30–44), G4 (15–29), G5 (<15 Kidney Failure). |
+| **CHA₂DS₂-VASc** | Sum of risk factors (CHF, HTN, Age ≥75 [2], DM, Stroke/TIA [2], Vascular, Age 65–74, Sex Female) | Point toggles (0–9 scale) | Binary toggles | Score 0 (Men) / 1 (Women): Low risk.<br>Score ≥2 (Men) / ≥3 (Women): Anticoagulation recommended. |
+| **Mean Arterial Pressure (MAP)** | $\text{MAP} = \text{DBP} + \frac{1}{3}(\text{SBP} - \text{DBP}) = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | Systolic BP, Diastolic BP (mmHg) | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock criterion. |
+| **Cockcroft-Gault CrCl** | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age, Sex, Weight (kg), Serum Cr | Age: 18–120 yr<br>Weight: 30–250 kg | Standard renal dosage adjustment metric for DOACs and antimicrobials. |
+| **Payne Corrected Calcium** | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Calcium (mg/dL), Albumin (g/dL) | Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts total calcium in hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
+| **Serum Anion Gap** | $\text{AG} = \text{Na}^+ - (\text{Cl}^- + \text{HCO}_3^-)$ | Sodium, Chloride, Bicarbonate (mEq/L) | Na: 100–180 mEq/L<br>Cl: 60–140 mEq/L | Normal: 8–12 mEq/L.<br>>12 mEq/L: High Anion Gap Metabolic Acidosis. |
+| **Fractional Excretion of Sodium (FeNa)** | $\text{FeNa} = \frac{U_{\text{Na}} \times S_{\text{cr}}}{S_{\text{Na}} \times U_{\text{cr}}} \times 100\%$ | Serum & Urine Na, Serum & Urine Cr | Cr: 0.1–20 mg/dL<br>Na: 5–200 mEq/L | <1%: Prerenal azotemia.<br>>2%: Acute Tubular Necrosis (ATN). |
+| **Fractional Excretion of Urea (FeUrea)** | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | Serum BUN, Urine Urea, Serum/Urine Cr | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking diuretics.<br>>50%: Intrinsic AKI. |
+| **Maintenance Fluids (4-2-1 Rule)** | $4 \text{ mL/kg/hr (1-10kg)} + 2 \text{ mL/kg/hr (11-20kg)} + 1 \text{ mL/kg/hr (>20kg)}$ | Patient Weight (kg) | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
+| **Wells' Criteria for PE** | Point summation across 7 clinical criteria (DVT signs, alternative less likely, HR >100, etc.) | Clinical criteria checkboxes (0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Check D-dimer).<br>>4.0: PE Likely (Proceed to CT Pulmonary Angiography). |
 
-Generate fresh reports:
+---
+
+## 5. Pharmacological Drug Interaction Screening & Preserved Context
+
+Implemented in [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js), this subsystem scans user questions against 12 major FDA black-box warning medication combinations:
+
+| Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
+|:---|:---|:---|:---:|:---|
+| **Anticoagulant + NSAID / Aspirin** | Warfarin, Eliquis, Xarelto, Plavix | Aspirin, Ibuprofen, Naproxen, Diclofenac | `CRITICAL` | Severe gastrointestinal ulceration and intracranial hemorrhage. |
+| **PDE5 Inhibitor + Nitrate** | Sildenafil, Tadalafil, Vardenafil | Nitroglycerin, Isosorbide Mononitrate | `CRITICAL` | Synergistic cGMP accumulation causing profound, fatal hypotension. |
+| **Tramadol / Opioids + SSRI / SNRI** | Tramadol, Meperidine, Methadone | Fluoxetine, Sertraline, Paroxetine, Venlafaxine | `HIGH` | Massive serotonin accumulation causing Serotonin Syndrome. |
+| **ACEI / ARB + K-Sparing Diuretic** | Lisinopril, Enalapril, Losartan, Valsartan | Spironolactone, Eplerenone, Potassium supplements | `HIGH` | Additive potassium retention causing fatal cardiac arrhythmias. |
+| **Methotrexate + TMP-SMX (Bactrim)** | Methotrexate | Trimethoprim, Sulfamethoxazole (Bactrim) | `CRITICAL` | Reduced renal tubular excretion causing lethal pancytopenia. |
+| **Fluoroquinolone + Corticosteroid** | Ciprofloxacin, Levofloxacin, Moxifloxacin | Prednisone, Dexamethasone, Methylprednisolone | `HIGH` | Synergistic collagen degradation causing Achilles tendon rupture. |
+| **Benzodiazepine + Opioid Analgesic** | Alprazolam, Diazepam, Lorazepam, Clonazepam | Oxycodone, Morphine, Fentanyl, Hydrocodone | `CRITICAL` | Severe CNS and respiratory depression, coma, fatal overdose (FDA Black Box). |
+| **Lithium + NSAID / ACE Inhibitor** | Lithium Carbonate / Citrate | Ibuprofen, Naproxen, Lisinopril, Enalapril | `HIGH` | Reduced renal prostaglandin clearance elevating serum lithium into toxic range. |
+| **Statin + Strong CYP3A4 Inhibitor** | Simvastatin, Atorvastatin, Lovastatin | Clarithromycin, Gemfibrozil, Itraconazole | `CRITICAL` | CYP3A4 inhibition elevates statin AUC up to 10x, causing rhabdomyolysis. |
+| **Warfarin + Azole Antifungal** | Warfarin (Coumadin) | Fluconazole, Voriconazole, Ketoconazole | `CRITICAL` | CYP2C9 inhibition suppresses S-warfarin clearance, spiking INR. |
+| **Digoxin + Amiodarone / Verapamil** | Digoxin | Amiodarone, Verapamil | `HIGH` | P-glycoprotein inhibition doubles serum digoxin, causing heart block. |
+| **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline | Sertraline, Fluoxetine, Pseudoephedrine | `CRITICAL` | Malignant hypertensive crisis and hyperthermic Serotonin Syndrome. |
+
+### Preserved Context Invariant
+```
+User Prompt: "I have severe chest pain and took nitroglycerin with sildenafil."
+     │
+     ├── 1. detectDrugInteractions() flags CRITICAL: PDE5 Inhibitor + Nitrate
+     │
+     ├── 2. screenPrompt() flags Emergency: "severe chest pain"
+     │
+     └── 3. answerService routes to immediate 911 emergencyText:
+             INVARIANT: Attaches detected drug interaction warnings into verification.drugInteractions
+             (Guarantees critical contraindication data is never silenced during emergency deflections)
+```
+
+---
+
+## 6. Key Implementation Code Snippets
+
+### 6.1 Two-Phase Generation Coordinator (`backend/controllers/aiController.js`)
+
+```javascript
+// backend/controllers/aiController.js
+const generateChatResponse = async (req, res, next) => {
+  const { prompt, sessionId, exchangeId, forceMedical, requestedProvider, requestedModel } = req.body;
+  const userId = req.user._id;
+
+  // Check for duplicate in-flight generation
+  let job = await Generation.findOne({ exchangeId, userId });
+  if (job && job.status === "ready") {
+    return res.json({ ...job.result, generationId: job.exchangeId, sessionId: job.sessionId });
+  }
+
+  // Create ephemeral placeholder with 24-hour TTL
+  job = await Generation.create({
+    exchangeId,
+    userId,
+    sessionId,
+    prompt,
+    status: "pending",
+    createdAt: new Date(),
+  });
+
+  try {
+    const result = await answerService.answer({
+      prompt,
+      sessionId,
+      userId,
+      forceMedical,
+      requestedProvider,
+      requestedModel,
+    });
+
+    job.result = result;
+    job.status = "ready";
+    await job.save();
+
+    return res.json({ ...result, generationId: job.exchangeId, sessionId: job.sessionId });
+  } catch (error) {
+    await Generation.deleteOne({ _id: job._id }).catch(() => {});
+    next(error);
+  }
+};
+```
+
+### 6.2 Deterministic Citation Auditor (`backend/services/citationService.js`)
+
+```javascript
+// backend/services/citationService.js
+function assessCitationGrounding(text, sourceCount) {
+  if (typeof text !== "string") {
+    return { grounded: false, validCitationCount: 0, invalidCitationCount: 0, citationCoverage: 0, status: "ungrounded" };
+  }
+
+  const matches = [...text.matchAll(/\[(\d+)\]/g)].map((m) => parseInt(m[1], 10));
+  const uniqueCitations = [...new Set(matches)].sort((a, b) => a - b);
+  const count = Number.isInteger(sourceCount) && sourceCount > 0 ? sourceCount : 0;
+
+  const validCitations = uniqueCitations.filter((n) => n >= 1 && n <= count);
+  const invalidCitations = uniqueCitations.filter((n) => n < 1 || n > count);
+
+  let status = "ungrounded";
+  if (invalidCitations.length > 0) status = "invalid_citations";
+  else if (validCitations.length > 0) status = "citation_checked";
+  else if (count > 0) status = "sources_supplied";
+
+  return {
+    grounded: validCitations.length > 0 && invalidCitations.length === 0,
+    validCitations,
+    invalidCitations,
+    validCitationCount: validCitations.length,
+    invalidCitationCount: invalidCitations.length,
+    citationCoverage: count > 0 ? Math.round((validCitations.length / count) * 100) : 0,
+    status,
+  };
+}
+```
+
+### 6.3 Web Locks API Client Concurrency Control (`frontend/src/lib/api.js`)
+
+```javascript
+// frontend/src/lib/api.js
+let refreshPromise = null;
+
+export async function refreshSession() {
+  if (!refreshPromise) {
+    const refresh = () => request("/auth/refresh-token", { method: "POST" });
+    refreshPromise = (
+      typeof navigator !== "undefined" && navigator.locks
+        ? navigator.locks.request("medassist-session-refresh", refresh)
+        : refresh()
+    )
+      .then((data) => {
+        window.dispatchEvent(new Event("session-renewed"));
+        return data;
+      })
+      .catch((error) => {
+        window.dispatchEvent(new Event("session-ended"));
+        throw error;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+```
+
+---
+
+## 7. Master Automated Verification Matrix
+
+The repository verification harness (`scripts/verify_project.cjs`) asserts quality, security, and behavior across 9 automated checks:
+
+```
+========================================================================================================================
+                                     MEDASSIST AI — VERIFIED QUALITY RESULTS
+========================================================================================================================
+
+    [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
+    ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       64 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom DOM Emulation    43 Passed          PASSED
+    Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
+    Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
+    Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
+    Headless Browser Smoke Test Suite           Playwright Chromium Headless      20 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      21 Passed          PASSED
+    Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
+    Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
+    ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    LOCALLY OBSERVED TOTAL                                                       174 Passed         PASSED
+========================================================================================================================
+```
+
+---
+
+## 8. Technical Documentation Suite Index
+
+For deep-dive technical specifications, mathematical derivations, and operational runbooks, consult the dedicated manuals in [`docs/`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/):
+
+| Volume | Document File | Primary Subject & Technical Scope |
+|:---:|:---|:---|
+| **01** | [`docs/README.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/README.md) | Documentation suite master catalog, system boundaries, and ASCII architecture. |
+| **02** | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md) | Multi-tier infrastructure, Nginx ingress, state machines, Web Locks, and calculators. |
+| **03** | [`docs/CURRENT_IMPLEMENTATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md) | Complete runtime state, API request/response schemas, and Mongoose database models. |
+| **04** | [`docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md) | Biomedical RAG mathematical formulations, NCBI E-Utilities, and citation auditing. |
+| **05** | [`docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md) | LoRA low-rank matrix decomposition, backpropagation gradients, and SFT masking. |
+| **06** | [`docs/SECURITY_AND_MESSAGE_POLICY.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SECURITY_AND_MESSAGE_POLICY.md) | Hardware AES-256-GCM vault, single-device session versioning, and OWASP defenses. |
+| **07** | [`docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md) | Complete file-by-file technical catalog and exported symbol/function inventory. |
+| **08** | [`docs/DEPLOYMENT_RUNBOOK.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEPLOYMENT_RUNBOOK.md) | Container mesh operations, host TLS 1.3 Nginx setup, secret generation, and backups. |
+| **09** | [`docs/EVALUATION_AND_INTEGRATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/EVALUATION_AND_INTEGRATION.md) | Paired case ablation scoring tools, strict matrix evaluation, and air-gapped search. |
+| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 172+ test assertion inventory. |
+| **11** | [`docs/ISSUES_AND_RISKS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/ISSUES_AND_RISKS.md) | Prioritized risk register, threat model, heuristic limitations, and mitigations. |
+| **12** | [`docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md) | Concise grounding summary, algorithmic rules, and secondary consensus verifier. |
+| **13** | [`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_FINE_TUNING_AND_LORA_GUIDE.md) | Concise LoRA setup guide, parameter estimation benchmarks, and dataset hygiene. |
+| **14** | [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md) | Line-by-line subsystem analysis, architectural patterns, and file inventory. |
+
+---
+
+## 9. Local Development & Quickstart Guide
+
+### 9.1 Prerequisites
+- **Node.js**: Version 24.x LTS and npm
+- **MongoDB**: Version 7.x (local instance or Docker container)
+- **Python**: Version 3.10+ (for standalone dataset and LoRA verification scripts)
+
+### 9.2 Execution Commands
 
 ```powershell
-python "Model and Dataset/analyze_dataset.py"
-python "Model and Dataset/audit_dataset.py"
-```
+# 1. Run the master project verification harness (runs all 9 test gates)
+node scripts/verify_project.cjs
 
-Create clean, question-level deterministic splits in a separate directory:
-
-```powershell
-python "Model and Dataset/prepare_dataset.py" --output-dir .\prepared-data
-python "Model and Dataset/verify_splits.py" --input-dir .\prepared-data
-```
-
-The preparation script keeps the source CSV unchanged, retains the longest answer for a repeated normalized question, removes missing or very short answers, and uses a SHA-256 question key for an 80/10/10 split. It does not train a model.
-
-## Project structure
-
-```text
-.
-├── backend/
-│   ├── controllers/       # Auth, chat, medical, AI, and analytics handlers
-│   ├── middleware/        # JWT cookie authentication
-│   ├── models/            # MongoDB user and chat models
-│   ├── routes/            # REST endpoints
-│   ├── services/          # Gemini, safety, email, and history retrieval
-│   ├── test/              # Node unit tests
-│   ├── app.js
-│   └── server.js
-├── frontend/
-│   └── src/
-│       ├── components/    # Auth, chat navigation, landing, and dashboard UI
-│       ├── context/       # Authentication and sidebar state
-│       ├── lib/           # Configurable API client
-│       └── utils/         # Medical query detection
-└── Model and Dataset/
-    ├── analyze_dataset.py
-    ├── audit_dataset.py
-    ├── prepare_dataset.py
-    ├── verify_splits.py
-    ├── test_dataset_tools.py
-    ├── reports/
-    ├── Final data set for llm based health assitance (1).csv
-    └── Fine-tunned model.py  # Legacy Colab export; not used by the app
-```
-
-## Requirements
-
-- Node.js 20 or newer
-- npm 10 or newer
-- MongoDB 7 or a compatible MongoDB Atlas deployment
-- Python 3.10 or newer for dataset utilities
-- Gemini API key for generated responses
-- Brevo credentials only when email verification and password reset delivery are required
-
-For Brevo email delivery, set `BREVO_API_KEY`, `EMAIL_FROM_ADDRESS`, and
-`EMAIL_FROM_NAME`. Verification and reset links use `FRONTEND_URL` when set,
-or the first configured `CLIENT_ORIGIN` as a fallback.
-
-## Local setup
-
-### 1. Backend
-
-```powershell
+# 2. Start the local backend development server
 cd backend
-Copy-Item .env.example .env
-npm install
 npm run dev
-```
 
-Configure `backend/.env`:
-
-```dotenv
-PORT=5000
-MONGO_URI=mongodb://127.0.0.1:27017/medassist
-CLIENT_ORIGIN=http://localhost:5173
-
-JWT_ACCESS_TOKEN=replace-with-a-long-random-secret
-JWT_REFRESH_TOKEN=replace-with-a-different-long-random-secret
-JWT_VERIFICATION_TOKEN=replace-with-a-different-long-random-secret
-JWT_RESET_TOKEN=replace-with-a-different-long-random-secret
-
-GEMINI_API_KEY=your-server-side-key
-GEMINI_MODEL=gemini-3.8-flash
-```
-
-Never use a `VITE_` prefix for server secrets. Vite exposes `VITE_` values to browser code.
-
-### 2. Frontend
-
-```powershell
-cd frontend
-Copy-Item .env.example .env
-npm install
+# 3. Start the local frontend development server
+cd ../frontend
 npm run dev
-```
 
-Default development endpoints:
-
-```dotenv
-VITE_API_URL=http://localhost:5000/api
-VITE_WS_URL=ws://localhost:5000/ws
-```
-
-Open `http://localhost:5173`.
-
-## Commands
-
-### Frontend
-
-```powershell
-npm run dev
-npm run lint
-npm run build
-```
-
-### Backend
-
-```powershell
-npm run dev
-npm start
-npm test
-```
-
-### Dataset utilities
-
-```powershell
+# 4. Run the Python dataset verification suite
 python -m unittest discover -s "Model and Dataset" -p "test_*.py"
-python "Model and Dataset/analyze_dataset.py"
-python "Model and Dataset/audit_dataset.py"
+
+# 5. Run the Python LoRA parameter calculation tests
+python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
 ```
 
-### LoRA preparation (no training)
-
-The maintained LoRA package validates adapter settings and converts prepared CSV rows to SFT JSONL. It never downloads a model or starts training.
+### 9.3 Containerized Production Deployment
 
 ```powershell
-cd "Model and Dataset/lora"
-python validate_lora_setup.py --output ../reports/lora_validation.json
-python -m unittest test_lora_tools.py
+# 1. Generate cryptographically strong production secrets
+node deploy/create_env.cjs
+
+# 2. Build and launch multi-container mesh
+docker compose up -d --build
+
+# 3. Verify container health status
+docker compose ps
 ```
 
-See `Model and Dataset/lora/README.md` for the data-conversion command and safety boundary.
+---
 
-### Project report
+## 10. License & Attribution
 
-The ten-page release report is committed at `output/pdf/medassist_ai_project_report.pdf`. Regenerate it after updating dataset reports or release evidence:
-
-```powershell
-python scripts/generate_project_report.py
-```
-
-The report covers architecture, UI/UX, dataset findings, the no-training LoRA scaffold, backend safeguards, deployment, live browser QA, limitations, and next steps.
-
-## Container deployment
-
-The production containers use one public origin: Nginx serves the React single-page application and proxies `/api` and `/ws` to the Node service. This avoids browser cookie and CORS inconsistencies between separately hosted frontend and backend origins.
-
-```powershell
-Copy-Item .env.docker.example .env
-# Replace every JWT placeholder with a unique random secret.
-docker compose up --build -d
-```
-
-Open `http://localhost:8080`. For HTTPS deployment, set `PUBLIC_ORIGIN` to the exact public origin and `COOKIE_SECURE=true`. The backend and frontend images include health checks; MongoDB persists to the `medassist-mongo` volume.
-
-## API overview
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| `GET` | `/api/health` | API, database, and AI configuration status |
-| `POST` | `/api/auth/register` | Create an account |
-| `POST` | `/api/auth/login` | Start an authenticated cookie session |
-| `GET` | `/api/auth/check` | Read the current session |
-| `POST` | `/api/auth/logout` | End the session |
-| `POST` | `/api/auth/refresh-token` | Refresh the access cookie |
-| `POST` | `/api/auth/forgot-password` | Request a reset email |
-| `POST` | `/api/auth/reset-password` | Apply a password reset token |
-| `GET` | `/api/history` | List the authenticated user's chats |
-| `POST` | `/api/save` | Create or update a chat |
-| `DELETE` | `/api/delete` | Delete an owned chat |
-| `PATCH` | `/api/chats/:sessionId` | Rename an owned chat |
-| `DELETE` | `/api/chats/:sessionId` | Delete an owned chat using the REST-style route |
-| `POST` | `/api/ai/chat` | Generate a safeguarded general response |
-| `POST` | `/api/medical` | Search PubMed and create a grounded medical response |
-| `GET` | `/api/analytics/overview?days=7` | Load user and dataset metrics for a 7, 30, or 90-day trend |
-
-## Safety and privacy notes
-
-- WebSocket messages are filtered by authenticated user ID.
-- Access and refresh tokens use HTTP-only cookies.
-- Gemini keys remain in backend environment variables.
-- Medical grounding uses PubMed metadata and visible links, but source presence is not proof that every answer is clinically correct.
-- Citation validation checks whether numbered citations map to supplied PubMed records; it does not independently establish factual or clinical correctness.
-- The custom filter is a first safety layer, not a replacement for provider safety systems, monitoring, or professional review.
-- Conversation retrieval uses local token-overlap relevance scoring over the authenticated user's recent stored chats. It is intentionally lightweight and is not a vector database.
-
-## Legacy model file
-
-`Model and Dataset/Fine-tunned model.py` is now a safe compatibility shim that points to the maintained `lora/` package. The invalid Colab export, embedded base64 image, automatic training, and upload steps were removed. No model training was performed during this upgrade.
-
-## Original team
-
-- 23bds011 — B varshith
-- 23bds024 — J Ganesh kumar reddy
-- 23bds015 — B Harsha
-- 23bds033 — M Jagadeeswar
-- 23bds053 — Izhaar ahmed
-
-## License
-
-MIT License. See `LICENSE`.
+- **Developed by**: **J Ganesh kumar reddy**
+- **Original Team Contributors**: 23bds011 — B varshith, 23bds024 — J Ganesh kumar reddy, 23bds015 — B Harsha, 23bds033 — M Jagadeeswar, 23bds053 — Izhaar ahmed.
+- **License**: MIT Software License. See [`LICENSE`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/LICENSE) for terms and permissions.

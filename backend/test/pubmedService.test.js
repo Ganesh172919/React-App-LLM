@@ -34,3 +34,10 @@ test("reduces conversational questions to useful PubMed terms", () => {
 test("deduplicates repeated search terms", () => {
   assert.equal(buildPubMedQuery("migraine migraine treatment"), "migraine treatment");
 });
+
+test("eliminates conversational requests and conjunctions", () => {
+  assert.equal(
+    buildPubMedQuery("Please tell me about asthma and bronchitis treatments"),
+    "asthma bronchitis treatments"
+  );
+});

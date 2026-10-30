@@ -1,0 +1,36 @@
+{
+  "completedAt": "2026-10-26T05:18:21.340Z",
+  "base": "http://127.0.0.1:4173",
+  "mode": "Built-output QA gateway; does not execute Nginx or Docker",
+  "results": [
+    {
+      "name": "Built index uses hashed assets without Vite development runtime",
+      "passed": true
+    },
+    {
+      "name": "Missing JavaScript returns 404 instead of HTML",
+      "passed": true
+    },
+    {
+      "name": "Readiness confirms connected MongoDB",
+      "passed": true
+    },
+    {
+      "name": "API responses prohibit caching and MIME sniffing",
+      "passed": true
+    },
+    {
+      "name": "Unknown API endpoint returns JSON 404",
+      "passed": true
+    },
+    {
+      "name": "JavaScript has correct MIME and immutable cache",
+      "passed": true
+    },
+    {
+      "name": "Deep link returns the SPA document",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

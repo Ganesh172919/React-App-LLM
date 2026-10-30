@@ -1,249 +1,371 @@
-# MedAssist AI - Backend Architecture & Documentation
+# MedAssist AI — Backend Architecture & Engineering Reference
 
-Welcome to the backend service documentation for **MedAssist AI**, developed by **J Ganesh kumar reddy**.
+Developed by **J Ganesh kumar reddy**
 
-The backend is built with **Node.js**, **Express**, **ws (WebSocket)**, and **MongoDB (Mongoose)**. It provides authenticated REST APIs, live WebSocket event synchronization, real-time medical literature grounding via the NCBI PubMed API, AI generation via Google Gemini, deterministic citation verification, and operational analytics.
-
----
-
-## 1. System Architecture Overview
-
-```
-                                  +------------------------------------+
-                                  |     React Client (Port 5173)       |
-                                  +------------------------------------+
-                                     | HTTP REST           | WebSocket
-                                     v                     v
-+-------------------------------------------------------------------------------+
-|                       Express + WebSocket Server (server.js)                  |
-|                                (Port 5000)                                    |
-|                                                                               |
-|  +--------------------+   +-------------------+   +------------------------+  |
-|  | Global Middleware  |   | Rate Limiting     |   | WebSocket Server (/ws) |  |
-|  | - Request ID (UUID)|   | - aiLimiter: 20/m |   | - JWT Cookie Auth      |  |
-|  | - Security Headers |   | - authLimiter:30/ |   | - 30s Heartbeat Ping   |  |
-|  | - CORS Whitelist   |   |   15m             |   | - User-Scoped Broadcast|  |
-|  | - Body Limit (32kb)|   +-------------------+   +------------------------+  |
-|  +--------------------+                                                       |
-|                                                                               |
-|  +-------------------------------------------------------------------------+  |
-|  |                             API Routes                                  |  |
-|  |  /api/auth       /api/chat       /api/medical   /api/ai    /api/analytics|  |
-|  +-------------------------------------------------------------------------+  |
-|                                                                               |
-|  +-------------------------------------------------------------------------+  |
-|  |                             Services                                    |  |
-|  |  aiService.js       citationService.js       safetyService.js           |  |
-|  |  emailService.js    historySearch.js                                    |  |
-|  +-------------------------------------------------------------------------+  |
-+-------------------------------------------------------------------------------+
-           |                        |                           |
-           v                        v                           v
-  +------------------+     +-------------------+       +-----------------+
-  | MongoDB Database |     | NCBI PubMed API   |       | Google Gemini   |
-  | (Users, Chats)   |     | (esearch, esummary|       | (Generate API)  |
-  +------------------+     +-------------------+       +-----------------+
-```
+*Full-Stack Educational Health Assistance, Biomedical Evidence Grounding, & Machine Learning Research Platform*
 
 ---
 
-## 2. Backend Module Mindmap Flow
+## 1. Backend Subsystem Architecture & Master Topology
+
+The MedAssist AI backend is engineered as a high-throughput, security-hardened service runtime utilizing **Node.js 24 LTS**, **Express 4**, **ws (WebSocket)**, and **MongoDB 7 (Mongoose)**. It provides authenticated REST APIs, real-time WebSocket state distribution, deterministic heuristic safety screening, multi-provider generative AI dispatch (Gemini, Groq, Together AI, Local vLLM), live NCBI PubMed literature retrieval, and an authenticated AES-256-GCM personal API key vault.
+
+> [!CAUTION]
+> **Clinical Notice**: All citation-number checks, XML parsing routines, and drug interaction screeners operate as deterministic software verifications. They do not establish clinical fact-checking, biological consensus, or production medical device suitability.
 
 ```
-[MedAssist Backend]
-  │
-  ├── server.js (HTTP + WebSocket Gateway)
-  │     ├── Express app binding
-  │     ├── WebSocket Server (/ws)
-  │     │     ├── Handshake: Origin Check + JWT verification
-  │     │     ├── Watchdog: 30s heartbeat ping-pong
-  │     │     └── Broadcast: user-scoped CHAT_UPDATE event emission
-  │     └── Graceful shutdown on SIGTERM / SIGINT
-  │
-  ├── app.js (Express Middleware Pipeline)
-  │     ├── Request ID tracing (UUID v4)
-  │     ├── Security headers (nosniff, no-referrer, permissions-policy)
-  │     ├── CORS whitelist validation
-  │     ├── Payload limits (JSON max 32kb)
-  │     ├── Database connection (MongoDB via Mongoose)
-  │     ├── Rate limiters (aiLimiter & authLimiter)
-  │     ├── Route registration
-  │     └── Centralized error boundary
-  │
-  ├── Routing Layer (routes/)
-  │     ├── authRoute.js      ──► Register, Login, Refresh, Password Reset, Email Verification
-  │     ├── chatRoute.js      ──► Save Chat, Get History, Update Title, Delete Session
-  │     ├── medicalRoute.js   ──► Evidence-grounded PubMed query handler
-  │     ├── aiRoute.js        ──► General AI chat with context retrieval
-  │     └── analyticsRoute.js ──► Operational & dataset analytics overview
-  │
-  ├── Controller Layer (controllers/)
-  │     ├── authController.js      ──► Dual-token issuance, bcrypt hashing, Brevo email triggers
-  │     ├── chatController.js      ──► CRUD persistence, length limits, WebSocket sync
-  │     ├── medicalController.js   ──► PubMed retrieval, context builder, citation audit
-  │     ├── aiController.js        ──► Prompt screening, history retrieval, Gemini dispatch
-  │     └── analyticsController.js ──► Multi-day trend metrics, dataset report parsing
-  │
-  ├── Service Layer (services/)
-  │     ├── aiService.js       ──► Gemini API integration with history windowing
-  │     ├── citationService.js ──► [1]..[N] grounding & hallucination evaluation
-  │     ├── safetyService.js   ──► Screening for self-harm, harmful acts, emergencies
-  │     ├── historySearch.js   ──► Token-overlap similarity for historical context
-  │     └── emailService.js    ──► Transactional emails via Brevo SDK
-  │
-  ├── Middleware Layer (middleware/)
-  │     └── authToken.js       ──► JWT accessToken cookie verification
-  │
-  └── Database Models (models/)
-        ├── userModel.js ──► User credentials, bcrypt pre-save hook, tokens
-        └── chatModel.js ──► Chat sessions, messages, PubMed references, verification
+========================================================================================================================
+                                     MEDASSIST AI — BACKEND COMPONENT ARCHITECTURE
+========================================================================================================================
+
+                                     +------------------------------------+
+                                     |     React Client (Port 5173/8080)  |
+                                     +------------------------------------+
+                                        │ HTTP REST           │ WebSocket (/ws)
+                                        ▼                     ▼
++======================================================================================================================+
+|                        EXPRESS + WEBSOCKET SERVER (backend/server.js)                                                |
+|                                        (Port 5000)                                                                   |
+|                                                                                                                      |
+|  [Global Middleware Pipeline (app.js)]                                                                               |
+|  ├── Request ID Tracing (UUIDv4 x-request-id)   ├── Security Headers (nosniff, DENY, no-referrer, no-store)          |
+|  ├── CORS Origin Whitelist Gate                ├── Strict Non-Safe Origin Match Gate (sec-fetch-site)                |
+|  ├── Body Parser (32KB JSON Ceiling)           └── Rate Limiters (Auth: 30/15m, AI: 20/m, Set: 12/15m, Rec: 5/15m)   |
+|                                                                                                                      |
+|  [Authentication & Session Guard]                                                                                    |
+|  ├── authToken.js: Cookie-based JWT verification with Monotonic sessionVersion Enforcement                           |
+|  └── sessionService.js: SHA-256 Refresh Token Hashing with Single-Use Rotation & Replay Family Revocation            |
+|                                                                                                                      |
+|  [API Routes]                                                                                                        |
+|  ├── /api/auth       (authRoute.js)     ──► authController.js & oauthController.js (PKCE S256 Flow)                  |
+|  ├── /api/settings   (settingsRoute.js) ──► settingsController.js (AES-256-GCM Key Vault & User Preferences)        |
+|  ├── /api/ai         (aiRoute.js)       ──► aiController.js (Two-Phase Ephemeral Generation Handshake)                |
+|  ├── /api/medical    (medicalRoute.js)  ──► medicalController.js (Forced PubMed Grounding Pipeline)                  |
+|  ├── /api/analytics  (analyticsRoute.js)──► analyticsController.js (7/30/90-Day UTC Trends & Telemetry)             |
+|  └── /api (Chat)     (chatRoute.js)     ──► chatController.js (Authoritative /save & Cursor History Pagination)      |
+|                                                                                                                      |
+|  [Core Services]                                                                                                     |
+|  ├── answerService.js: Query routing, safety interception, context windowing, RAG coordinator                        |
+|  ├── modelProvider.js: Multi-provider dispatch (Gemini 2.5 Flash, Groq, Together AI, Local vLLM/Ollama)              |
+|  ├── providerSelection.js: Resolves deployment defaults vs AES-256-GCM user-vault personal keys                     |
+|  ├── pubmedService.js: NCBI Entrez REST client (esearch, esummary, efetch) & fast-xml-parser flattener               |
+|  ├── citationService.js: Deterministic [N] numerical citation extraction & set partitioning auditor                  |
+|  ├── interactionService.js: Deterministic 12-pair FDA black-box drug interaction scanner                             |
+|  ├── answerVerifier.js: Secondary LLM consensus reviewer (SUPPORTED vs UNSUPPORTED)                                 |
+|  ├── safetyService.js: Deterministic prompt & output screening for crisis, emergency, and harmful synthesis         |
+|  └── websocketService.js: 30s heartbeat watchdog ping-pong & 1MB backpressure drop protection                        |
++======================================================================================================================+
+           │                                             │                                            │
+           ▼                                             ▼                                            ▼
+  +==================+                         +===================+                        +===================+
+  | MongoDB 7        |                         | NCBI PubMed API   |                        | Upstream AI Cloud |
+  | (Users, Chats,   |                         | (esearch, esummary|                        | (Google Gemini,   |
+  |  Generations TTL,|                         |  efetch MEDLINE)  |                        |  Groq, Together,  |
+  |  Credentials)    |                         |                   |                        |  Local vLLM)      |
+  +==================+                         +===================+                        +===================+
+========================================================================================================================
 ```
 
 ---
 
-## 3. Core ASCII Flows
+## 2. Backend Capabilities Mindmap
 
-### Flow A: User Authentication & JWT Session Lifecycle
-
-```
-Client Browser                         authController                     MongoDB / Email
-      │                                      │                                  │
-  [1] │─── POST /api/auth/register ─────────>│                                  │
-      │    { email, password }               ├─ Hash password (bcrypt) ─────────┤
-      │                                      ├─ Generate 24h verify token       │
-      │                                      ├─ Save User (isVerified: false) ──┤
-      │                                      ├─ Send Email via Brevo API ───────┤
-      │<── 201 Created ("Check email") ──────┤                                  │
-      │                                      │                                  │
-  [2] │─── GET /api/auth/verify-email?token ─>│                                  │
-      │                                      ├─ Verify token & expiry ──────────┤
-      │                                      ├─ Update isVerified: true ────────┤
-      │<── 200 OK ("Email verified") ────────┤                                  │
-      │                                      │                                  │
-  [3] │─── POST /api/auth/login ─────────────>│                                  │
-      │    { email, password }               ├─ Compare password (bcrypt) ──────┤
-      │                                      ├─ Check isVerified === true       │
-      │                                      ├─ Issue accessToken (15m, cookie) │
-      │                                      ├─ Issue refreshToken (7d, cookie) ┤
-      │<── 200 OK (Set-Cookie: tokens) ──────┤                                  │
-      │                                      │                                  │
-  [4] │─── POST /api/auth/refresh-token ────>│                                  │
-      │    Cookie: refreshToken              ├─ Verify refreshToken ────────────┤
-      │<── 200 OK (Set-Cookie: new access) ──┤                                  │
-```
-
----
-
-### Flow B: Grounded Medical Response & Citation Audit Flow
-
-```
-Client Browser           medicalController              NCBI PubMed API         Gemini API
-      │                          │                             │                    │
-  [1] │─── POST /api/medical ───>│                             │                    │
-      │    { prompt }            ├─ safetyService.screen()     │                    │
-      │                          │                             │                    │
-  [2] │                          ├─ esearch.fcgi?term=prompt ─>│                    │
-      │                          │<─ { idlist: [pmid1, pmid2] }┤                    │
-      │                          │                             │                    │
-  [3] │                          ├─ esummary.fcgi?id=pmids ───>│                    │
-      │                          │<─ { articles metadata } ────┤                    │
-      │                          │                                                  │
-  [4] │                          ├─ Build Source Context:                           │
-      │                          │  "[1] Title... PMID..."                          │
-      │                          │                                                  │
-  [5] │                          ├─ generateWithGemini() ──────────────────────────>│
-      │                          │  - Bounded prompt with strict citation rules     │
-      │                          │<─ "According to [1], migraine causes... [2]" ────┤
-      │                          │                                                  │
-  [6] │                          ├─ assessCitationGrounding(response, 2)            │
-      │                          │  - Valid: [1, 2]                                 │
-      │                          │  - Invalid: []                                   │
-      │                          │  - Status: "citation_checked", Grounded: true    │
-      │                          │                                                  │
-  [7] │<── 200 OK Response ──────┤                                                  │
-      │    - text with [1], [2]  │                                                  │
-      │    - references metadata │                                                  │
-      │    - verification audit  │                                                  │
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Backend Subsystem))
+    ::icon(fa fa-server)
+    (01 Ingress & Routing Pipeline)
+      Express 4 Event Loop
+      UUID Tracing x-request-id
+      CORS Origin Gate
+      sec-fetch-site Verification
+      Strict 32KB Payload Ceiling
+    (02 Identity & Session Engine)
+      Single-Device sessionVersion
+      Rotating SHA-256 Refresh Tokens
+      Replay Attack Family Revocation
+      Google OAuth 2.0 PKCE S256
+      AES-256-GCM Personal Key Vault
+    (03 Biomedical Grounding & RAG)
+      NCBI Entrez REST Pipeline
+        esearch Relevance Sorting
+        esummary Bibliographic Metadata
+        efetch MEDLINE XML Parser
+        fast-xml-parser Abstract Flattener
+      Deterministic Citation Auditor
+        Bracket Regex Extraction [N]
+        Numerical Set Partitioning
+        Reference Coverage Metric
+      Secondary Consensus Model Review
+    (04 Pharmacological & Safety Filters)
+      Deterministic Safety Screening
+        Self-Harm & Crisis Deflection
+        Acute Emergency Interception
+        Harmful Synthesis Rejection
+        Prompt Injection Token Stripping
+      12 FDA Black-Box Drug Interaction Pairs
+        Preserved in Emergency Redirects
+    (05 Real-Time & Persistence)
+      Two-Phase Ephemeral Generation
+        Phase 1 Generation with 24h TTL
+        Phase 2 Authoritative /save Push
+      WebSocket Gateway on /ws
+        Heartbeat Ping Pong 30s
+        Backpressure Drop 1MB
+        User-Scoped State Sync
+      MongoDB 7 Schemas
+        Users, Chats, Generations, Credentials
 ```
 
 ---
 
-### Flow C: Real-Time WebSocket Synchronization
+## 3. Directory & Module Inventory
 
 ```
-Client Browser                   server.js (WSS)                 chatController
-      │                                 │                               │
-  [1] │─── WS Handshake (/ws) ─────────>│                               │
-      │    Cookie: accessToken          ├─ Authenticate JWT             │
-      │<── 101 Switching Protocols ─────┤  Store ws.userId = decoded.id │
-      │                                 │                               │
-  [2] │    [Periodic Heartbeat]         │                               │
-      │<── ping() (every 30s) ──────────┤                               │
-      │─── pong() ─────────────────────>│ (ws.isAlive = true)           │
-      │                                 │                               │
-  [3] │─── POST /api/save ─────────────────────────────────────────────>│
-      │    { prompt, response, ... }    │                               ├─ Save to DB
-      │                                 │<─ broadcastUpdate(data, uid) ─┤
-      │                                 ├─ Filter clients by userId     │
-      │<── ws.send(CHAT_UPDATE) ────────┤                               │
+backend/
+├── app.js                          # Express application factory with middleware pipeline
+├── server.js                       # HTTP & WebSocket process entry point with graceful shutdown
+├── Dockerfile                      # Production container definition (node:24-alpine)
+├── package.json                    # Backend dependencies and native test runner scripts
+├── README.md                       # This technical manual
+│
+├── controllers/                    # Route Controllers
+│   ├── aiController.js             # Two-phase generative AI chat coordinator
+│   ├── analyticsController.js      # Usage telemetry, daily UTC trends, dataset report parsing
+│   ├── authController.js           # Registration, login, token rotation, account wipe
+│   ├── chatController.js           # Authoritative message saves, history pagination, rename
+│   ├── medicalController.js        # Explicit medical query handler (req.forceMedical = true)
+│   ├── oauthController.js          # Google OAuth 2.0 PKCE flow & OpenID token exchange
+│   └── settingsController.js       # User preferences and AES-256-GCM key management
+│
+├── middleware/
+│   └── authToken.js                # Validates HttpOnly access cookie & monotonic sessionVersion
+│
+├── models/                         # Mongoose Schemas & Database Models
+│   ├── userModel.js                # User accounts, salted bcrypt hash, sessionVersion
+│   ├── chatModel.js                # Conversation threads, message turns, PubMed references
+│   ├── generationModel.js          # Ephemeral in-flight generations with 24-hour TTL index
+│   └── providerCredentialModel.js  # AES-256-GCM encrypted user API keys (IV, Tag, Data)
+│
+├── routes/                         # Express Route Definitions
+│   ├── aiRoute.js                  # POST /api/ai/chat
+│   ├── analyticsRoute.js           # GET /api/analytics/overview
+│   ├── authRoute.js                # /api/auth/* (register, login, google, refresh, reset)
+│   ├── chatRoute.js                # /api/save, /api/history, /api/chats/:id
+│   ├── medicalRoute.js             # POST /api/medical
+│   └── settingsRoute.js            # /api/settings/* (GET/PATCH preferences, PUT/DELETE keys)
+│
+├── services/                       # Core Business Logic & Upstream Service Clients
+│   ├── aiService.js                # Google Gemini Generative Language API integration
+│   ├── answerService.js            # Dual-engine router, safety gate, grounding coordinator
+│   ├── answerVerifier.js           # Secondary LLM consensus reviewer (SUPPORTED/UNSUPPORTED)
+│   ├── citationService.js          # Deterministic [N] citation verification & coverage math
+│   ├── config.js                   # Startup environment variable validation & key checks
+│   ├── emailService.js             # Brevo transactional email dispatcher
+│   ├── historySearch.js            # Conversational turn relevance ranking via token overlap
+│   ├── interactionService.js       # Deterministic 12-pair FDA black-box drug interaction scanner
+│   ├── modelProvider.js            # Multi-provider client (Gemini, Groq, Together, Local)
+│   ├── providerCredentials.js      # AES-256-GCM authenticated cipher vault (seal/open)
+│   ├── providerSelection.js        # Resolves operator deployment vs personal encrypted keys
+│   ├── pubmedService.js            # NCBI Entrez client (esearch, esummary, efetch) & XML parser
+│   ├── safetyService.js            # Deterministic prompt and output safety screening
+│   ├── sessionService.js           # Dual JWT issuance, SHA-256 token hashing, cookie options
+│   ├── validation.js               # Schema validators for UUIDs, email, allowed JSON keys
+│   └── websocketService.js         # WebSocket server on /ws with 30s heartbeat watchdog
+│
+└── test/                           # Automated Backend Test Suites (64 Passing Tests)
+    ├── application.test.js         # Integration tests with in-memory MongoMemoryServer
+    ├── chatTitle.test.js           # Conversation auto-titling and markdown stripping tests
+    ├── citationService.test.js     # Unit tests for citation parsing and coverage math
+    ├── historySearch.test.js       # Unit tests for conversational history selection
+    ├── interactionService.test.js  # Unit tests for 12 high-risk drug interaction pairs
+    ├── modelProvider.test.js       # Unit tests for multi-provider API resolution
+    ├── providers.test.js           # Unit tests for PubMed sorting, XML parsing, Gemini
+    ├── pubmedService.test.js       # Unit tests for PubMed query string generation
+    └── safetyService.test.js       # Unit tests for crisis and medical emergency screening
 ```
 
 ---
 
-## 4. Environment Variables (`.env`)
+## 4. Key Implementation Code Snippets
 
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `PORT` | HTTP & WebSocket server port | `5000` |
-| `NODE_ENV` | Runtime environment mode | `development` or `production` |
-| `MONGO_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/medassist` |
-| `CLIENT_ORIGIN` | Allowed client origin(s) for CORS | `http://localhost:5173` |
-| `JWT_ACCESS_TOKEN` | Secret key for 15-minute access token | `random-32-char-string` |
-| `JWT_REFRESH_TOKEN` | Secret key for 7-day refresh token | `random-32-char-string` |
-| `JWT_VERIFICATION_TOKEN` | Secret key for 24-hour email verify token | `random-32-char-string` |
-| `JWT_RESET_TOKEN` | Secret key for 1-hour password reset token | `random-32-char-string` |
-| `GEMINI_API_KEY` | Google AI Studio API key | `AIzaSy...` |
-| `GEMINI_MODEL` | Target Gemini model identifier | `gemini-3.8-flash` |
-| `BREVO_API_KEY` | Brevo (Sendinblue) transactional email key | `xkeysib-...` |
-| `EMAIL_FROM_ADDRESS` | Sender email address | `no-reply@medassist.ai` |
-| `EMAIL_FROM_NAME` | Sender display name | `MedAssist AI` |
+### 4.1 Single-Device Authentication & Session Verification (`backend/middleware/authToken.js`)
+
+```javascript
+// Implementation snippet from backend/middleware/authToken.js:
+const { authenticate } = require("../services/sessionService");
+
+module.exports = async (req, res, next) => {
+  try {
+    const { user } = await authenticate(req.cookies.accessToken);
+    req.user = { id: String(user._id), version: user.sessionVersion };
+    req.authUser = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      code: error.name === "TokenExpiredError" ? "ACCESS_EXPIRED" : "AUTH_REQUIRED",
+      message: "Please sign in to continue.",
+      requestId: req.requestId,
+    });
+  }
+};
+```
+
+### 4.2 Rotating Refresh Tokens & Replay Defense (`backend/services/sessionService.js`)
+
+```javascript
+// Implementation snippet from backend/services/sessionService.js:
+const jwt = require("jsonwebtoken");
+const { createHash, randomUUID } = require("crypto");
+const User = require("../models/userModel");
+
+const hashToken = (value) => createHash("sha256").update(value).digest("hex");
+
+const makeTokens = (user) => {
+  const claims = { id: String(user._id), version: user.sessionVersion };
+  return {
+    accessToken: jwt.sign(claims, process.env.JWT_ACCESS_SECRET, { expiresIn: "15m" }),
+    refreshToken: jwt.sign({ ...claims, jti: randomUUID() }, process.env.JWT_REFRESH_SECRET, { expiresIn: "7d" }),
+  };
+};
+
+const authenticate = async (token) => {
+  const decoded = jwt.verify(token || "", process.env.JWT_ACCESS_SECRET);
+  if (!Number.isInteger(decoded.version)) throw new Error("Legacy session expired");
+
+  // Enforce monotonic sessionVersion comparison
+  const user = await User.findOne({ _id: decoded.id, sessionVersion: decoded.version, isVerified: true });
+  if (!user) throw new Error("Session revoked");
+  return { user, expiresAt: decoded.exp * 1000 };
+};
+```
+
+### 4.3 AES-256-GCM Personal API Key Vault (`backend/services/providerCredentials.js`)
+
+```javascript
+// Implementation snippet from backend/services/providerCredentials.js:
+const { randomBytes, createCipheriv, createDecipheriv } = require("crypto");
+const { fail } = require("./validation");
+
+const encryptionKey = () => {
+  const raw = process.env.USER_API_KEY_ENCRYPTION_KEY;
+  if (!raw || !/^[0-9a-f]{64}$/i.test(raw)) {
+    throw fail("Personal API key storage is misconfigured.", 503, "KEY_STORAGE_UNAVAILABLE");
+  }
+  return Buffer.from(raw, "hex");
+};
+
+const seal = (apiKey) => {
+  if (typeof apiKey !== "string" || apiKey.length < 12 || apiKey.length > 512 || /\s|[\x00-\x1f\x7f]/.test(apiKey)) {
+    throw fail("Enter a valid API key without spaces (12 to 512 characters).");
+  }
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
+  const ciphertext = Buffer.concat([cipher.update(apiKey, "utf8"), cipher.final()]);
+  return {
+    iv: iv.toString("base64"),
+    tag: cipher.getAuthTag().toString("base64"),
+    ciphertext: ciphertext.toString("base64"),
+    lastFour: apiKey.slice(-4),
+    updatedAt: new Date(),
+  };
+};
+
+const open = (record) => {
+  try {
+    const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(record.iv, "base64"));
+    decipher.setAuthTag(Buffer.from(record.tag, "base64"));
+    return Buffer.concat([decipher.update(Buffer.from(record.ciphertext, "base64")), decipher.final()]).toString("utf8");
+  } catch {
+    throw fail("The saved API key could not be read. Remove it and add a new key.", 503, "KEY_UNAVAILABLE");
+  }
+};
+```
+
+### 4.4 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
+
+```javascript
+// Implementation snippet from backend/services/interactionService.js:
+const HIGH_RISK_INTERACTION_RULES = [
+  {
+    pair: "Anticoagulant / Antiplatelet + NSAIDs / Aspirin",
+    drugA: "Anticoagulants / Antiplatelets (e.g., Warfarin, Eliquis, Plavix)",
+    drugB: "NSAIDs / Aspirin (e.g., Ibuprofen, Naproxen, Aspirin)",
+    severity: "CRITICAL",
+    drugsA: [/\bwarfarin\b/i, /\beliquis\b/i, /\bxarelto\b/i, /\bclopidogrel\b/i, /\bplavix\b/i],
+    drugsB: [/\baspirin\b/i, /\bibuprofen\b/i, /\badvil\b/i, /\bnaproxen\b/i, /\baleve\b/i],
+    description: "Concurrent use significantly elevates gastrointestinal ulceration and systemic bleeding risks.",
+  },
+  {
+    pair: "PDE5 Inhibitor + Nitrate Vasodilator",
+    drugA: "PDE5 Inhibitors (e.g., Sildenafil, Tadalafil)",
+    drugB: "Nitrates (e.g., Nitroglycerin, Isosorbide)",
+    severity: "CRITICAL",
+    drugsA: [/\bsildenafil\b/i, /\bviagra\b/i, /\btadalafil\b/i, /\bcialis\b/i],
+    drugsB: [/\bnitroglycerin\b/i, /\bnitrostat\b/i, /\bisosorbide\b/i],
+    description: "Absolute contraindication: Causes synergistic cyclic GMP accumulation leading to profound hypotension.",
+  },
+  // 10 additional FDA Black-Box interaction rules...
+];
+
+const detectDrugInteractions = (text) => {
+  if (typeof text !== "string" || !text.trim()) return [];
+  const matches = [];
+  for (const rule of HIGH_RISK_INTERACTION_RULES) {
+    if (rule.drugsA.some((rx) => rx.test(text)) && rule.drugsB.some((rx) => rx.test(text))) {
+      matches.push({ pair: rule.pair, severity: rule.severity, drugA: rule.drugA, drugB: rule.drugB, description: rule.description });
+    }
+  }
+  return matches;
+};
+```
 
 ---
 
-## 5. API Reference
+## 5. Master REST API Specification Matrix
 
-### Authentication Endpoints (`/api/auth`)
-- `POST /register`: Register user with email and password (min 8 chars).
-- `POST /login`: Authenticate and issue HTTP-only cookies.
-- `GET /check`: Validate current access token cookie.
-- `POST /logout`: Invalidate refresh token and clear cookies.
-- `POST /refresh-token`: Exchange valid refresh cookie for new access token.
-- `GET /verify-email`: Verify email address via query parameter token.
-- `POST /resend-verification`: Dispatch fresh verification email.
-- `POST /forgot-password`: Request password reset email.
-- `POST /reset-password`: Set new password using reset token.
-
-### Chat & History Endpoints (`/api`)
-- `POST /save`: Save a prompt/response exchange to a new or existing session.
-- `GET /history`: Fetch user's chat sessions (supports `?q=search` and `?limit=100`).
-- `PATCH /chats/:sessionId`: Rename session title (1 to 80 characters).
-- `DELETE /chats/:sessionId`: Delete user-owned chat session.
-- `DELETE /delete`: Legacy delete endpoint accepting sessionId in body.
-
-### AI & Medical Endpoints
-- `POST /api/medical`: Query PubMed and generate bounded medical answer.
-- `POST /api/ai/chat`: Query Gemini for general health assistance with context.
-- `GET /api/health`: Health status, DB state, uptime, and AI configuration status.
-- `GET /api/analytics/overview`: Usage metrics across 7, 30, or 90 days.
+| Method | Endpoint | Authentication | Rate Limit | Request Body / Parameters | Response Status & Key Fields |
+| :--- | :--- | :---: | :---: | :--- | :--- |
+| `POST` | `/api/auth/register` | Public | 30 / 15m | `{ email, password }` | `201 Created`: `{ message, user }` |
+| `POST` | `/api/auth/login` | Public | 30 / 15m | `{ email, password }` | `200 OK`: Sets HttpOnly cookies; `{ user }` |
+| `POST` | `/api/auth/logout` | Public | None | None | `200 OK`: Clears cookies; closes WebSockets |
+| `POST` | `/api/auth/refresh-token` | HttpOnly Cookie | None | None | `200 OK`: Issues rotated token cookies |
+| `GET` | `/api/auth/check` | Authenticated | None | None | `200 OK`: `{ user, providerConfigured }` |
+| `DELETE`| `/api/auth/account` | Authenticated | 12 / 15m | `{ password }` | `200 OK`: Cascading purge of account & keys |
+| `POST` | `/api/ai/chat` | Authenticated | 20 / 1m | `{ prompt, sessionId, exchangeId }` | `200 OK`: `{ text, generationId, sessionId }` |
+| `POST` | `/api/medical` | Authenticated | 20 / 1m | `{ prompt, sessionId, exchangeId }` | `200 OK`: Forces PubMed grounding |
+| `POST` | `/api/save` | Authenticated | None | `{ generationId }` | `201 Created`: Commits message to chat |
+| `GET` | `/api/history` | Authenticated | None | Query: `limit`, `q`, `cursor` | `200 OK`: `{ items, nextCursor }` |
+| `GET` | `/api/chats/:id` | Authenticated | None | URL Parameter: `sessionId` | `200 OK`: `{ chat: { messages } }` |
+| `PATCH`| `/api/chats/:id` | Authenticated | None | `{ title, isPinned }` | `200 OK`: Updates chat metadata |
+| `DELETE`| `/api/chats/:id` | Authenticated | None | URL Parameter: `sessionId` | `200 OK`: Deletes single thread |
+| `DELETE`| `/api/history` | Authenticated | None | None | `200 OK`: Permanently deletes all user chats |
+| `GET` | `/api/settings` | Authenticated | None | None | `200 OK`: `{ preferences, providers }` |
+| `PATCH`| `/api/settings` | Authenticated | 12 / 15m | `{ answerStyle, audienceProfile, provider }` | `200 OK`: Updates user preferences |
+| `PUT` | `/api/settings/providers`| Authenticated | 12 / 15m | `{ provider, apiKey, model }` | `200 OK`: Seals key in AES-256-GCM vault |
+| `DELETE`| `/api/settings/providers`| Authenticated | 12 / 15m | `{ provider }` | `200 OK`: Purges stored encrypted key |
+| `GET` | `/api/analytics/overview`| Public | None | None | `200 OK`: Summary statistics & report data |
+| `GET` | `/api/health` | Public | None | None | `200 OK`: Process vitality probe |
+| `GET` | `/api/ready` | Public | None | None | `200 OK` / `503`: Subsystem readiness probe |
 
 ---
 
-## 6. Running Tests
+## 6. Running Automated Backend Tests
 
-The backend uses Node.js native test runner:
+The backend test suite executes via Node.js native test runner (`node:test`) with in-memory MongoDB:
 
-```bash
+```powershell
+cd backend
 npm test
 ```
 
-All 9 unit tests cover citation grounding validation, history relevance scoring, and safety filter boundaries.
+### Complete Test Suite Breakdown (64 Tests):
+1. `application.test.js` (14 Tests): Full integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, two-phase `/api/save`, and WebSocket notifications.
+2. `interactionService.test.js` (13 Tests): Validates detection across 12 high-risk drug pairs and ensures clean queries pass.
+3. `safetyService.test.js` (10 Tests): Verifies crisis deflection, acute emergency interception, prompt injection defense, and educational exemptions.
+4. `citationService.test.js` (9 Tests): Validates numerical bracket parsing `[N]`, valid vs invalid set partitioning, and coverage math.
+5. `pubmedService.test.js` (8 Tests): Unit tests for E-Utilities query string building, fast-xml-parser extraction, and rate throttle delays.
+6. `modelProvider.test.js` (4 Tests): Unit tests verifying provider resolution across Gemini, Groq, Together AI, and Local endpoints.
+7. `providers.test.js` (4 Tests): Unit tests for PubMed sorting, XML parsing, and Gemini candidate extraction.
+8. `chatTitle.test.js` (2 Tests): Validates conversation auto-titling, markdown link stripping, and length bounding.

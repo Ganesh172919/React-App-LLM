@@ -1,0 +1,134 @@
+{
+  "generatedAt": "2026-10-30T00:53:04.810Z",
+  "rangeDays": 7,
+  "summaryScope": "lifetime",
+  "timezone": "UTC",
+  "summary": {
+    "totalSessions": 1,
+    "totalMessages": 6,
+    "medicalSessions": 1,
+    "medicalResponses": 6,
+    "citedResponses": 3,
+    "citations": 3,
+    "averageMessagesPerSession": 6,
+    "sourceAttachmentRate": 50
+  },
+  "breakdown": [
+    {
+      "label": "Medical",
+      "value": 1
+    },
+    {
+      "label": "General",
+      "value": 0
+    }
+  ],
+  "trend": [
+    {
+      "date": "2026-10-24",
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-25",
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-26",
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-27",
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-28",
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-29",
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-30",
+      "sessions": 1,
+      "exchanges": 6
+    }
+  ],
+  "verification": {
+    "statuses": {
+      "safety_redirect": 3,
+      "citation_checked": 3
+    },
+    "providers": {
+      "Gemini": 3
+    }
+  },
+  "dataset": {
+    "rows": {
+      "total": 16412,
+      "valid_question_answer_pairs": 16407,
+      "excluded_missing_value_rows": 5,
+      "unique_normalized_questions": 14345,
+      "unique_normalized_pairs": 16359
+    },
+    "qualityFlags": {
+      "missing_question_rows": 0,
+      "missing_answer_rows": 5,
+      "exact_duplicate_rows_after_whitespace_normalization": 48,
+      "repeated_question_rows": 2062,
+      "questions_under_4_words": 215,
+      "answers_under_20_words": 656,
+      "answers_over_1000_words": 225
+    },
+    "qualityRates": {
+      "missing_question_rows": 0,
+      "missing_answer_rows": 0.03,
+      "exact_duplicate_rows_after_whitespace_normalization": 0.29,
+      "repeated_question_rows": 12.56,
+      "questions_under_4_words": 1.31,
+      "answers_under_20_words": 4,
+      "answers_over_1000_words": 1.37
+    },
+    "answerLengthDistribution": {
+      "under_20_words": 656,
+      "20_to_99_words": 5516,
+      "100_to_249_words": 6657,
+      "250_to_499_words": 2793,
+      "500_to_999_words": 559,
+      "1000_words_or_more": 226
+    },
+    "questionTypes": {
+      "definition": 7790,
+      "other": 4123,
+      "symptoms": 2749,
+      "causes": 736,
+      "risk": 378,
+      "prognosis": 358,
+      "prevention": 221,
+      "treatment": 45,
+      "diagnosis": 7
+    },
+    "generatedAt": "2026-10-25T00:03:12.836423+00:00",
+    "sourceHash": "e402794930259ab9829cbbe8448182d259de744f2157e701d2c64d3a5b38a8d2",
+    "audit": {
+      "multipleAnswerQuestions": {
+        "question_groups": 1396,
+        "rows_in_groups": 3438,
+        "additional_answer_variants": 2014,
+        "groups_below_0_35_similarity": 1128,
+        "mean_pairwise_similarity": 0.192
+      },
+      "contentFlags": {
+        "answers_with_html_like_markup": 0,
+        "answers_with_urls": 159,
+        "answers_with_non_ascii_characters": 61
+      }
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "exportedAt": "2026-10-26T05:16:24.700Z",
+  "id": "61e66c13-139e-4b03-a1a4-1237dc54c7a8",
+  "sessionId": "61e66c13-139e-4b03-a1a4-1237dc54c7a8",
+  "title": "Migraine notes - built-in QA",
+  "isMedical": true,
+  "timestamp": "2026-10-26T05:15:23.265Z",
+  "createdAt": "2026-10-26T05:06:47.809Z",
+  "messages": [
+    {
+      "id": "90e6fbdd-2ea9-453d-b92d-5a42e366aab0-user",
+      "text": "What are common migraine triggers? slow response",
+      "isUser": true,
+      "timestamp": "2026-10-26T05:06:31.730Z",
+      "isMedical": true
+    },
+    {
+      "id": "90e6fbdd-2ea9-453d-b92d-5a42e366aab0-assistant",
+      "text": "This is a synthetic educational test answer [1]. Review the linked source with a qualified clinician. This checks the chat workflow, not clinical accuracy.",
+      "isUser": false,
+      "timestamp": "2026-10-26T05:06:31.730Z",
+      "isMedical": true,
+      "references": [
+        {
+          "title": "Synthetic PubMed record for browser workflow testing",
+          "authors": [],
+          "journal": "QA fixture",
+          "pubdate": "2026",
+          "pmid": "123",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/123/",
+          "evidenceType": "abstract"
+        }
+      ],
+      "verification": {
+        "status": "citation_checked",
+        "provider": "Gemini",
+        "model": "built-browser-fixture",
+        "sourceCount": 1,
+        "grounded": false,
+        "citationNumbersValid": true,
+        "validCitationCount": 1,
+        "invalidCitationCount": 0,
+        "citationCoverage": 100,
+        "evidenceLevel": "abstracts_supplied"
+      }
+    }
+  ]
+}

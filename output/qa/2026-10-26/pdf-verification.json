@@ -1,0 +1,110 @@
+{
+  "pages": [
+    {
+      "page": 1,
+      "header": true,
+      "footer": true,
+      "bottom": 774.1,
+      "words": 378,
+      "headerPixels": 1903
+    },
+    {
+      "page": 2,
+      "header": true,
+      "footer": true,
+      "bottom": 774.7,
+      "words": 543,
+      "headerPixels": 1903
+    },
+    {
+      "page": 3,
+      "header": true,
+      "footer": true,
+      "bottom": 710.3,
+      "words": 476,
+      "headerPixels": 1903
+    },
+    {
+      "page": 4,
+      "header": true,
+      "footer": true,
+      "bottom": 769.3,
+      "words": 233,
+      "headerPixels": 1903
+    },
+    {
+      "page": 5,
+      "header": true,
+      "footer": true,
+      "bottom": 768.9,
+      "words": 382,
+      "headerPixels": 1903
+    },
+    {
+      "page": 6,
+      "header": true,
+      "footer": true,
+      "bottom": 771.3,
+      "words": 439,
+      "headerPixels": 1903
+    },
+    {
+      "page": 7,
+      "header": true,
+      "footer": true,
+      "bottom": 778.9,
+      "words": 339,
+      "headerPixels": 1903
+    },
+    {
+      "page": 8,
+      "header": true,
+      "footer": true,
+      "bottom": 737.1,
+      "words": 357,
+      "headerPixels": 1903
+    },
+    {
+      "page": 9,
+      "header": true,
+      "footer": true,
+      "bottom": 726.3,
+      "words": 317,
+      "headerPixels": 1903
+    },
+    {
+      "page": 10,
+      "header": true,
+      "footer": true,
+      "bottom": 762.3,
+      "words": 462,
+      "headerPixels": 1903
+    },
+    {
+      "page": 11,
+      "header": true,
+      "footer": true,
+      "bottom": 778.5,
+      "words": 458,
+      "headerPixels": 1903
+    },
+    {
+      "page": 12,
+      "header": true,
+      "footer": true,
+      "bottom": 773.7,
+      "words": 504,
+      "headerPixels": 1903
+    },
+    {
+      "page": 13,
+      "header": true,
+      "footer": true,
+      "bottom": 708.9,
+      "words": 304,
+      "headerPixels": 1903
+    }
+  ],
+  "passed": true,
+  "visualReview": "Contact sheet of every page plus full-size checks of image/table/code-heavy pages; no clipping or overlapping text observed"
+}

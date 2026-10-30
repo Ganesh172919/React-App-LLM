@@ -43,7 +43,8 @@ test("accepts citations that map to supplied sources", () => {
   assert.equal(result.validCitationCount, 2);
   assert.equal(result.invalidCitationCount, 0);
   assert.equal(result.citationCoverage, 66.7);
-  assert.equal(result.grounded, true);
+  assert.equal(result.citationNumbersValid, true);
+  assert.equal(result.grounded, false);
 });
 
 test("flags citations outside the supplied source range", () => {
@@ -57,4 +58,16 @@ test("distinguishes supplied sources from cited sources", () => {
   const result = assessCitationGrounding("No numbered citation was included.", 2);
   assert.equal(result.status, "sources_supplied");
   assert.equal(result.validCitationCount, 0);
+});
+
+test("supports multi-citations and ranges like [1, 2] and [1-3]", () => {
+  const multi = assessCitationGrounding("Evidence shows efficacy [1, 2].", 2);
+  assert.equal(multi.status, "citation_checked");
+  assert.equal(multi.validCitationCount, 2);
+  assert.equal(multi.invalidCitationCount, 0);
+
+  const range = assessCitationGrounding("Comprehensive review [1-3].", 3);
+  assert.equal(range.status, "citation_checked");
+  assert.equal(range.validCitationCount, 3);
+  assert.equal(range.citationCoverage, 100);
 });

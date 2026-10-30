@@ -70,15 +70,15 @@ const extractText = (payload) =>
     .join("\n")
     .trim();
 
-const generateWithGemini = async ({ prompt, systemInstruction, history = [] }) => {
-  const apiKey = process.env.GEMINI_API_KEY;
+const generateWithGemini = async ({ prompt, systemInstruction, history = [], signal, providerConfig }) => {
+  const apiKey = providerConfig?.apiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     const error = new Error("GEMINI_API_KEY is not configured");
     error.code = "AI_NOT_CONFIGURED";
     throw error;
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const model = providerConfig?.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const contents = history
     .filter((item) => item?.text)
     .slice(-8)
@@ -102,6 +102,9 @@ const generateWithGemini = async ({ prompt, systemInstruction, history = [] }) =
     },
     {
       timeout: 20000,
+      signal,
+      maxRedirects: 0,
+      maxContentLength: 1024 * 1024,
       headers: {
         "Content-Type": "application/json",
         "x-goog-api-key": apiKey,
@@ -110,6 +113,11 @@ const generateWithGemini = async ({ prompt, systemInstruction, history = [] }) =
   );
 
   const text = extractText(response.data);
+  if (response.data?.promptFeedback?.blockReason || response.data?.candidates?.[0]?.finishReason !== "STOP") {
+    const error = new Error("The provider blocked or did not complete the answer");
+    error.code = "AI_INCOMPLETE_RESPONSE";
+    throw error;
+  }
   if (!text) {
     const error = new Error("The AI provider returned an empty response");
     error.code = "AI_EMPTY_RESPONSE";
