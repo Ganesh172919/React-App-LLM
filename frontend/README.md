@@ -51,6 +51,7 @@ The MedAssist AI client is an enterprise-grade, accessibility-audited single-pag
     │                                          CLIENT STORAGE & RESILIENCE LAYER                                     │
     │  - lib/api.js: Fetch interceptor with Web Locks API single-flight session token refresh                         │
     │  - lib/tabStorage.js: Fault-tolerant sessionStorage draft recovery with in-memory fallback                     │
+    │  - lib/conversationImport.js: Bounded local JSON parser with forged-metadata stripping (max 512 KB)            │
     │  - utils/medicalDetector.js: Client-side clinical keyword lexicon & prefix heuristic matcher                      │
     │  - Theme Engine: Automatic prefers-color-scheme OS detection + manual WCAG AA dark/light toggling              │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -324,6 +325,78 @@ export function formatChatAsMarkdown(chat) {
 }
 ```
 
+### 4.5 Bounded Local Conversation JSON Preview & Metadata Stripping (`frontend/src/lib/conversationImport.js`)
+
+To prevent spoofing attacks where external or altered JSON exports could inject forged evidence claims (`verification: { status: "citation_checked", modelReview: "supported" }`) or tamper with active session state, `conversationImport.js` implements a strict sandboxed parser:
+
+```
+========================================================================================================================
+                         UNTRUSTED CLIENT CONVERSATION IMPORT PREVIEW PIPELINE
+========================================================================================================================
+
+    [ User Selects JSON File ] (via "Preview conversation JSON" button)
+                 │
+                 ▼
+    [ Byte Ceiling Check ] ──► Hard limit: File size <= 512 KB (MAX_IMPORT_BYTES)
+                 │
+                 ▼
+    [ Structure Validation ] ──► Nonempty messages array, alternating User / Assistant turns
+                 │              Max 100 complete pairs (200 messages), max 20,000 chars/message
+                 │
+                 ▼
+    [ Security Sanitizer ] ──► STRIPS FORGED METADATA:
+                 │             - Discards verification status, modelReview, and references
+                 │             - Discards forged message IDs and sessionId
+                 │             - Generates local synthetic IDs: "import-0", "import-1"
+                 │             - Sanitizes title: strips control characters, caps to 80 chars
+                 │
+                 ▼
+    [ Local Read-Only Preview in ChatWorkspace.jsx ]
+                 ├── Sets `importPreview = true`
+                 ├── Header displays: "Local preview · <Title>"
+                 ├── Persistent Notice: "Local preview only: not saved to your account or used as AI context"
+                 ├── Message byline displays: "Imported answer · unverified"
+                 ├── Composer is disabled (sending locked to prevent context poisoning)
+                 └── ZERO data sent to backend; ZERO MongoDB persistence
+========================================================================================================================
+```
+
+```javascript
+// Implementation snippet from frontend/src/lib/conversationImport.js:
+export const MAX_IMPORT_BYTES = 512 * 1024;
+const MAX_MESSAGES = 200;
+const MAX_MESSAGE_LENGTH = 20000;
+
+export function parseConversationImport(jsonText) {
+  if (typeof jsonText !== "string" || new TextEncoder().encode(jsonText).length > MAX_IMPORT_BYTES) {
+    throw new Error("The JSON file must be 512 KB or smaller.");
+  }
+  let parsed;
+  try { parsed = JSON.parse(jsonText); }
+  catch { throw new Error("Could not parse file. Please choose a valid JSON conversation export."); }
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.messages) || !parsed.messages.length) {
+    throw new Error("The file must contain a nonempty messages list.");
+  }
+  if (parsed.messages.length > MAX_MESSAGES || parsed.messages.length % 2 !== 0) {
+    throw new Error("A preview supports up to 100 complete question-and-answer pairs.");
+  }
+  const messages = parsed.messages.map((message, index) => {
+    if (!message || typeof message !== "object" || message.isUser !== (index % 2 === 0) ||
+        typeof message.text !== "string" || !message.text.trim() || message.text.length > MAX_MESSAGE_LENGTH) {
+      throw new Error("Each imported exchange must have one question and one answer of 20,000 characters or fewer.");
+    }
+    const timestamp = typeof message.timestamp === "string" && Number.isFinite(Date.parse(message.timestamp))
+      ? new Date(message.timestamp).toISOString() : undefined;
+    // Exported verification, citations, IDs, and provider metadata are untrusted.
+    return { id: `import-${index}`, isUser: message.isUser, text: message.text, ...(timestamp ? { timestamp } : {}) };
+  });
+  const title = typeof parsed.title === "string"
+    ? parsed.title.replace(/\p{Cc}/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80)
+    : "";
+  return { title: title || "Imported conversation", messages };
+}
+```
+
 ---
 
 ## 5. Educational Clinical Calculators Implementation
@@ -415,7 +488,7 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (46 tests)
+# 3. Execute Vitest automated unit and component test suite (47 tests across 6 suites)
 npm test
 
 # 4. Compile optimized production distribution bundle

@@ -375,17 +375,17 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       65 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom DOM Emulation    45 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       64 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       47 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
     Headless Browser Smoke Test Suite           Playwright Chromium Headless      20 Passed          PASSED
-    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      24 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      21 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       180 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       178 Passed         PASSED
 ========================================================================================================================
 ```
 

@@ -153,10 +153,14 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │
 │       ├── lib/                             # Client Utilities
 │       │   ├── api.js                       # Fetch client with Web Locks token renewal
+│       │   ├── conversationImport.js        # Bounded local JSON parser with forged-metadata stripping
 │       │   └── tabStorage.js                # Resilient draft and pending job recovery
 │       │
 │       ├── test/                            # Frontend Automated Test Suites
 │       │   ├── api.test.js                  # Web Locks concurrent token renewal tests
+│       │   ├── clinicalCalculators.test.jsx # Unit tests for 13 clinical calculators & bounds
+│       │   ├── conversationImport.test.js   # Unit tests for conversation import security & stripping
+│       │   ├── medicalDetector.test.js      # Heuristic clinical prompt detection tests
 │       │   ├── tabStorage.test.js           # Resilient storage fallback tests
 │       │   └── ui.test.jsx                  # Component tests for auth, chat, and dashboard
 │       │
@@ -298,6 +302,7 @@ mindmap
 | `frontend/src/components/auth/AISettings.jsx` | Provider Settings | `<AISettings />` | `lib/api.js` |
 | `frontend/src/components/auth/AuthPage.jsx` | Auth Modal | `<AuthPage />` | React |
 | `frontend/src/lib/api.js` | API Wrapper | `apiRequest`, `refreshSession`, `getWebSocketUrl`, `downloadJson` | Web Locks API, Fetch API |
+| `frontend/src/lib/conversationImport.js` | Import Parser | `parseConversationImport`, `MAX_IMPORT_BYTES` | Standard text encoders & JSON parser |
 | `frontend/src/lib/tabStorage.js` | Resilient Cache | `readTab`, `writeTab`, `readPending` | Browser `sessionStorage` |
 | `frontend/src/utils/medicalDetector.js` | Client Heuristics | `isMedicalPrompt` | Regular expressions |
 

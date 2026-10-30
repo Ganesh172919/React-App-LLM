@@ -914,3 +914,71 @@ Protects against storage access exceptions in restricted browser environments (i
 
 Prevents accidental premature message submission during multi-byte Input Method Editor (IME) compositions (Japanese, Chinese, Korean, Indic transliterations) by evaluating `event.nativeEvent.isComposing`.
 
+### 9.4 Bounded Local Conversation JSON Preview & Untrusted Import Contract (`frontend/src/lib/conversationImport.js`)
+
+Implements a client-side sandboxed preview mechanism for exported conversation JSON files:
+
+```
+========================================================================================================================
+                         CONVERSATION IMPORT PARSER SCHEMA & BOUNDS (MAX 512 KB)
+========================================================================================================================
+
+    [ Input JSON String ] ──► Size Check: TextEncoder byte length <= 512 KB (MAX_IMPORT_BYTES)
+                 │
+                 ├── JSON.parse validation (catches syntax errors)
+                 ├── Object type check & non-empty `messages` array validation
+                 ├── Alternating Turn Invariant: index % 2 === 0 => isUser: true; index % 2 === 1 => isUser: false
+                 ├── Pair Count Limit: <= 200 total messages (100 complete Q&A pairs)
+                 ├── String Bounds: message.text must be non-empty and <= 20,000 characters
+                 └── Title Sanitization: Strip Unicode control characters (\p{Cc}), collapse whitespace, cap at 80 chars
+                 │
+                 ▼
+    [ Untrusted Metadata Dropped ]
+    ├── Strips `message.verification` (prevents forged claim attestation)
+    ├── Strips `message.references` (prevents false citation injection)
+    ├── Strips remote `sessionId` and identity properties
+    └── Assigns local synthetic IDs: `id: import-${index}`
+                 │
+                 ▼
+    [ Sandbox State in ChatWorkspace.jsx ]
+    ├── Activates `importPreview = true` state flag
+    ├── Renders explicit notice: "Local preview only: not saved to your account or used as AI context"
+    ├── Byline displayed as "Imported answer · unverified"
+    ├── Message sending disabled to prevent context poisoning of active LLM sessions
+    └── ZERO API requests dispatched to Express; ZERO storage in MongoDB
+========================================================================================================================
+```
+
+```javascript
+// Implementation snippet from frontend/src/lib/conversationImport.js
+export const MAX_IMPORT_BYTES = 512 * 1024;
+
+export function parseConversationImport(jsonText) {
+  if (typeof jsonText !== "string" || new TextEncoder().encode(jsonText).length > MAX_IMPORT_BYTES) {
+    throw new Error("The JSON file must be 512 KB or smaller.");
+  }
+  let parsed;
+  try { parsed = JSON.parse(jsonText); }
+  catch { throw new Error("Could not parse file. Please choose a valid JSON conversation export."); }
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.messages) || !parsed.messages.length) {
+    throw new Error("The file must contain a nonempty messages list.");
+  }
+  if (parsed.messages.length > MAX_MESSAGES || parsed.messages.length % 2 !== 0) {
+    throw new Error("A preview supports up to 100 complete question-and-answer pairs.");
+  }
+  const messages = parsed.messages.map((message, index) => {
+    if (!message || typeof message !== "object" || message.isUser !== (index % 2 === 0) ||
+        typeof message.text !== "string" || !message.text.trim() || message.text.length > MAX_MESSAGE_LENGTH) {
+      throw new Error("Each imported exchange must have one question and one answer of 20,000 characters or fewer.");
+    }
+    const timestamp = typeof message.timestamp === "string" && Number.isFinite(Date.parse(message.timestamp))
+      ? new Date(message.timestamp).toISOString() : undefined;
+    return { id: `import-${index}`, isUser: message.isUser, text: message.text, ...(timestamp ? { timestamp } : {}) };
+  });
+  const title = typeof parsed.title === "string"
+    ? parsed.title.replace(/\p{Cc}/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80)
+    : "";
+  return { title: title || "Imported conversation", messages };
+}
+```
+

@@ -696,7 +696,47 @@ export const tabStorage = {
 };
 ```
 
-### 5.3 IME Composition Safety in Composer (`frontend/src/components/chat/ChatWorkspace.jsx`)
+### 5.3 Bounded Local Conversation JSON Preview & Security Sanitizer (`frontend/src/lib/conversationImport.js`)
+- **File Path**: [`frontend/src/lib/conversationImport.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/lib/conversationImport.js)
+- **Role**: Validates imported conversation JSON exports with strict 512 KB payload ceilings, turn-alternation assertions, and automatic stripping of untrusted or forged evidence claims (`verification`, `modelReview`, `references`).
+
+```javascript
+// Implementation Snippet: frontend/src/lib/conversationImport.js
+export const MAX_IMPORT_BYTES = 512 * 1024;
+const MAX_MESSAGES = 200;
+const MAX_MESSAGE_LENGTH = 20000;
+
+export function parseConversationImport(jsonText) {
+  if (typeof jsonText !== "string" || new TextEncoder().encode(jsonText).length > MAX_IMPORT_BYTES) {
+    throw new Error("The JSON file must be 512 KB or smaller.");
+  }
+  let parsed;
+  try { parsed = JSON.parse(jsonText); }
+  catch { throw new Error("Could not parse file. Please choose a valid JSON conversation export."); }
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.messages) || !parsed.messages.length) {
+    throw new Error("The file must contain a nonempty messages list.");
+  }
+  if (parsed.messages.length > MAX_MESSAGES || parsed.messages.length % 2 !== 0) {
+    throw new Error("A preview supports up to 100 complete question-and-answer pairs.");
+  }
+  const messages = parsed.messages.map((message, index) => {
+    if (!message || typeof message !== "object" || message.isUser !== (index % 2 === 0) ||
+        typeof message.text !== "string" || !message.text.trim() || message.text.length > MAX_MESSAGE_LENGTH) {
+      throw new Error("Each imported exchange must have one question and one answer of 20,000 characters or fewer.");
+    }
+    const timestamp = typeof message.timestamp === "string" && Number.isFinite(Date.parse(message.timestamp))
+      ? new Date(message.timestamp).toISOString() : undefined;
+    // Exported verification, citations, IDs, and provider metadata are untrusted.
+    return { id: `import-${index}`, isUser: message.isUser, text: message.text, ...(timestamp ? { timestamp } : {}) };
+  });
+  const title = typeof parsed.title === "string"
+    ? parsed.title.replace(/\p{Cc}/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80)
+    : "";
+  return { title: title || "Imported conversation", messages };
+}
+```
+
+### 5.4 IME Composition Safety in Composer (`frontend/src/components/chat/ChatWorkspace.jsx`)
 - **File Path**: [`frontend/src/components/chat/ChatWorkspace.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/chat/ChatWorkspace.jsx)
 - **Role**: Prevents accidental premature message submission during multi-byte Input Method Editor (IME) compositions (Japanese, Chinese, Korean, Indic transliterations).
 
@@ -969,6 +1009,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `frontend/src/App.jsx` | Main Application Component| `main.jsx` | React Router hierarchy, auth state guard, theme provider hydration |
 | `frontend/src/context/AuthContext.jsx`| Auth Context Provider | Frontend Views | Session state tracking, 14m proactive token refresh timer |
 | `frontend/src/lib/api.js` | `apiRequest`, `refreshSession` | Frontend Components | Web Locks API single-flight token renewal, 401 retry interceptor |
+| `frontend/src/lib/conversationImport.js` | `parseConversationImport` | `ChatWorkspace.jsx` | Bounded local JSON parser with forged-metadata stripping |
 | `frontend/src/lib/tabStorage.js` | `readTab`, `writeTab`, `readPending` | Chat Components | Session-isolated draft caching with memory fallback |
 | `frontend/src/components/chat/ChatWorkspace.jsx` | Chat Workspace View | `App.jsx` | Message stream feed, composer with IME protection, citation pills |
 | `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Calculators Modal | `App.jsx` | 13 validated calculators, WAI-ARIA arrow-key cycling |
@@ -998,7 +1039,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 4. **Zero Partition Leakage**: Training, validation, and test splits are partitioned strictly on SHA-256 hashes of normalized question keys, ensuring identical questions never appear across different evaluation partitions.
 5. **Full Suite Verification Status**: 100% of tests are passing in local and CI environments:
    - **Backend**: 64 passed in-memory MongoDB tests
-   - **Frontend**: 43 passed Vitest component tests
+   - **Frontend**: 47 passed Vitest component tests across 6 suites
    - **Python Suites**: 19 passed unit tests (13 dataset + 6 LoRA)
    - **Built-Output Gateway**: 7 passed HTTP serving checks
    - **Headless Browser Workflows**: 41 passed Playwright workflows (20 smoke + 21 dark mode/tools)

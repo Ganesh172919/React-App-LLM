@@ -118,12 +118,13 @@ The local verification runs reported 177 passing checks or workflows across Node
 | • `modelProvider.test.js` | Multi-provider dispatch (Gemini, Groq, Together, Local) | 4 | Axios Mock Adapter | **PASSED** |
 | • `providers.test.js` | AES-256-GCM vault seal/open, credential CRUD | 4 | In-Memory MongoDB | **PASSED** |
 | • `chatTitle.test.js` | Title generation, markdown stripping, length bounding | 2 | Standalone Node.js | **PASSED** |
-| **Frontend Unit & Component** | `frontend/src/test/*.test.jsx` | **46** | Vitest + jsdom | **PASSED** |
-| • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 6 | jsdom + Mock Fetch | **PASSED** |
-| • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 6 | jsdom Storage Mock | **PASSED** |
-| • `medicalDetector.test.js`| Lexicon match, prefixes, suggestion chip support | 8 | jsdom | **PASSED** |
+| **Frontend Unit & Component** | `frontend/src/test/*.test.js*` | **47** | Vitest + jsdom | **PASSED** |
+| • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 3 | jsdom + Mock Fetch | **PASSED** |
+| • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 2 | jsdom Storage Mock | **PASSED** |
+| • `medicalDetector.test.js`| Lexicon match, prefixes, suggestion chip support | 5 | jsdom | **PASSED** |
 | • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, CURB-65, GCS) | 11 | jsdom React Render | **PASSED** |
-| • `ui.test.jsx` | Auth, chat composer, copy button, ARIA tab cycling | 15 | jsdom React Render | **PASSED** |
+| • `conversationImport.test.js`| Sanitizes imported JSON, strips forged verification | 2 | jsdom Vitest | **PASSED** |
+| • `ui.test.jsx` | Auth, chat composer, copy button, ARIA tab cycling | 24 | jsdom React Render | **PASSED** |
 | **Python Dataset Suite** | `Model and Dataset/test_*.py` | **13** | Python 3.10+ `unittest` | **PASSED** |
 | • `test_dataset_tools.py` | Profiler metrics, Jaccard multi-answer divergence | 5 | Standard Library Only | **PASSED** |
 | • `test_release_data.py` | SHA-256 splits, zero cross-split question leakage | 4 | Standard Library Only | **PASSED** |
@@ -135,7 +136,7 @@ The local verification runs reported 177 passing checks or workflows across Node
 | **Production Build & Serving** | `scripts/check_build_serving.cjs` | **7** | Production Nginx / Express | **PASSED** |
 | **Playwright Browser Smoke** | `scripts/browser_smoke.cjs` | **20** | Headless Chromium (Built App) | **PASSED** |
 | **Playwright Dark & Tools** | `scripts/browser_verify_dark_and_tools.cjs`| **21** | Headless Chromium (Built App) | **PASSED** |
-| **Locally Observed Total** | **Separately run software checks** | **177** | **Isolated fixture environment** | **PASSED** |
+| **Locally Observed Total** | **Separately run software checks** | **178** | **Isolated fixture environment** | **PASSED** |
 
 ---
 
@@ -181,8 +182,11 @@ The local verification runs reported 177 passing checks or workflows across Node
     Resilient Draft Cache      frontend/src/lib/tabStorage.js  Stores active user drafts in sessionStorage per keystroke.
                                                                Automatically recovers uncommitted answers after reload.
 
-    Clinical Calculators       frontend/src/components/tools/  11 clinical calculators with strict input bounding, Payne
-                               ClinicalCalculatorsModal.jsx    calcium correction, Wells score, WAI-ARIA tab cycling.
+    Import Preview Sandbox     frontend/src/lib/conversationI.. Strips forged verification/citations from external JSON.
+                                                               Local preview only; sending disabled to prevent injection.
+
+    Clinical Calculators       frontend/src/components/tools/  13 clinical calculators with strict input bounding, Payne
+                               ClinicalCalculatorsModal.jsx    calcium correction, Wells score, CURB-65, GCS, ARIA tabs.
 
     Theme & Accessibility      frontend/src/index.css          Dark/light layouts with keyboard checks. Automatic system
                                frontend/src/components/*       prefers-color-scheme detection with manual override.
