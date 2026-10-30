@@ -18,6 +18,8 @@
  *   - Fluoroquinolones + Systemic Corticosteroids (Tendon Rupture)
  *   - Benzodiazepines + Opioids (Profound CNS/Respiratory Depression)
  *   - Lithium + NSAIDs/ACE Inhibitors (Lithium Neurotoxicity)
+ *   - Allopurinol/Febuxostat + Azathioprine/6-Mercaptopurine (Severe Pancytopenia)
+ *   - Methotrexate + NSAIDs/Aspirin (Fatal Bone Marrow Suppression & AKI)
  * ============================================================================
  */
 
@@ -262,6 +264,26 @@ const HIGH_RISK_INTERACTION_RULES = [
       /\b6-mercaptopurine\b/i, /\b6-mp\b/i, /\bpurinethol\b/i, /\bpurixan\b/i,
     ],
     description: "Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia.",
+  },
+  {
+    pair: "Methotrexate + NSAIDs / High-Dose Aspirin",
+    drugA: "Methotrexate (e.g., Rheumatrex, Trexall)",
+    drugB: "NSAIDs / Aspirin (e.g., Ibuprofen, Naproxen, Ketorolac, High-Dose Aspirin)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bmethotrexate\b/i, /\btrexall\b/i, /\botrexup\b/i, /\brasuvo\b/i, /\brheumatrex\b/i,
+    ],
+    drugsB: [
+      /\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i,
+      /\bnaproxen\b/i, /\baleve\b/i, /\bnaprosyn\b/i,
+      /\bketorolac\b/i, /\btoradol\b/i,
+      /\bmeloxicam\b/i, /\bmobic\b/i,
+      /\bdiclofenac\b/i, /\bvoltaren\b/i,
+      /\bindomethacin\b/i, /\bindocin\b/i,
+      /\bcelecoxib\b/i, /\bcelebrex\b/i,
+      /\baspirin\b/i, /\bacetylsalicylic acid\b/i,
+    ],
+    description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
   },
 ];
 

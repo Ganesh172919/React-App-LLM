@@ -94,6 +94,15 @@ test("detects allopurinol and azathioprine bone marrow toxicity contraindication
   assert.match(result[0].description, /bone marrow suppression/i);
 });
 
+test("detects methotrexate and NSAID critical interaction", () => {
+  const result = detectDrugInteractions("Can I take methotrexate with ibuprofen for joint swelling?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Methotrexate + NSAIDs / High-Dose Aspirin");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /bone marrow suppression/i);
+  assert.match(result[0].description, /FDA Black Box Warning/i);
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);
