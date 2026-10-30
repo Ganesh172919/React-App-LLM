@@ -104,7 +104,7 @@ mindmap
 - [x] **Accessible Citation Focus, Export Formats & Global Shortcuts**: Programmatic focus management (`tabIndex={-1}`, `el.focus()`), high-contrast focus rings (`:focus-visible`), dual Markdown and structured JSON export, global `Alt+C` modal shortcut (`aria-keyshortcuts="Alt+C"`), arrow-key tab cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and Vancouver citation copy support.
 - [x] **Offline Data Quarantine**: Isolation of 1,437 ambiguous question groups and zero-leakage SHA-256 modulo 100 splitting.
 - [x] **Analytical LoRA Validation**: Closed-form estimation confirming $147,456$ trainable parameters ($0.281$ MB FP16 footprint).
-- [x] **Automated Verification Matrix**: All 65 backend tests, 45 Vitest tests, 19 Python tests, 7 build-serving checks, 20 Playwright regression workflows, and 24 dark mode/tools visual workflows passed in the local fixture stack.
+- [x] **Automated Verification Matrix**: All 64 backend tests, 46 Vitest component tests, 19 Python research tests, 7 build-serving checks, 20 Playwright smoke workflows, and 21 dark mode/tools accessibility workflows (177+ automated checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
 
 ### 3.2 Target Host Deployment Checklist (Pending Host Cutover)
 - [ ] **Docker Engine Verification**: Ensure Docker 24.0+ and Docker Compose v2.20+ are installed on the deployment host.

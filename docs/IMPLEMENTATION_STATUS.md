@@ -27,7 +27,7 @@ This document details the engineering implementation status and test verificatio
     │  - Framework: Node.js   │   │  - Framework: Vitest    │   │  - Framework: unittest  │
     │    test runner          │   │  - Environment: jsdom   │   │  - Zero GPU / stdlib    │
     │  - MongoMemoryServer    │   │  - React 19 Hooks       │   │  - Dataset & LoRA tests │
-    │  - 64 Unit/Integ Tests  │   │  - 43 Component Tests   │   │  - 19 Unit Tests        │
+    │  - 64 Unit/Integ Tests  │   │  - 46 Component Tests   │   │  - 19 Unit Tests        │
     └─────────────────────────┘   └─────────────────────────┘   └─────────────────────────┘
                  │                             │                             │
                  └─────────────────────────────┼─────────────────────────────┘
@@ -172,7 +172,7 @@ The local verification runs reported 177 passing checks or workflows across Node
                                                                Partitions into valid vs invalid sets. Drops ungrounded
                                                                text if invalid numbers exist or coverage is zero.
 
-    Drug Interaction Checker   backend/services/interactionS.. Deterministic name matching for 12 limited medication
+    Drug Interaction Checker   backend/services/interactionS.. Deterministic name matching for 14 limited medication
                                                                pair cautions. Preserved during emergency safety redirects.
 
     Web Locks Refresh          frontend/src/lib/api.js         Uses navigator.locks.request("medassist-session-refresh")

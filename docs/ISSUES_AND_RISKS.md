@@ -186,6 +186,8 @@ The medication interaction service (`backend/services/interactionService.js`) em
 10. **Warfarin + Azole Antifungals** (CYP2C9 inhibition, supratherapeutic INR, hemorrhage)
 11. **Digoxin + Amiodarone / Verapamil** (P-glycoprotein inhibition, digoxin toxicity, arrhythmias)
 12. **MAOIs + SSRIs / SNRIs / Tricyclics** (Hypertensive crisis and lethal Serotonin Syndrome)
+13. **Allopurinol / Febuxostat + Azathioprine / 6-Mercaptopurine** (Xanthine oxidase inhibition, severe 6-TGN accumulation, profound bone marrow suppression)
+14. **Methotrexate + NSAIDs / High-Dose Aspirin** (Renal PG inhibition, competitive OAT1/3 clearance blockade, fatal pancytopenia and acute kidney injury)
 
 ```javascript
 // Implementation snippet from backend/services/interactionService.js:
