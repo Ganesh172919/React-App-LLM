@@ -108,7 +108,7 @@ mindmap
         efetch MEDLINE XML Parsing
       fast-xml-parser Text Extraction
     (03 Pharmacological Screening)
-      12 FDA Black-Box Drug Interactions
+      14 FDA Black-Box Drug Interactions
         Preserved in Emergency Deflections
         Non-Diagnostic Safety Banners
     (04 Multi-Provider Synthesis)
@@ -240,6 +240,24 @@ const HIGH_RISK_INTERACTION_RULES = [
     drugsB: [/\baspirin\b/i, /\bibuprofen\b/i, /\badvil\b/i, /\bnaproxen\b/i],
     description: "Concurrent use significantly elevates gastrointestinal ulceration and systemic bleeding risks.",
   },
+  {
+    pair: "Allopurinol / Febuxostat + Azathioprine / 6-Mercaptopurine",
+    drugA: "Xanthine Oxidase Inhibitors (e.g., Allopurinol, Febuxostat)",
+    drugB: "Thiopurines (e.g., Azathioprine, 6-Mercaptopurine)",
+    severity: "CRITICAL",
+    drugsA: [/\ballopurinol\b/i, /\bzyloprim\b/i, /\bfebuxostat\b/i],
+    drugsB: [/\bazathioprine\b/i, /\bimuran\b/i, /\b6-mercaptopurine\b/i, /\b6-mp\b/i],
+    description: "Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia.",
+  },
+  {
+    pair: "Methotrexate + NSAIDs / High-Dose Aspirin",
+    drugA: "Methotrexate (e.g., Rheumatrex, Trexall)",
+    drugB: "NSAIDs / Aspirin (e.g., Ibuprofen, Naproxen, Ketorolac, High-Dose Aspirin)",
+    severity: "CRITICAL",
+    drugsA: [/\bmethotrexate\b/i, /\btrexall\b/i, /\botrexup\b/i, /\brheumatrex\b/i],
+    drugsB: [/\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i, /\bnaproxen\b/i, /\baleve\b/i, /\bketorolac\b/i, /\baspirin\b/i],
+    description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
+  },
   // 11 additional FDA black-box contraindication rules...
 ];
 
@@ -273,4 +291,61 @@ async function verifyAnswer({ question, answer, sourceText, signal, generate = g
   if (!["SUPPORTED", "UNSUPPORTED"].includes(verdict)) throw new Error("Verifier returned an unrecognized verdict.");
   return { supported: verdict === "SUPPORTED", model: result.model };
 }
+```
+
+---
+
+## 4. Evidence-Based Clinical Calculators Architecture
+
+Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the suite embeds 13 mathematical tools with strict boundary validation and WAI-ARIA tab navigation:
+
+```
+========================================================================================================================
+                                     CLINICAL CALCULATOR SUITE & MATHEMATICAL FORMULATIONS
+========================================================================================================================
+
+    [ CALCULATOR ]             [ SCIENTIFIC FORMULATION / ALGORITHM ]                    [ BOUNDS / CONSTRAINTS ]
+    ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Body Mass Index (BMI)      BMI = weight_kg / (height_m)^2                            Weight: 20-300 kg
+                               Imperial: (weight_lbs * 703) / (height_in)^2              Height: 50-250 cm
+
+    eGFR (CKD-EPI 2021)        eGFR = 142 * min(Scr/κ, 1)^α * max(Scr/κ, 1)^-1.200       Age: 18-120 years
+    (Race-Free Standard)              * 0.9938^Age * (1.012 if female)                   Scr: 0.2-15.0 mg/dL
+                               (κ = 0.7 F / 0.9 M; α = -0.241 F / -0.302 M)
+
+    CHA2DS2-VASc               Points: CHF (+1), HTN (+1), Age >=75 (+2), Diabetes (+1), Age: 18-120 years
+    (Stroke Risk in AFib)      Stroke/TIA (+2), Vascular Disease (+1), Age 65-74 (+1),   Binary clinical flags
+                               Female Sex (+1). Range: 0 to 9 points.
+
+    Mean Arterial Pressure     MAP = DBP + 1/3 * (SBP - DBP)                             SBP: 50-260 mmHg
+    (MAP Hemodynamics)                                                                   DBP: 30-160 mmHg
+
+    Cockcroft-Gault CrCl       CrCl = [(140 - Age) * Weight_kg] / (72 * Scr)            Age: 18-120 years
+    (Renal Drug Dosing)        * (0.85 if female)                                        Weight: 20-250 kg, Scr: 0.2-15
+
+    Payne Corrected Calcium    Corrected Ca = Measured Ca + 0.8 * (4.0 - Albumin_g_dL)   Total Ca: 4.0-18.0 mg/dL
+                                                                                         Albumin: 1.0-6.0 g/dL
+
+    Serum Anion Gap            Anion Gap = Na - (Cl + HCO3)                              Na: 100-180 mEq/L
+                               Normal Range: 4 to 12 mEq/L                               Cl: 50-140, HCO3: 5-50
+
+    FeNa (Fractional Sodium)   FeNa = (UNa * SCr) / (SNa * UCr) * 100%                   UNa, SNa, SCr, UCr
+                               < 1% Prerenal azotemia; > 2% Acute tubular necrosis       All positive values
+
+    FeUrea (Fractional Urea)   FeUrea = (UUrea * SCr) / (BUN * UCr) * 100%               UUrea, BUN, SCr, UCr
+                               < 35% Prerenal (valid during diuretic therapy)            All positive values
+
+    Maintenance Fluids (4-2-1) Total Rate = 4 mL (1-10kg) + 2 mL (11-20kg) + 1 mL (>20kg)Weight: 1-150 kg
+                               Holliday-Segar basal hydration formula                    Hourly and 24h rates
+
+    Wells Criteria for PE      Clinical DVT (+3), PE #1 diagnosis (+3), HR >100 (+1.5),  Binary clinical flags
+                               Immobilization/Surgery (+1.5), Prior DVT/PE (+1.5),       PE unlikely <= 4
+                               Hemoptysis (+1), Malignancy (+1). Range: 0 to 12.5.       PE likely > 4
+
+    CURB-65 Pneumonia Score    Confusion (+1), Urea > 19 mg/dL (+1), RR >= 30 (+1),      Binary clinical flags
+                               Low BP SBP < 90 or DBP <= 60 (+1), Age >= 65 (+1).       0-1: Low, 2: Int, 3-5: High
+
+    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
+                               Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
+========================================================================================================================
 ```
