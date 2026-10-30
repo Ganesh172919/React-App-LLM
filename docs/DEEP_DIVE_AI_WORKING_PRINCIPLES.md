@@ -425,7 +425,7 @@ To guard against hazardous medication combinations frequently inquired about in 
    [Incoming User Prompt x]
               │
               ├──► 1. detectDrugInteractions(prompt)
-              │    Matches against 12 FDA Black-Box Rule Sets (drugsA & drugsB)
+              │    Matches against 14 FDA Black-Box Rule Sets (drugsA & drugsB)
               │
               ▼
    [Safety Screener: screenPrompt(prompt)]
@@ -453,7 +453,7 @@ To guard against hazardous medication combinations frequently inquired about in 
 ====================================================================================================
 ```
 
-### 8.1 12 High-Risk Interaction Rules & Clinical Severities
+### 8.1 14 High-Risk Interaction Rules & Clinical Severities
 
 | Rule Name | Class A Drugs | Class B Drugs | Severity | Clinical Pathophysiology & Risk |
 |:---|:---|:---|:---:|:---|
@@ -469,6 +469,8 @@ To guard against hazardous medication combinations frequently inquired about in 
 | **Warfarin + Azole Antifungal** | Warfarin (Coumadin, Jantoven) | Fluconazole, Voriconazole, Ketoconazole, Itraconazole, Posaconazole | `CRITICAL` | CYP2C9 inhibition suppresses clearance of active S-warfarin, precipitating supra-therapeutic INR and catastrophic hemorrhages. |
 | **Digoxin + Amiodarone / Verapamil** | Digoxin (Lanoxin) | Amiodarone, Verapamil | `HIGH` | P-glycoprotein inhibition reduces renal/biliary digoxin clearance, doubling serum levels and causing fatal heart blocks. |
 | **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline, Isocarboxazid | Fluoxetine, Sertraline, Paroxetine, Venlafaxine, Pseudoephedrine | `CRITICAL` | Massive catecholamine and serotonin surge triggering malignant hyperthermia, hypertensive emergency, and circulatory collapse. |
+| **Allopurinol / Febuxostat + Azathioprine / 6-MP** | Allopurinol (Zyloprim), Febuxostat (Uloric) | Azathioprine (Imuran), 6-Mercaptopurine (Purinethol) | `CRITICAL` | Xanthine oxidase inhibition blocks 6-mercaptopurine inactivation, precipitating lethal active metabolite accumulation and severe pancytopenia. |
+| **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Trexall, Rheumatrex) | Ibuprofen, Naproxen, Ketorolac, Meloxicam, Aspirin | `CRITICAL` | Renal prostaglandin synthesis inhibition and competitive tubular secretion blockage by NSAIDs markedly reduces methotrexate clearance, causing fatal bone marrow suppression and AKI (FDA Black Box Warning). |
 
 ### 8.2 Production Implementation (`backend/services/interactionService.js`)
 
@@ -496,6 +498,24 @@ const HIGH_RISK_INTERACTION_RULES = [
       /\bcelecoxib\b/i, /\bcelebrex\b/i,
     ],
     description: "Concurrent use significantly elevates gastrointestinal ulceration, systemic bleeding, and intracranial hemorrhage risks.",
+  },
+  {
+    pair: "Allopurinol / Febuxostat + Azathioprine / 6-Mercaptopurine",
+    drugA: "Xanthine Oxidase Inhibitors (e.g., Allopurinol, Febuxostat)",
+    drugB: "Thiopurines (e.g., Azathioprine, 6-Mercaptopurine)",
+    severity: "CRITICAL",
+    drugsA: [/\ballopurinol\b/i, /\bzyloprim\b/i, /\baloprim\b/i, /\bfebuxostat\b/i, /\buloric\b/i],
+    drugsB: [/\bazathioprine\b/i, /\bimuran\b/i, /\bazasan\b/i, /\b6-mercaptopurine\b/i, /\b6-mp\b/i, /\bpurinethol\b/i],
+    description: "Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia.",
+  },
+  {
+    pair: "Methotrexate + NSAIDs / High-Dose Aspirin",
+    drugA: "Methotrexate (e.g., Rheumatrex, Trexall)",
+    drugB: "NSAIDs / Aspirin (e.g., Ibuprofen, Naproxen, Ketorolac, High-Dose Aspirin)",
+    severity: "CRITICAL",
+    drugsA: [/\bmethotrexate\b/i, /\btrexall\b/i, /\botrexup\b/i, /\brasuvo\b/i, /\brheumatrex\b/i],
+    drugsB: [/\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i, /\bnaproxen\b/i, /\baleve\b/i, /\bketorolac\b/i, /\btoradol\b/i, /\baspirin\b/i],
+    description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
   },
   // ... 11 additional evidence-based pairs
 ];

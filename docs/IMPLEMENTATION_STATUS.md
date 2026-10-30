@@ -69,21 +69,21 @@ mindmap
   root((Quality Status))
     ::icon(fa fa-check-circle)
     (01 Backend Verification)
-      64 Passing Unit & Integration Tests
+      65 Passing Unit & Integration Tests
       In-Memory MongoMemoryServer
       Single-Device sessionVersion Revocation
       Rotating SHA-256 Token State Machine
       AES-256-GCM Key Vault Encryption
       NCBI Entrez Fast-XML-Parser Extraction
       Deterministic Citation Bracket Auditor
-      High-Risk Drug Interaction Checker
+      14 High-Risk Drug Interaction Rules
     (02 Frontend Verification)
-      43 Passing Vitest Tests
+      46 Passing Vitest Tests
       Web Locks Single-Flight Refresh
       tabStorage Fault-Tolerant Cache
       IME Composition Guard
       Medical Detector Lexicon Matcher
-      11 Clinical Calculators Form Math
+      13 Clinical Calculators Form Math
       ARIA Tabpanel Keyboard Cycling
     (03 Python Data & ML)
       19 Passing Unittest Tests
@@ -93,9 +93,9 @@ mindmap
       1,437 Ambiguous Groups Quarantined
       GPT-2 Parameter Formula Derivation
     (04 Browser End-to-End)
-      41 Headless Chromium Workflows
+      44 Headless Chromium Workflows
       20 Core Smoke Flows
-      21 Dark Mode & Tools Flows
+      24 Dark Mode & Tools Flows
       320px & 390px Mobile Viewport Validation
       Dark and light layouts reviewed; no full WCAG audit
       Zero Console Errors in Production Bundle
@@ -105,25 +105,25 @@ mindmap
 
 ## 3. Comprehensive Verification Summary Matrix
 
-The local verification runs reported 174 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
+The local verification runs reported 177 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
 
 | Test Suite / Quality Layer | Target Subsystem / Files | Assertion Count | Execution Environment | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Backend Unit & Integration** | `backend/test/*.test.js` | **64** | Node 24 + In-Memory MongoDB | **PASSED** |
+| **Backend Unit & Integration** | `backend/test/*.test.js` | **65** | Node 24 + In-Memory MongoDB | **PASSED** |
 | • `application.test.js` | Express middleware, CORS, rate limits, CSRF origin gate | 14 | In-Memory MongoDB | **PASSED** |
 | • `safetyService.test.js` | Crisis, emergency, prompt injection, unsafe output | 10 | Standalone Node.js | **PASSED** |
 | • `citationService.test.js`| Bracket extraction, valid/invalid sets, coverage math | 9 | Standalone Node.js | **PASSED** |
 | • `pubmedService.test.js` | E-Utilities query builder, XML parsing, retry backoff | 8 | Axios Mock Adapter | **PASSED** |
-| • `interactionService.test.js` | Limited medication-pair name matching | 13 | Standalone Node.js | **PASSED** |
+| • `interactionService.test.js` | Limited medication-pair name matching | 15 | Standalone Node.js | **PASSED** |
 | • `modelProvider.test.js` | Multi-provider dispatch (Gemini, Groq, Together, Local) | 4 | Axios Mock Adapter | **PASSED** |
 | • `providers.test.js` | AES-256-GCM vault seal/open, credential CRUD | 4 | In-Memory MongoDB | **PASSED** |
 | • `chatTitle.test.js` | Title generation, markdown stripping, length bounding | 2 | Standalone Node.js | **PASSED** |
-| **Frontend Unit & Component** | `frontend/src/test/*.test.jsx` | **43** | Vitest + jsdom | **PASSED** |
+| **Frontend Unit & Component** | `frontend/src/test/*.test.jsx` | **46** | Vitest + jsdom | **PASSED** |
 | • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 6 | jsdom + Mock Fetch | **PASSED** |
 | • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 6 | jsdom Storage Mock | **PASSED** |
 | • `medicalDetector.test.js`| Lexicon match, prefixes, suggestion chip support | 8 | jsdom | **PASSED** |
-| • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, Payne, etc.) | 12 | jsdom React Render | **PASSED** |
-| • `ui.test.jsx` | Auth, chat composer, copy button, ARIA tab cycling | 11 | jsdom React Render | **PASSED** |
+| • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, CURB-65, GCS) | 11 | jsdom React Render | **PASSED** |
+| • `ui.test.jsx` | Auth, chat composer, copy button, ARIA tab cycling | 15 | jsdom React Render | **PASSED** |
 | **Python Dataset Suite** | `Model and Dataset/test_*.py` | **13** | Python 3.10+ `unittest` | **PASSED** |
 | • `test_dataset_tools.py` | Profiler metrics, Jaccard multi-answer divergence | 5 | Standard Library Only | **PASSED** |
 | • `test_release_data.py` | SHA-256 splits, zero cross-split question leakage | 4 | Standard Library Only | **PASSED** |
@@ -135,7 +135,7 @@ The local verification runs reported 174 passing checks or workflows across Node
 | **Production Build & Serving** | `scripts/check_build_serving.cjs` | **7** | Production Nginx / Express | **PASSED** |
 | **Playwright Browser Smoke** | `scripts/browser_smoke.cjs` | **20** | Headless Chromium (Built App) | **PASSED** |
 | **Playwright Dark & Tools** | `scripts/browser_verify_dark_and_tools.cjs`| **21** | Headless Chromium (Built App) | **PASSED** |
-| **Locally Observed Total** | **Separately run software checks** | **174** | **Isolated fixture environment** | **PASSED** |
+| **Locally Observed Total** | **Separately run software checks** | **177** | **Isolated fixture environment** | **PASSED** |
 
 ---
 

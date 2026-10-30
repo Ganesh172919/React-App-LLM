@@ -108,7 +108,7 @@ mindmap
         Gemini Reviewer Consensus
         Supported vs Unsupported Gate
       Pharmacological Screening
-        12 FDA Black-Box Rule Sets
+        14 FDA Black-Box Rule Sets
         Preserved Invariant Context
     (04 State & Persistence)
       Two-Phase Generation Protocol
@@ -129,7 +129,7 @@ mindmap
       Memory Backpressure Drop Code 1013
       Owner-Scoped Event Fanout
     (06 Evidence Clinical Tools)
-      11 Clinical Calculators
+      13 Clinical Calculators
         BMI Metric and Imperial
         CKD-EPI 2021 eGFR
         CHA2DS2-VASc Stroke Risk
@@ -140,6 +140,8 @@ mindmap
         FeNa and FeUrea
         Holliday-Segar Fluids
         Wells PE Pre-Test Score
+        CURB-65 Pneumonia Score
+        Glasgow Coma Scale GCS
       Accessibility Invariants
         WAI-ARIA Tabpanel Semantics
         Keyboard Alt-Plus-C Shortcut
@@ -784,7 +786,7 @@ export async function apiRequest(path, options = {}) {
 
 ## 10. Pharmacological Drug Interaction Detection & Preservation (`interactionService.js`)
 
-MedAssist AI implements deterministic regular expression screening for 12 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
+MedAssist AI implements deterministic regular expression screening for 14 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
 
 ```
 ====================================================================================================
@@ -814,7 +816,7 @@ MedAssist AI implements deterministic regular expression screening for 12 major 
 ====================================================================================================
 ```
 
-### 10.1 12 FDA Black-Box Interaction Pairs
+### 10.1 14 FDA Black-Box Interaction Pairs
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Primary Risk & Mechanism |
 |:---|:---|:---|:---:|:---|
@@ -830,6 +832,8 @@ MedAssist AI implements deterministic regular expression screening for 12 major 
 | **Warfarin + Azole Antifungal** | Warfarin | Fluconazole, Voriconazole, Ketoconazole | `CRITICAL` | CYP2C9 inhibition suppresses S-warfarin clearance, spiking INR. |
 | **Digoxin + Amiodarone / Verapamil** | Digoxin | Amiodarone, Verapamil | `HIGH` | P-glycoprotein inhibition doubles serum digoxin, causing fatal heart block. |
 | **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline | Sertraline, Fluoxetine, Pseudoephedrine | `CRITICAL` | Malignant hypertensive crisis and hyperthermic Serotonin Syndrome. |
+| **Allopurinol / Febuxostat + Azathioprine / 6-MP** | Allopurinol, Febuxostat | Azathioprine, 6-Mercaptopurine | `CRITICAL` | Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia. |
+| **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Meloxicam, Aspirin | `CRITICAL` | Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning). |
 
 ---
 
@@ -854,7 +858,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
                  │
                  ▼
    ┌─────────────────────────────────────────────────────────────────┐
-   │ 11 Evidence-Based Clinical Scoring Tools:                       │
+   │ 13 Evidence-Based Clinical Scoring Tools:                       │
    │ ├── 01. Adult BMI (Metric: kg/m², Imperial: lbs/in² * 703)      │
    │ ├── 02. CKD-EPI 2021 Creatinine eGFR (Race-Free ASN-NKF Formula)│
    │ ├── 03. CHA₂DS₂-VASc Score for Atrial Fibrillation Stroke Risk  │
@@ -864,8 +868,10 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
    │ ├── 07. Serum Anion Gap (Na - (Cl + HCO3))                      │
    │ ├── 08. Fractional Excretion of Sodium (FeNa Prerenal vs ATN)   │
    │ ├── 09. Fractional Excretion of Urea (FeUrea for Diuretic State)│
-   │ ├── 10. Holliday-Segar 4-2-1 Maintenance & Parkland Burn Fluid  │
-   │ └── 11. Wells' Criteria for Pulmonary Embolism (Pre-Test Prob)  │
+   │ ├── 10. Holliday-Segar 4-2-1 Maintenance Fluid Infusion         │
+   │ ├── 11. Wells' Criteria for Pulmonary Embolism (Pre-Test Prob)  │
+   │ ├── 12. CURB-65 Pneumonia Severity Score (30-Day Mortality)     │
+   │ └── 13. Glasgow Coma Scale (GCS Consciousness Assessment)       │
    └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -888,6 +894,8 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **Fractional Excretion of Urea (FeUrea)** | Serum BUN, Urine Urea, Serum Cr, Urine Cr | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking loop or thiazide diuretics.<br>>50%: Intrinsic renal failure. |
 | **Maintenance Fluids (4-2-1)** | Body Weight (kg) | $4 \text{ mL/kg/hr for first 10 kg} + 2 \text{ mL/kg/hr for 11–20 kg} + 1 \text{ mL/kg/hr for each kg > 20 kg}$ | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
 | **Wells' Criteria for PE** | DVT signs (3), Alternative less likely (3), HR >100 (1.5), Immobilization/Surgery (1.5), Prior DVT/PE (1.5), Hemoptysis (1), Malignancy (1) | Point summation (Range: 0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Proceed to D-dimer).<br>>4.0: PE Likely (Proceed directly to CT Pulmonary Angiography). |
+| **CURB-65 Pneumonia Score** | Confusion (+1), Urea >19 mg/dL (+1), RR ≥30 (+1), Low BP SBP <90 or DBP ≤60 (+1), Age ≥65 (+1) | Point summation (Range: 0–5) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient management).<br>2: Intermediate risk (~9% mortality, short inpatient admission).<br>3–5: High / severe risk (15–40% mortality, urgent admission/ICU). |
+| **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
 
 ### 11.2 Production Implementation Snippet (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 
@@ -919,4 +927,53 @@ export function calculateCKDEPI({ age, sex, creatinine }) {
 
   return { egfr, stage };
 }
+```
+
+### 11.3 Glasgow Coma Scale (GCS) Implementation & ARIA Trapping
+
+```jsx
+// frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+// GCS Scoring Logic & Stratification
+const gcsEyeScore = parseInt(gcsEye, 10) || 4;
+const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
+const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
+const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
+
+let gcsStratification = "Mild brain injury / Alert (13–15)";
+if (gcsScore <= 8) {
+  gcsStratification = "Severe brain injury / Coma (3–8)";
+} else if (gcsScore <= 12) {
+  gcsStratification = "Moderate brain injury (9–12)";
+}
+
+// WAI-ARIA Focus Management & Keyboard Trap
+useEffect(() => {
+  if (!isOpen) return;
+  const previousFocus = document.activeElement;
+  closeButtonRef.current?.focus();
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
+    const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+    const activeEl = document.activeElement;
+    if (activeEl && activeEl.getAttribute("role") === "tab") {
+      const curTabId = activeEl.id.replace(/^tab-/, "");
+      const curIndex = tabList.indexOf(curTabId);
+      if (curIndex !== -1) {
+        let nextIndex = -1;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") nextIndex = (curIndex + 1) % tabList.length;
+        else if (e.key === "ArrowLeft" || e.key === "ArrowUp") nextIndex = (curIndex - 1 + tabList.length) % tabList.length;
+        else if (e.key === "Home") nextIndex = 0;
+        else if (e.key === "End") nextIndex = tabList.length - 1;
+        if (nextIndex !== -1) {
+          e.preventDefault();
+          const nextTab = tabList[nextIndex];
+          setActiveTab(nextTab);
+          document.getElementById("tab-" + nextTab)?.focus();
+        }
+      }
+    }
+  };
+  window.addEventListener("keydown", handleKeyDown);
+  return () => { window.removeEventListener("keydown", handleKeyDown); previousFocus?.focus(); };
+}, [isOpen]);
 ```

@@ -39,7 +39,7 @@ This comprehensive technical documentation suite provides deep engineering speci
 +==================================================================================================+
 |                                    CLIENT TIER (Web Browser)                                     |
 |  React 19 SPA | Vite 6 | Tailwind CSS 4 | Web Locks API | tabStorage (Resilient Session Recovery) |
-|  11 Validated Clinical Calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Wells PE, Payne, etc.)    |
+|  13 Validated Clinical Calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Wells PE, Payne, etc.)    |
 +==================================================================================================+
                                            │              ▲
                HTTP (Port 8080; external HTTPS required) │   WebSocket (/ws)
@@ -67,7 +67,7 @@ This comprehensive technical documentation suite provides deep engineering speci
 |    ├── aiController.js       <--> answerService.js (Two-Phase Idempotent Generation)             |
 |    ├── medicalController.js  <--> pubmedService.js (NCBI E-Utilities: esearch, esummary, efetch)  |
 |    ├── citationService.js    <--> Deterministic Numerical Set Partitioning [N] Audit             |
-|    ├── interactionService.js <--> Limited 12-pair medication-name caution checker              |
+|    ├── interactionService.js <--> Limited 14-pair medication-name caution checker              |
 |    ├── answerVerifier.js     <--> Secondary LLM Draft Consensus Review                          |
 |    └── websocketService.js   <--> 30s Heartbeat Watchdog & 1MB Backpressure Protection           |
 +==================================================================================================+
@@ -101,7 +101,7 @@ mindmap
       Web Locks Single-Flight Refresh
       Resilient tabStorage Recovery
       IME Composition Guard
-      11 Clinical Calculators
+      13 Clinical Calculators
     (02 Ingress & Security)
       Nginx Reverse Proxy
       Origin Verification Gate
@@ -130,7 +130,7 @@ mindmap
         Acute Emergency Interception
         Harmful Synthesis Rejection
         Prompt Injection Token Stripping
-      12 Medication-Name Pair Cautions
+      14 Medication-Name Pair Cautions
         Preserved in Emergency Redirects
     (05 Model Orchestration)
       Multi-Provider Engine
@@ -182,7 +182,7 @@ The comprehensive system documentation is organized into focused architectural v
 | **06** | **[`COMPLETE_FILE_DIRECTORY_REFERENCE.md`](COMPLETE_FILE_DIRECTORY_REFERENCE.md)** | Exhaustive, line-by-line engineering inventory of every file in the repository across `backend/`, `frontend/`, `Model and Dataset/`, `scripts/`, and root configurations, including exported symbols, dependencies, and architectural roles. |
 | **07** | **[`DEPLOYMENT_RUNBOOK.md`](DEPLOYMENT_RUNBOOK.md)** | Production operations manual, multi-container Docker Compose orchestration, bare-metal deployment, automated secrets generation (`deploy/create_env.cjs`), SSL/TLS Nginx configuration, database backup/restore (`mongodump`/`mongorestore`), health/readiness monitoring, and disaster recovery. |
 | **08** | **[`EVALUATION_AND_INTEGRATION.md`](EVALUATION_AND_INTEGRATION.md)** | Empirical evaluation framework, paired case-level ablation scoring (`evaluate_benchmark.py`), offline document retrieval with OCR (`document_retrieval.py`), privacy boundaries, and clinical evidence caveats. |
-| **09** | **[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (64), frontend (43), Python (19), built HTTP (7), and separately run browser workflows (41). Production dependency audits reported zero vulnerabilities at the time of the run. |
+| **09** | **[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (64), frontend (46), Python (19), built HTTP (7), and separately run browser workflows (41). Production dependency audits reported zero vulnerabilities at the time of the run. |
 | **10** | **[`ISSUES_AND_RISKS.md`](ISSUES_AND_RISKS.md)** | Prioritized risk register and engineering mitigations, multi-tier defense-in-depth model, clinical boundaries, pharmacological heuristic limitations, cryptographic key dependencies, and regulatory compliance. |
 | **11** | **[`AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md)** | Condensed architectural handbook summarizing the clinical query routing pipeline, PubMed grounding steps, Gemini system instructions, and citation validation rules. |
 | **12** | **[`AI_FINE_TUNING_AND_LORA_GUIDE.md`](AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, and review-gated training commands. |

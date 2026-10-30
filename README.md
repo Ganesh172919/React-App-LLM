@@ -12,8 +12,8 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 ### Core System Capabilities
 1. **Biomedical Evidence Grounding**: Live 3-stage NCBI Entrez E-Utilities harvesting (`esearch`, `esummary`, `efetch`) extracting structured MEDLINE XML abstracts.
 2. **Deterministic Citation Auditing**: Set-partitioning mathematical verifier analyzing `[N]` bracketed assertions against retrieved literature bounds.
-3. **High-Risk Medication Interaction Screener**: Heuristic screening covering 12 major FDA black-box contraindication drug pairs with preserved context across emergency deflections.
-4. **Educational Clinical Calculators**: 11 evidence-based medical scoring tools with strict physiological input bounds and WAI-ARIA tab navigation.
+3. **High-Risk Medication Interaction Screener**: Heuristic screening covering 14 major FDA black-box contraindication drug pairs with preserved context across emergency deflections.
+4. **Educational Clinical Calculators**: 13 evidence-based medical scoring tools with strict physiological input bounds and WAI-ARIA tab navigation.
 5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer committed only upon explicit user confirmation (`/api/save`).
 6. **Multi-Tab Web Locks Synchronization**: Single-flight token renewal across concurrent browser tabs (`navigator.locks.request`).
 7. **Offline Machine Learning & LoRA Suite**: 1,437 ambiguous question groups quarantined; deterministic SHA-256 modulo 100 hash splits; closed-form LoRA parameter calculations.
@@ -35,7 +35,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      ├── Web Locks API Single-Flight Token Refresh (frontend/src/lib/api.js)
      ├── Resilient Draft & Pending Answer Cache (frontend/src/lib/tabStorage.js)
      ├── IME Composition Safety Guard for East Asian Language Typing
-     └── 11 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
+     └── 13 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
                   │
                   │ HTTP (Port 8080) / Secure WebSocket (/ws)
                   │ (External TLS 1.3 Ingress Required in Production)
@@ -61,7 +61,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 12 FDA Black-Box Warning Drug Interaction Screener (interactionService.js)                                 │
+     │  - 14 FDA Black-Box Warning Drug Interaction Screener (interactionService.js)                                 │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -106,7 +106,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      12 FDA Drug Interaction Warning Rules
+      14 FDA Drug Interaction Warning Rules
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -117,7 +117,8 @@ mindmap
       AES-256-GCM Authenticated Vault
       Google OAuth 2.0 PKCE Flow
     (04 Clinical Educational Calculators)
-      11 Clinical Tools
+      13 Clinical Tools
+        Adult BMI Metric and Imperial
         CKD-EPI 2021 eGFR Race-Free
         CHA2DS2-VASc Stroke Risk
         Mean Arterial Pressure MAP
@@ -127,6 +128,8 @@ mindmap
         FeNa and FeUrea
         Holliday-Segar 4-2-1 Fluids
         Wells PE Pre-Test Probability
+        CURB-65 Pneumonia Severity
+        Glasgow Coma Scale GCS
       Accessibility Controls
         WAI-ARIA Tabpanel Cycling
         Keyboard Alt-Plus-C Shortcut
@@ -147,7 +150,7 @@ mindmap
 
 ## 4. Evidence-Based Clinical Calculators Suite
 
-The platform includes an 11-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
+The platform includes a comprehensive 13-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
 
 | Tool Name | Clinical Formula / Scoring Model | Input Parameters | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -162,20 +165,22 @@ The platform includes an 11-calculator clinical suite implemented in [`frontend/
 | **Fractional Excretion of Urea (FeUrea)** | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | Serum BUN, Urine Urea, Serum/Urine Cr | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking diuretics.<br>>50%: Intrinsic AKI. |
 | **Maintenance Fluids (4-2-1 Rule)** | $4 \text{ mL/kg/hr (1-10kg)} + 2 \text{ mL/kg/hr (11-20kg)} + 1 \text{ mL/kg/hr (>20kg)}$ | Patient Weight (kg) | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
 | **Wells' Criteria for PE** | Point summation across 7 clinical criteria (DVT signs, alternative less likely, HR >100, etc.) | Clinical criteria checkboxes (0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Check D-dimer).<br>>4.0: PE Likely (Proceed to CT Pulmonary Angiography). |
+| **CURB-65 Pneumonia Score** | $\text{CURB-65} = C + U + R + B + 65$ (Confusion, Urea >19, RR ≥30, SBP <90 or DBP ≤60, Age ≥65) | 5 clinical checkboxes (0–5 points) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient).<br>2: Intermediate risk (~9% mortality, short stay).<br>3–5: High risk (15–40% mortality, urgent admission/ICU). |
+| **Glasgow Coma Scale (GCS)** | $\text{GCS} = E (1–4) + V (1–5) + M (1–6)$ (Eye, Verbal, Motor responses) | 3 ordinal dropdown selectors (3–15 points) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway reflexes). |
 
 ---
 
 ## 5. Pharmacological Drug Interaction Screening & Preserved Context
 
-Implemented in [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js), this subsystem scans user questions against 12 major FDA black-box warning medication combinations:
+Implemented in [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js), this subsystem scans user questions against 14 major FDA black-box warning medication combinations:
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
 |:---|:---|:---|:---:|:---|
-| **Anticoagulant + NSAID / Aspirin** | Warfarin, Eliquis, Xarelto, Plavix | Aspirin, Ibuprofen, Naproxen, Diclofenac | `CRITICAL` | Severe gastrointestinal ulceration and intracranial hemorrhage. |
-| **PDE5 Inhibitor + Nitrate** | Sildenafil, Tadalafil, Vardenafil | Nitroglycerin, Isosorbide Mononitrate | `CRITICAL` | Synergistic cGMP accumulation causing profound, fatal hypotension. |
+| **Anticoagulant + NSAID / Aspirin** | Warfarin, Eliquis, Xarelto, Plavix, Heparin | Aspirin, Ibuprofen, Naproxen, Diclofenac | `CRITICAL` | Severe gastrointestinal ulceration and intracranial hemorrhage. |
+| **PDE5 Inhibitor + Nitrate** | Sildenafil, Tadalafil, Vardenafil, Avanafil | Nitroglycerin, Isosorbide Mononitrate/Dinitrate | `CRITICAL` | Synergistic cGMP accumulation causing profound, fatal hypotension. |
 | **Tramadol / Opioids + SSRI / SNRI** | Tramadol, Meperidine, Methadone | Fluoxetine, Sertraline, Paroxetine, Venlafaxine | `HIGH` | Massive serotonin accumulation causing Serotonin Syndrome. |
 | **ACEI / ARB + K-Sparing Diuretic** | Lisinopril, Enalapril, Losartan, Valsartan | Spironolactone, Eplerenone, Potassium supplements | `HIGH` | Additive potassium retention causing fatal cardiac arrhythmias. |
-| **Methotrexate + TMP-SMX (Bactrim)** | Methotrexate | Trimethoprim, Sulfamethoxazole (Bactrim) | `CRITICAL` | Reduced renal tubular excretion causing lethal pancytopenia. |
+| **Methotrexate + TMP-SMX (Bactrim)** | Methotrexate | Trimethoprim, Sulfamethoxazole (Bactrim, Septra) | `CRITICAL` | Reduced renal tubular excretion causing lethal pancytopenia. |
 | **Fluoroquinolone + Corticosteroid** | Ciprofloxacin, Levofloxacin, Moxifloxacin | Prednisone, Dexamethasone, Methylprednisolone | `HIGH` | Synergistic collagen degradation causing Achilles tendon rupture. |
 | **Benzodiazepine + Opioid Analgesic** | Alprazolam, Diazepam, Lorazepam, Clonazepam | Oxycodone, Morphine, Fentanyl, Hydrocodone | `CRITICAL` | Severe CNS and respiratory depression, coma, fatal overdose (FDA Black Box). |
 | **Lithium + NSAID / ACE Inhibitor** | Lithium Carbonate / Citrate | Ibuprofen, Naproxen, Lisinopril, Enalapril | `HIGH` | Reduced renal prostaglandin clearance elevating serum lithium into toxic range. |
@@ -183,6 +188,8 @@ Implemented in [`backend/services/interactionService.js`](file:///c:/Users/RAVIP
 | **Warfarin + Azole Antifungal** | Warfarin (Coumadin) | Fluconazole, Voriconazole, Ketoconazole | `CRITICAL` | CYP2C9 inhibition suppresses S-warfarin clearance, spiking INR. |
 | **Digoxin + Amiodarone / Verapamil** | Digoxin | Amiodarone, Verapamil | `HIGH` | P-glycoprotein inhibition doubles serum digoxin, causing heart block. |
 | **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline | Sertraline, Fluoxetine, Pseudoephedrine | `CRITICAL` | Malignant hypertensive crisis and hyperthermic Serotonin Syndrome. |
+| **Allopurinol + Azathioprine / 6-MP** | Allopurinol, Febuxostat | Azathioprine, 6-Mercaptopurine | `CRITICAL` | Xanthine oxidase inhibition blocks thiopurine degradation, precipitating lethal bone marrow suppression and pancytopenia. |
+| **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Aspirin | `CRITICAL` | Renal prostaglandin synthesis inhibition and competitive tubular secretion blockage by NSAIDs reduces methotrexate clearance, causing fatal pancytopenia and AKI. |
 
 ### Preserved Context Invariant
 ```
@@ -280,7 +287,50 @@ function assessCitationGrounding(text, sourceCount) {
 }
 ```
 
-### 6.3 Web Locks API Client Concurrency Control (`frontend/src/lib/api.js`)
+### 6.3 Glasgow Coma Scale & WAI-ARIA Navigation (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
+
+```jsx
+// frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+// GCS Calculator State & Scoring Model
+const [gcsEye, setGcsEye] = useState("4");
+const [gcsVerbal, setGcsVerbal] = useState("5");
+const [gcsMotor, setGcsMotor] = useState("6");
+
+const gcsEyeScore = parseInt(gcsEye, 10) || 4;
+const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
+const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
+const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
+
+let gcsStratification = "Mild brain injury / Alert (13–15)";
+if (gcsScore <= 8) {
+  gcsStratification = "Severe brain injury / Coma (3–8)";
+} else if (gcsScore <= 12) {
+  gcsStratification = "Moderate brain injury (9–12)";
+}
+
+// WAI-ARIA Arrow Key Tab Navigation
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+const handleKeyDown = (e) => {
+  const curIndex = tabList.indexOf(activeTab);
+  let nextIndex = -1;
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+    nextIndex = (curIndex + 1) % tabList.length;
+  } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+    nextIndex = (curIndex - 1 + tabList.length) % tabList.length;
+  } else if (e.key === "Home") {
+    nextIndex = 0;
+  } else if (e.key === "End") {
+    nextIndex = tabList.length - 1;
+  }
+  if (nextIndex !== -1) {
+    e.preventDefault();
+    setActiveTab(tabList[nextIndex]);
+    document.getElementById("tab-" + tabList[nextIndex])?.focus();
+  }
+};
+```
+
+### 6.4 Web Locks API Client Concurrency Control (`frontend/src/lib/api.js`)
 
 ```javascript
 // frontend/src/lib/api.js
@@ -323,17 +373,17 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       64 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom DOM Emulation    43 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       65 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom DOM Emulation    45 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
     Headless Browser Smoke Test Suite           Playwright Chromium Headless      20 Passed          PASSED
-    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      21 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      24 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       174 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       180 Passed         PASSED
 ========================================================================================================================
 ```
 
@@ -346,7 +396,7 @@ For deep-dive technical specifications, mathematical derivations, and operationa
 | Volume | Document File | Primary Subject & Technical Scope |
 |:---:|:---|:---|
 | **01** | [`docs/README.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/README.md) | Documentation suite master catalog, system boundaries, and ASCII architecture. |
-| **02** | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md) | Multi-tier infrastructure, Nginx ingress, state machines, Web Locks, and calculators. |
+| **02** | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md) | Multi-tier infrastructure, Nginx ingress, state machines, Web Locks, and 13 calculators. |
 | **03** | [`docs/CURRENT_IMPLEMENTATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md) | Complete runtime state, API request/response schemas, and Mongoose database models. |
 | **04** | [`docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md) | Biomedical RAG mathematical formulations, NCBI E-Utilities, and citation auditing. |
 | **05** | [`docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md) | LoRA low-rank matrix decomposition, backpropagation gradients, and SFT masking. |
@@ -354,7 +404,7 @@ For deep-dive technical specifications, mathematical derivations, and operationa
 | **07** | [`docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md) | Complete file-by-file technical catalog and exported symbol/function inventory. |
 | **08** | [`docs/DEPLOYMENT_RUNBOOK.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEPLOYMENT_RUNBOOK.md) | Container mesh operations, host TLS 1.3 Nginx setup, secret generation, and backups. |
 | **09** | [`docs/EVALUATION_AND_INTEGRATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/EVALUATION_AND_INTEGRATION.md) | Paired case ablation scoring tools, strict matrix evaluation, and air-gapped search. |
-| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 172+ test assertion inventory. |
+| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 177+ test assertion inventory. |
 | **11** | [`docs/ISSUES_AND_RISKS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/ISSUES_AND_RISKS.md) | Prioritized risk register, threat model, heuristic limitations, and mitigations. |
 | **12** | [`docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md) | Concise grounding summary, algorithmic rules, and secondary consensus verifier. |
 | **13** | [`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_FINE_TUNING_AND_LORA_GUIDE.md) | Concise LoRA setup guide, parameter estimation benchmarks, and dataset hygiene. |

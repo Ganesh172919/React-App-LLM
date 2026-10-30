@@ -41,7 +41,7 @@ The MedAssist AI client is an enterprise-grade, accessibility-audited single-pag
     │  - <AuthPage />         │                   │  - <Sidebar />          │                   │  - <AccountPage />      │
     │    (Login, Register,    │                   │    (History CRUD, filter│                   │    (Profile, data wipe) │
     │     Password Recovery)  │                   │  - <ClinicalCalculators>│                   │  - <AISettings />       │
-    │  - <VerifyEmail />      │                   │    (11 validated tools) │                   │    (Provider & Vault)   │
+    │  - <VerifyEmail />      │                   │    (13 validated tools) │                   │    (Provider & Vault)   │
     └─────────────────────────┘                   └─────────────────────────┘                   └─────────────────────────┘
                  │                                             │                                             │
                  └─────────────────────────────────────────────┼─────────────────────────────────────────────┘
@@ -91,7 +91,7 @@ mindmap
         History Loading State Lock
         Auto-Expanding Textarea
     (04 Clinical Calculators Modal)
-      11 Clinical Tools
+      13 Clinical Tools
         BMI Metric and Imperial
         eGFR CKD-EPI 2021 Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -101,8 +101,10 @@ mindmap
         Serum Anion Gap
         Fractional Excretion of Sodium
         Fractional Excretion of Urea
-        Parkland Fluid Resuscitation
+        Holliday-Segar Fluids
         Wells Criteria for PE
+        CURB-65 Pneumonia Severity
+        Glasgow Coma Scale GCS
       WAI-ARIA Accessibility
         role="tablist" & role="tabpanel"
         Keyboard Arrow-Key Cycling
@@ -326,7 +328,7 @@ export function formatChatAsMarkdown(chat) {
 
 ## 5. Educational Clinical Calculators Implementation
 
-The `ClinicalCalculatorsModal.jsx` component implements 11 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
+The `ClinicalCalculatorsModal.jsx` component implements 13 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -364,13 +366,39 @@ The `ClinicalCalculatorsModal.jsx` component implements 11 standardized clinical
     FeUrea (Fractional Urea)   FeUrea = (UUrea * SCr) / (BUN * UCr) * 100%               UUrea, BUN, SCr, UCr
                                < 35% Prerenal (valid during diuretic therapy)            All positive numbers
 
-    Parkland Burn Fluids       Total 24h = 4 mL * Weight_kg * %TBSA                      Weight: 20-200 kg
-                               First 8h: 50% of total; Remaining 16h: 50% of total        TBSA: 1-100%
+    Holliday-Segar Fluids      4 mL/kg/hr (1-10kg) + 2 mL/kg/hr (11-20kg) + 1 mL (>20kg) Weight: 1-150 kg
+                               Basal hourly and 24-hour maintenance fluid rates          Hourly and 24h rates
 
     Wells Criteria for PE      Clinical DVT (+3), PE #1 diagnosis (+3), HR >100 (+1.5),  Binary clinical flags
                                Immobilization/Surgery (+1.5), Prior DVT/PE (+1.5),       PE unlikely <= 4
                                Hemoptysis (+1), Malignancy (+1). Range: 0 to 12.5.       PE likely > 4
+
+    CURB-65 Pneumonia Score    Confusion (+1), Urea > 19 mg/dL (+1), RR >= 30 (+1),      Binary clinical flags
+                               Low BP SBP < 90 or DBP <= 60 (+1), Age >= 65 (+1).       0-1: Low, 2: Int, 3-5: High
+
+    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
+                               Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
 ========================================================================================================================
+```
+
+### 5.1 Glasgow Coma Scale (GCS) Implementation & ARIA Trapping
+
+```jsx
+// Implementation snippet from frontend/src/components/tools/ClinicalCalculatorsModal.jsx:
+const gcsEyeScore = parseInt(gcsEye, 10) || 4;
+const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
+const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
+const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
+
+let gcsStratification = "Mild brain injury / Alert (13–15)";
+if (gcsScore <= 8) {
+  gcsStratification = "Severe brain injury / Coma (3–8)";
+} else if (gcsScore <= 12) {
+  gcsStratification = "Moderate brain injury (9–12)";
+}
+
+// Arrow key navigation across all 13 tabs
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
 ```
 
 ---
@@ -387,7 +415,7 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (43 tests)
+# 3. Execute Vitest automated unit and component test suite (46 tests)
 npm test
 
 # 4. Compile optimized production distribution bundle

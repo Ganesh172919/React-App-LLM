@@ -822,7 +822,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 
 ### 7.3 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 
-Performs deterministic regular-expression scanning across user queries for 12 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
+Performs deterministic regular-expression scanning across user queries for 14 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
 
 | Interacting Pair | Severity | Drug A Class & Examples | Drug B Class & Examples | Clinical Risk Description |
 | :--- | :---: | :--- | :--- | :--- |
@@ -830,20 +830,22 @@ Performs deterministic regular-expression scanning across user queries for 12 ma
 | **PDE5 Inhibitors + Nitrates** | **CRITICAL** | Sildenafil, Tadalafil, Vardenafil | Nitroglycerin, Isosorbide, Poppers | Cyclic GMP accumulation causing refractory, fatal hypotension |
 | **Serotonergic Opioids + SSRIs** | **HIGH** | Tramadol, Meperidine, Methadone | Fluoxetine, Sertraline, Venlafaxine | Severe Serotonin Syndrome and lowered seizure threshold |
 | **ACEI/ARBs + K-Sparing Diuretics**| **HIGH** | Lisinopril, Losartan, Enalapril | Spironolactone, Triamterene, K-Dur | Synergistic potassium retention causing fatal cardiac arrhythmias |
-| **Methotrexate + Bactrim** | **HIGH** | Methotrexate, Trexall | Trimethoprim-Sulfamethoxazole | Synergistic anti-folate bone marrow suppression & pancytopenia |
+| **Methotrexate + Bactrim** | **CRITICAL** | Methotrexate, Trexall | Trimethoprim-Sulfamethoxazole | Synergistic anti-folate bone marrow suppression & pancytopenia |
 | **Fluoroquinolones + Steroids** | **HIGH** | Ciprofloxacin, Levofloxacin | Prednisone, Dexamethasone | Synergistic tendon collagen degradation & Achilles rupture |
 | **Benzodiazepines + Opioids** | **CRITICAL** | Alprazolam, Diazepam, Clonazepam | Morphine, Oxycodone, Fentanyl | Synergistic GABA/mu-opioid respiratory depression and death |
 | **Lithium + NSAIDs/ACEI** | **HIGH** | Lithium carbonate, Lithobid | Ibuprofen, Naproxen, Lisinopril | Impaired renal clearance causing acute lithium neurotoxicity |
-| **Statins + CYP3A4 Inhibitors** | **HIGH** | Simvastatin, Atorvastatin, Lovastatin | Clarithromycin, Itraconazole, Gemfibrozil | Impaired hepatic CYP3A4 clearance causing rhabdomyolysis |
+| **Statins + CYP3A4 Inhibitors** | **CRITICAL** | Simvastatin, Atorvastatin, Lovastatin | Clarithromycin, Itraconazole, Gemfibrozil | Impaired hepatic CYP3A4 clearance causing rhabdomyolysis |
 | **Warfarin + Azoles** | **CRITICAL** | Warfarin, Coumadin | Fluconazole, Ketoconazole, Metronidazole| CYP2C9 inhibition causing supratherapeutic INR and hemorrhage |
 | **Digoxin + Amiodarone/Verapamil**| **HIGH** | Digoxin, Lanoxin | Amiodarone, Verapamil, Diltiazem | P-glycoprotein inhibition causing digoxin toxicity and heart block |
 | **MAOIs + Serotonergic Agents** | **CRITICAL** | Phenelzine, Selegiline, Tranylcypromine| Fluoxetine, Escitalopram, Duloxetine | Fatal Serotonin Syndrome and acute hypertensive crisis |
+| **Allopurinol + Azathioprine** | **CRITICAL** | Allopurinol, Febuxostat | Azathioprine, 6-Mercaptopurine | Xanthine oxidase inhibition suppresses thiopurine degradation, causing severe pancytopenia |
+| **Methotrexate + NSAIDs/Aspirin** | **CRITICAL** | Methotrexate, Rheumatrex | Ibuprofen, Naproxen, Ketorolac, Aspirin | Tubular secretion inhibition reduces methotrexate clearance, precipitating fatal bone marrow suppression and AKI |
 
 ---
 
 ## 8. Clinical Educational Calculators Specification
 
-The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 11 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
+The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 13 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
 
 ```
 ========================================================================================================================
@@ -881,12 +883,18 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
     FeUrea (Fractional Urea)   FeUrea = (UUrea * SCr) / (BUN * UCr) * 100%               UUrea, BUN, SCr, UCr
                                < 35% Prerenal (valid during diuretic therapy)            All positive values
 
-    Parkland Burn Fluids       Total 24h = 4 mL * Weight_kg * %TBSA                      Weight: 20-200 kg
-                               First 8h: 50% of total; Remaining 16h: 50% of total        TBSA: 1-100%
+    Maintenance Fluids (4-2-1) Total Rate = 4 mL (1-10kg) + 2 mL (11-20kg) + 1 mL (>20kg)Weight: 1-150 kg
+                               Holliday-Segar basal hydration formula                    Hourly and 24h rates
 
     Wells Criteria for PE      Clinical DVT (+3), PE #1 diagnosis (+3), HR >100 (+1.5),  Binary clinical flags
                                Immobilization/Surgery (+1.5), Prior DVT/PE (+1.5),       PE unlikely <= 4
                                Hemoptysis (+1), Malignancy (+1). Range: 0 to 12.5.       PE likely > 4
+
+    CURB-65 Pneumonia Score    Confusion (+1), Urea > 19 mg/dL (+1), RR >= 30 (+1),      Binary clinical flags
+                               Low BP SBP < 90 or DBP <= 60 (+1), Age >= 65 (+1).       0-1: Low, 2: Int, 3-5: High
+
+    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
+                               Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
 ========================================================================================================================
 ```
 

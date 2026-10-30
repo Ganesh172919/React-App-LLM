@@ -66,7 +66,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── config.js                        # Environment variable validation on startup
 │   │   ├── emailService.js                  # Brevo (Sendinblue) transactional email dispatcher
 │   │   ├── historySearch.js                 # Conversational context turn relevance ranker
-│   │   ├── interactionService.js            # 12 FDA black-box drug-drug interaction warning rules
+│   │   ├── interactionService.js            # 14 FDA black-box drug-drug interaction warning rules
 │   │   ├── modelProvider.js                 # Multi-provider client (Gemini, Groq, Together, Local)
 │   │   ├── providerCredentials.js           # AES-256-GCM authenticated cipher vault (seal/open)
 │   │   ├── providerSelection.js             # Multi-provider routing and key resolution logic
@@ -145,7 +145,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   ├── header/Header.jsx            # Top navigation bar with auth status
 │       │   ├── home/Home.jsx                # Public landing page with system notices
 │       │   └── tools/                       # Evidence-Based Clinical Tools
-│       │       └── ClinicalCalculatorsModal.jsx # 11-calculator educational suite with WAI-ARIA tabs
+│       │       └── ClinicalCalculatorsModal.jsx # 13-calculator educational suite with WAI-ARIA tabs
 │       │
 │       ├── context/                         # React State Contexts
 │       │   ├── AuthContext.jsx              # User session state, sign-in, sign-out handler
@@ -271,7 +271,7 @@ mindmap
 | `backend/models/generationModel.js` | Ephemeral Buffer | Mongoose `Generation` model (24h TTL) | `mongoose` |
 | `backend/services/pubmedService.js` | PubMed Client | `buildPubMedQuery`, `orderedRecords`, `parseAbstracts`, `fetchSources` | `axios`, `fast-xml-parser` |
 | `backend/services/citationService.js` | Citation Audit | `assessCitationGrounding` | Standard regex |
-| `backend/services/interactionService.js` | Drug Interaction Screener | `screenDrugInteractions` | Standard regex & 12 FDA black-box warning pairs |
+| `backend/services/interactionService.js` | Drug Interaction Screener | `detectDrugInteractions`, `HIGH_RISK_INTERACTION_RULES` | Standard regex & 14 FDA black-box warning pairs |
 | `backend/services/answerVerifier.js` | Model Review | `verifyAnswer` | `aiService.js` |
 | `backend/services/providerCredentials.js` | AES-256-GCM Vault | `seal`, `open` | `crypto` |
 | `backend/services/providerSelection.js` | Multi-Provider Engine | `resolveProviderSelection`, `listChoices`, `defaultProvider` | `providerCredentialModel.js`, `userModel.js` |
@@ -293,7 +293,7 @@ mindmap
 | `frontend/src/context/SidebarContext.jsx` | Drawer State | `SidebarContext`, `SidebarProvider`, `useSidebar` | React |
 | `frontend/src/components/chat/ChatWorkspace.jsx` | Chat UI | `<ChatWorkspace />` | `react-markdown`, `tabStorage.js`, `api.js` |
 | `frontend/src/components/dashboard/AnalyticsDashboard.jsx` | Metrics Dashboard | `<AnalyticsDashboard />` | `lib/api.js`, Lucide icons |
-| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Tools | `<ClinicalCalculatorsModal />` | React, Lucide icons, WAI-ARIA tab semantics |
+| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Tools | `<ClinicalCalculatorsModal />` | 13 evidence-based calculators with WAI-ARIA tab semantics |
 | `frontend/src/components/auth/AccountPage.jsx` | Account Manager | `<AccountPage />` | `AuthContext.jsx`, `tabStorage.js` |
 | `frontend/src/components/auth/AISettings.jsx` | Provider Settings | `<AISettings />` | `lib/api.js` |
 | `frontend/src/components/auth/AuthPage.jsx` | Auth Modal | `<AuthPage />` | React |

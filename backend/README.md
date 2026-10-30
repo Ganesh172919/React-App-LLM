@@ -50,7 +50,7 @@ The MedAssist AI backend is engineered as a high-throughput, security-hardened s
 |  ├── providerSelection.js: Resolves deployment defaults vs AES-256-GCM user-vault personal keys                     |
 |  ├── pubmedService.js: NCBI Entrez REST client (esearch, esummary, efetch) & fast-xml-parser flattener               |
 |  ├── citationService.js: Deterministic [N] numerical citation extraction & set partitioning auditor                  |
-|  ├── interactionService.js: Deterministic 12-pair FDA black-box drug interaction scanner                             |
+|  ├── interactionService.js: Deterministic 14-pair FDA black-box drug interaction scanner                             |
 |  ├── answerVerifier.js: Secondary LLM consensus reviewer (SUPPORTED vs UNSUPPORTED)                                 |
 |  ├── safetyService.js: Deterministic prompt & output screening for crisis, emergency, and harmful synthesis         |
 |  └── websocketService.js: 30s heartbeat watchdog ping-pong & 1MB backpressure drop protection                        |
@@ -104,7 +104,7 @@ mindmap
         Acute Emergency Interception
         Harmful Synthesis Rejection
         Prompt Injection Token Stripping
-      12 FDA Black-Box Drug Interaction Pairs
+      14 FDA Black-Box Drug Interaction Pairs
         Preserved in Emergency Redirects
     (05 Real-Time & Persistence)
       Two-Phase Ephemeral Generation
@@ -306,7 +306,25 @@ const HIGH_RISK_INTERACTION_RULES = [
     drugsB: [/\bnitroglycerin\b/i, /\bnitrostat\b/i, /\bisosorbide\b/i],
     description: "Absolute contraindication: Causes synergistic cyclic GMP accumulation leading to profound hypotension.",
   },
-  // 10 additional FDA Black-Box interaction rules...
+  {
+    pair: "Allopurinol / Febuxostat + Azathioprine / 6-Mercaptopurine",
+    drugA: "Xanthine Oxidase Inhibitors (e.g., Allopurinol, Febuxostat)",
+    drugB: "Thiopurines (e.g., Azathioprine, 6-Mercaptopurine)",
+    severity: "CRITICAL",
+    drugsA: [/\ballopurinol\b/i, /\bzyloprim\b/i, /\bfebuxostat\b/i],
+    drugsB: [/\bazathioprine\b/i, /\bimuran\b/i, /\b6-mercaptopurine\b/i, /\b6-mp\b/i],
+    description: "Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia.",
+  },
+  {
+    pair: "Methotrexate + NSAIDs / High-Dose Aspirin",
+    drugA: "Methotrexate (e.g., Rheumatrex, Trexall)",
+    drugB: "NSAIDs / Aspirin (e.g., Ibuprofen, Naproxen, Ketorolac, High-Dose Aspirin)",
+    severity: "CRITICAL",
+    drugsA: [/\bmethotrexate\b/i, /\btrexall\b/i, /\botrexup\b/i, /\brheumatrex\b/i],
+    drugsB: [/\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i, /\bnaproxen\b/i, /\baleve\b/i, /\bketorolac\b/i, /\baspirin\b/i],
+    description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
+  },
+  // 11 additional FDA Black-Box interaction rules...
 ];
 
 const detectDrugInteractions = (text) => {
@@ -362,7 +380,7 @@ npm test
 
 ### Complete Test Suite Breakdown (64 Tests):
 1. `application.test.js` (14 Tests): Full integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, two-phase `/api/save`, and WebSocket notifications.
-2. `interactionService.test.js` (13 Tests): Validates detection across 12 high-risk drug pairs and ensures clean queries pass.
+2. `interactionService.test.js` (15 Tests): Validates detection across 14 high-risk drug pairs and ensures clean queries pass.
 3. `safetyService.test.js` (10 Tests): Verifies crisis deflection, acute emergency interception, prompt injection defense, and educational exemptions.
 4. `citationService.test.js` (9 Tests): Validates numerical bracket parsing `[N]`, valid vs invalid set partitioning, and coverage math.
 5. `pubmedService.test.js` (8 Tests): Unit tests for E-Utilities query string building, fast-xml-parser extraction, and rate throttle delays.

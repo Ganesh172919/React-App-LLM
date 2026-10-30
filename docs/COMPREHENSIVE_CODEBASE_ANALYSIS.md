@@ -549,7 +549,7 @@ function attachWebSockets(server, app) {
 
 ### 4.10 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 - **File Path**: [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js)
-- **Role**: Performs deterministic name matching for 12 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
+- **Role**: Performs deterministic name matching for 14 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
 
 ```
 ========================================================================================================================
@@ -560,7 +560,7 @@ function attachWebSockets(server, app) {
               │
               ▼
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │ 12 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
+    │ 14 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
     │ ├── 1. Anticoagulants/Antiplatelets + NSAIDs/Aspirin (Major Bleeding Risk)                       │
     │ ├── 2. PDE5 Inhibitors + Nitrates (Profound Refractory Hypotension)                              │
     │ ├── 3. Serotonergic Opioids + SSRIs/SNRIs (Serotonin Syndrome)                                   │
@@ -572,7 +572,9 @@ function attachWebSockets(server, app) {
     │ ├── 9. Statins + Strong CYP3A4 Inhibitors (Rhabdomyolysis Risk)                                  │
     │ ├── 10. Warfarin + Azole Antifungals (Supratherapeutic INR / Bleeding)                           │
     │ ├── 11. Digoxin + Amiodarone/Verapamil (Digoxin Toxicity)                                        │
-    │ └── 12. MAOIs + SSRIs/SNRIs/Tricyclics (Hypertensive Crisis / Serotonin Toxicity)                │
+    │ ├── 12. MAOIs + SSRIs/SNRIs/Tricyclics (Hypertensive Crisis / Serotonin Toxicity)                │
+    │ ├── 13. Allopurinol/Febuxostat + Azathioprine/6-Mercaptopurine (Severe Pancytopenia)             │
+    │ └── 14. Methotrexate + NSAIDs/High-Dose Aspirin (Fatal Bone Marrow Suppression & AKI)           │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
               │
               ├── Matches Found ──► Emit structured `drugInteractions` array with clinical descriptions
@@ -718,7 +720,7 @@ const handleKeyDown = (e) => {
 
 ### 5.4 Clinical Educational Calculators Suite (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 - **File Path**: [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx)
-- **Role**: Implements 11 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
+- **Role**: Implements 13 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -733,6 +735,7 @@ const handleKeyDown = (e) => {
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ WAI-ARIA Tab Navigation: role="tablist"                                                          │
     │ [BMI] [eGFR] [CHA₂DS₂-VASc] [MAP] [CrCl] [Payne Ca] [Anion Gap] [FeNa] [FeUrea] [Fluids] [Wells]│
+    │ [CURB-65] [Glasgow Coma Scale (GCS)]                                                             │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -748,7 +751,7 @@ const handleKeyDown = (e) => {
 
 ```javascript
 // Implementation Snippet: Keyboard Arrow Tab Cycling in ClinicalCalculatorsModal.jsx
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells"];
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
 if (activeEl && activeEl.getAttribute("role") === "tab") {
   const curTabId = activeEl.id.replace(/^tab-/, "");
   const curIndex = tabList.indexOf(curTabId);
@@ -953,7 +956,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `backend/models/generationModel.js` | Generation Model | `aiController.js` | 24-hour TTL ephemeral generation storage |
 | `backend/models/providerCredentialModel.js` | ProviderCredential Model| `settingsController.js`| AES-256-GCM encrypted user personal API keys |
 | `backend/services/answerService.js` | `answer` Function | `aiController.js` | Master biomedical grounding pipeline, PubMed retrieval, citation verification |
-| `backend/services/interactionService.js` | `detectDrugInteractions` | `answerService.js` | Limited medication-pair name matcher |
+| `backend/services/interactionService.js` | `detectDrugInteractions` | `answerService.js` | 14 FDA black-box drug interaction rules & preserved context |
 | `backend/services/modelProvider.js` | Provider Completion Engine | `answerService.js` | Multi-provider API abstraction (Gemini, Groq, Together, Local) |
 | `backend/services/providerCredentials.js` | `seal` & `open` Vault | `settingsController.js`| Symmetric AES-256-GCM encryption/decryption engine |
 | `backend/services/providerSelection.js` | Key & Provider Resolver | `answerService.js` | Fallback hierarchy: personal keys -> deployment keys |
@@ -968,7 +971,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `frontend/src/lib/api.js` | `apiRequest`, `refreshSession` | Frontend Components | Web Locks API single-flight token renewal, 401 retry interceptor |
 | `frontend/src/lib/tabStorage.js` | `readTab`, `writeTab`, `readPending` | Chat Components | Session-isolated draft caching with memory fallback |
 | `frontend/src/components/chat/ChatWorkspace.jsx` | Chat Workspace View | `App.jsx` | Message stream feed, composer with IME protection, citation pills |
-| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Calculators Modal | `App.jsx` | 11 validated calculators, WAI-ARIA arrow-key cycling |
+| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Calculators Modal | `App.jsx` | 13 validated calculators, WAI-ARIA arrow-key cycling |
 | `frontend/src/utils/medicalDetector.js` | `isMedicalQuery` Heuristic | `ChatWorkspace.jsx` | Client-side clinical keyword lexicon & prefix matcher |
 | `frontend/src/components/auth/AISettings.jsx` | AI Settings View | `App.jsx` | Provider selection UI, encrypted key modal, answer verbosity controls |
 | `frontend/src/components/dashboard/AnalyticsDashboard.jsx` | Analytics Dashboard | `App.jsx` | SVG telemetry charts, query trends, grounded response ratios |
