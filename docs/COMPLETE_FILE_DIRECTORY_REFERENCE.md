@@ -91,19 +91,21 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   ├── create_env.cjs                       # Generates production .env with random 32-byte hex secrets
 │   └── mongo-init.js                        # Mongo container bootstrap script (creates app user)
 │
-├── docs/                                    # Technical Documentation Suite
-│   ├── AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md # Concise AI grounding summary
-│   ├── AI_FINE_TUNING_AND_LORA_GUIDE.md     # Concise LoRA guide
-│   ├── COMPLETE_FILE_DIRECTORY_REFERENCE.md # This comprehensive file inventory
-│   ├── COMPREHENSIVE_CODEBASE_ANALYSIS.md   # Architectural codebase breakdown
+├── docs/                                    # Technical Documentation Suite (Volumes 01–14)
+│   ├── AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md # Concise AI grounding & multi-provider summary
+│   ├── AI_FINE_TUNING_AND_LORA_GUIDE.md     # Concise LoRA fine-tuning guide & hyperparameters
+│   ├── COMPLETE_FILE_DIRECTORY_REFERENCE.md # Complete repository inventory & symbol reference
+│   ├── COMPREHENSIVE_CODEBASE_ANALYSIS.md   # Architectural codebase breakdown & pattern audit
 │   ├── CURRENT_IMPLEMENTATION.md            # Detailed runtime specification & API schemas
 │   ├── DEEP_DIVE_AI_WORKING_PRINCIPLES.md   # Mathematical RAG treatise & E-Utilities deep dive
 │   ├── DEEP_DIVE_LORA_AND_FINE_TUNING.md    # LoRA mathematical derivations & SFT backprop
 │   ├── DEPLOYMENT_RUNBOOK.md                # Enterprise Docker Compose & operations runbook
 │   ├── EVALUATION_AND_INTEGRATION.md        # Ablation benchmark scoring & document retrieval
 │   ├── IMPLEMENTATION_STATUS.md             # Verification test evidence & audit matrix
+│   ├── ISSUES_AND_RISKS.md                  # STRIDE threat model, risk register & mitigations
 │   ├── README.md                            # Documentation suite master index & mindmap
-│   └── SECURITY_AND_MESSAGE_POLICY.md       # Trust boundaries, AES-256-GCM vault, OWASP defenses
+│   ├── SECURITY_AND_MESSAGE_POLICY.md       # Trust boundaries, AES-256-GCM vault, OWASP defenses
+│   └── SYSTEM_ARCHITECTURE_DEEP_DIVE.md     # Comprehensive distributed system deep dive
 │
 ├── frontend/                                # React 19 Single Page Application
 │   ├── .dockerignore                        # Frontend container exclusions

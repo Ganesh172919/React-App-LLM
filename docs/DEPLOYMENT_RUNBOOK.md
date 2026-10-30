@@ -675,3 +675,98 @@ node scripts/browser_verify_dark_and_tools.cjs
 Get-Content output/qa/automated-results.json
 Get-Content output/qa/browser-results.json
 ```
+
+
+---
+
+## 10. Production Acceptance Verification & Rollback Procedures
+
+MedAssist AI enforces a deterministic acceptance checklist and automated rollback state machine to prevent broken builds or corrupted database schemas from persisting in production:
+
+```
+========================================================================================================================
+                                     PRODUCTION ACCEPTANCE & ROLLBACK STATE MACHINE
+========================================================================================================================
+
+    [ Host Cutover Triggered ] ──► docker compose up -d --build
+                 │
+                 ▼
+    [ Tier 1: Container Vitality Probe ]
+    ├── Probe: curl -f http://127.0.0.1:8080/healthz (Exit code 0 required)
+    └── Probe: curl -f http://127.0.0.1:8080/api/health (HTTP 200 required)
+                 │
+                 ├── FAIL (Timeout / 5xx) ──► ROLLBACK TRIGGERED: docker compose down && docker compose up -d (Previous)
+                 │
+                 ▼ PASS
+    [ Tier 2: Subsystem Readiness Probe ]
+    ├── Probe: curl -f http://127.0.0.1:8080/api/ready (HTTP 200 required)
+    ├── Verifies MongoDB connection state (readyState === 1)
+    └── Verifies AI Provider and Email dispatch service readiness
+                 │
+                 ├── FAIL (Database disconnected / 503) ──► ROLLBACK TRIGGERED: inspect mongo logs, restart mongo
+                 │
+                 ▼ PASS
+    [ Tier 3: Browser End-to-End Acceptance ]
+    ├── Execute: node scripts/browser_verify_dark_and_tools.cjs
+    └── Verifies 13 clinical calculators, 14 FDA DDI banners, and emergency deflections
+                 │
+                 ├── FAIL ──► CANARY ISOLATION: Host Nginx remains on stable upstream
+                 │
+                 ▼ PASS
+    [ Promotion to Active Public Traffic ] ──► sudo systemctl reload nginx (Zero-downtime cutover)
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Release Acceptance))
+    ::icon(fa fa-check-circle)
+    (01 Container Probes)
+      Nginx Ingress /healthz
+      Express Process /api/health
+      Database Wire /api/ready
+    (02 End-to-End Verification)
+      178+ Master Gate Tests
+      Browser Smoke Playwright
+      Dark Theme & ARIA Trapping
+      13 Clinical Calculators
+    (03 Rollback Playbook)
+      Immediate Container Stop
+      Tag-Pinned Docker Image Rollback
+      Point-in-Time mongorestore
+      Nginx Upstream Reversion
+    (04 Telemetry Handshake)
+      UUIDv4 Tracing Verification
+      Structured JSON Emission
+      429 Rate Limiter Sanity
+```
+
+### 10.1 Automated Rollback Playbook
+
+If any acceptance probe fails following an upgrade or schema migration:
+
+```bash
+#!/usr/bin/env bash
+# /opt/medassist/scripts/rollback_deployment.sh
+set -euo pipefail
+
+PREVIOUS_TAG="${1:-latest-stable}"
+echo "[$(date)] INITIATING EMERGENCY ROLLBACK to tag: ${PREVIOUS_TAG}"
+
+# Step 1: Revert Git repository to previous stable commit tag
+git checkout "${PREVIOUS_TAG}"
+
+# Step 2: Re-launch previous container specification
+docker compose down --timeout 10
+docker compose up -d --build
+
+# Step 3: Verify reverted container health
+sleep 5
+curl -f http://127.0.0.1:8080/healthz || { echo "CRITICAL: Ingress failed rollback!"; exit 1; }
+curl -f http://127.0.0.1:8080/api/ready || { echo "CRITICAL: Backend readiness failed rollback!"; exit 1; }
+
+# Step 4: Reload host Nginx proxy
+sudo nginx -t && sudo systemctl reload nginx
+echo "[$(date)] ROLLBACK SUCCESSFUL: Production restored to ${PREVIOUS_TAG}"
+```
