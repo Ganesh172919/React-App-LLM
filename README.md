@@ -324,7 +324,7 @@ if (gcsScore <= 8) {
 }
 
 // WAI-ARIA Arrow Key Tab Navigation
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
 const handleKeyDown = (e) => {
   const curIndex = tabList.indexOf(activeTab);
   let nextIndex = -1;
@@ -388,17 +388,17 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       68 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom (9 suites)       52 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       70 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       54 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
     Headless Browser Smoke Test Suite           Playwright Chromium Headless      21 Passed          PASSED
-    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      28 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      33 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       195 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       204 Passed         PASSED
 ========================================================================================================================
 ```
 
