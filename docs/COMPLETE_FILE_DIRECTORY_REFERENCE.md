@@ -44,7 +44,8 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   └── settingsController.js            # User preferences and AES-256-GCM key management
 │   │
 │   ├── middleware/                          # Express Middleware
-│   │   └── authToken.js                     # Validates HttpOnly access cookie & sessionVersion
+│   │   ├── authToken.js                     # Validates HttpOnly access cookie & sessionVersion
+│   │   └── README.md                        # Backend middleware architecture & security manual
 │   │
 │   ├── models/                              # Mongoose Database Schemas
 │   │   ├── chatModel.js                     # Chat threads, messages, references, citation audits
@@ -90,6 +91,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       ├── modelProvider.test.js            # Unit tests for multi-provider API resolution
 │       ├── providers.test.js                # Unit tests for PubMed UID sorting & XML parsing
 │       ├── pubmedService.test.js            # Unit tests for PubMed query string generation
+│       ├── README.md                        # Backend testing architecture & verification manual
 │       └── safetyService.test.js            # Unit tests for crisis, emergency, and harm screening
 │
 ├── deploy/                                  # Deployment & Infrastructure Automation
@@ -158,6 +160,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │
 │       ├── context/                         # React State Contexts
 │       │   ├── AuthContext.jsx              # User session state, sign-in, sign-out handler
+│       │   ├── README.md                    # Frontend context architecture & global state manual
 │       │   └── SidebarContext.jsx           # Mobile drawer open/close visibility state
 │       │
 │       ├── lib/                             # Client Utilities
@@ -171,6 +174,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   ├── clinicalCalculators.test.jsx # Unit tests for 13 clinical calculators & bounds
 │       │   ├── conversationImport.test.js   # Unit tests for conversation import security & stripping
 │       │   ├── medicalDetector.test.js      # Heuristic clinical prompt detection tests
+│       │   ├── README.md                    # Frontend testing architecture & verification manual
 │       │   ├── tabStorage.test.js           # Resilient storage fallback tests
 │       │   └── ui.test.jsx                  # Component tests for auth, chat, and dashboard
 │       │
