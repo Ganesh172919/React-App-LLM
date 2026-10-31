@@ -78,12 +78,12 @@ mindmap
       Deterministic Citation Bracket Auditor
       15 High-Risk Drug Interaction Rules
     (02 Frontend Verification)
-      48 Passing Vitest Tests
+      49 Passing Vitest Tests
       Web Locks Single-Flight Refresh
       tabStorage Fault-Tolerant Cache
       IME Composition Guard
       Medical Detector Lexicon Matcher
-      14 Clinical Calculators Form Math
+      13 Clinical Calculators Form Math
       ARIA Tabpanel Keyboard Cycling
     (03 Python Data & ML)
       19 Passing Unittest Tests
@@ -290,3 +290,103 @@ Before releasing MedAssist AI to external clinicians, students, or patients, com
 - [ ] **Transactional Email Provider**: Provision and verify Brevo (Sendinblue) production account with DKIM, SPF, and DMARC DNS records for reliable account verification email delivery.
 - [ ] **Automated Backup & Disaster Recovery**: Schedule daily automated `mongodump` cron jobs with 30-day retention and execute monthly test restorations into an isolated recovery environment.
 - [ ] **Live Upstream Provider Quota Monitoring**: Configure monitoring and alerting on Google Gemini, Groq, and Together AI API quotas, spending limits, and error rates.
+
+---
+
+## 7. Developer Extensibility: Adding Custom Automated Checks to the CI Harness
+
+When adding new microservices, database schemas, or clinical calculators to MedAssist AI, developers should register their automated verification steps directly into the master verification runner (`scripts/verify_project.cjs`) to maintain the single-command verification guarantee.
+
+```
+========================================================================================================================
+                          MEDASSIST AI — EXTENSIBLE VERIFICATION RUNNER
+========================================================================================================================
+
+    [ DEVELOPER COMMAND: node scripts/verify_project.cjs ]
+                              │
+                              ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                MASTER RUNNER DISPATCHER (scripts/verify_project.cjs)                           │
+    │  - Step 1: Check required runtimes (Node.js >= 20, Python >= 3.10)                                             │
+    │  - Step 2: In-Memory Backend Suite (`npm test --prefix backend` -> 66 checks)                                  │
+    │  - Step 3: Frontend Component Suite (`npm test --prefix frontend` -> 49 checks)                                │
+    │  - Step 4: Python Dataset & LoRA Suites (`python -m unittest ...` -> 19 checks)                                │
+    │  - Step 5: Frontend Lint & Production Distribution Build (`npm run build` -> clean bundle)                     │
+    │  - Step 6: Built Ingress Probes (`node scripts/check_build_serving.cjs` -> 7 checks)                           │
+    │  - Step 7: Headless Playwright Workflows (Smoke & Dark Theme -> 41 checks)                                     │
+    │  - Step 8 [EXTENSIBLE]: Custom Clinical & Regulatory Validation Stage                                          │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                UNIFIED REPORT SERIALIZATION                                                    │
+    │  - Writes aggregate JSON: `output/qa/automated-results.json`                                                   │
+    │  - Outputs console progress bar with per-suite timings and failure callouts                                     │
+    │  - Exits with code 0 on 100% success; exits with non-zero code on any failure                                  │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((CI Verification))
+    ::icon(fa fa-tasks)
+    (01 Environment Checks)
+      Node.js Runtime 24 LTS
+      Python Runtime 3.10+
+      Directory Write Permissions
+    (02 Automated Code Checks)
+      Backend Node Test Runner: 66
+      Frontend Vitest Suite: 49
+      Python Dataset Tests: 13
+      Python LoRA Math Tests: 6
+    (03 Build & Serving Checks)
+      ESLint 9 Clean Sweep: 0 Warnings
+      Vite 6 Distribution Compile
+      Static Ingress Cache Headers: 7
+    (04 Playwright Regression)
+      Core Smoke Scenarios: 20
+      Dark Mode & Accessibility: 21
+    (05 Custom Checks Pipeline)
+      FHIR Ingress Schema Tests
+      Pediatric Safety Rule Tests
+      Export Integrity Hash Assertions
+```
+
+### 7.1 Registering a Custom Verification Stage in `scripts/verify_project.cjs`
+
+```javascript
+// Example extension snippet for scripts/verify_project.cjs
+// Adding a custom automated verification stage:
+
+async function runCustomClinicalAuditStage(results) {
+  console.log("\n[STAGE] Running Custom Clinical Audit & Safety Tests...");
+  const startTime = Date.now();
+
+  try {
+    // Execute custom automated check script
+    const output = childProcess.execSync("node scripts/check_clinical_invariants.cjs", {
+      encoding: "utf-8",
+      stdio: "pipe"
+    });
+
+    results.push({
+      name: "Custom Clinical Invariant Suite",
+      passed: true,
+      durationMs: Date.now() - startTime,
+      details: "Verified pediatric contraindication rules and calculator bounds."
+    });
+    console.log("  ✔ Custom Clinical Invariant Suite PASSED");
+  } catch (err) {
+    results.push({
+      name: "Custom Clinical Invariant Suite",
+      passed: false,
+      durationMs: Date.now() - startTime,
+      error: err.stderr || err.message
+    });
+    console.error("  ✖ Custom Clinical Invariant Suite FAILED:", err.stderr || err.message);
+    throw err; // Halts CI pipeline on failure
+  }
+}
+```

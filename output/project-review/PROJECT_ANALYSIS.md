@@ -199,3 +199,127 @@ For developers looking to contribute, fork, or build upon MedAssist AI, detailed
 - **Custom Dataset Ingestion**: [`Model and Dataset/README.md`](../../Model%20and%20Dataset/README.md#7-developer-extensibility-ingesting-custom-clinical-corpora--domain-datasets)
 - **Modern LoRA Adapters (Llama-3/Mistral)**: [`Model and Dataset/lora/README.md`](../../Model%20and%20Dataset/lora/README.md#7-developer-extensibility-adapting-contemporary-llms-llama-3-mistral-gemma--edge-serving)
 
+---
+
+## 7. Production CI/CD Pipeline & GitHub Actions Automation
+
+To maintain code quality, prevent regressions, and ensure that every pull request adheres to the 182-check verification bar, MedAssist AI utilizes an automated continuous integration pipeline.
+
+```
+========================================================================================================================
+                          MEDASSIST AI — CONTINUOUS INTEGRATION & RELEASE PIPELINE
+========================================================================================================================
+
+    [ GIT PUSH / PULL REQUEST TRIGGER ]
+                   │
+                   ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                GITHUB ACTIONS CI RUNNER (ubuntu-latest)                                        │
+    │  - Set up Node.js 24 LTS and Python 3.11 with dependency caching                                              │
+    │  - Install root, backend, frontend, and test dependencies (`npm ci`)                                           │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                   │
+                   ├────────────────────────────────┬────────────────────────────────┐
+                   │                                │                                │
+                   ▼                                ▼                                ▼
+    ┌─────────────────────────────┐  ┌─────────────────────────────┐  ┌─────────────────────────────┐
+    │  STAGE 1: BACKEND TESTS     │  │  STAGE 2: FRONTEND SUITE    │  │  STAGE 3: PYTHON RESEARCH   │
+    │  - 66 tests passing         │  │  - ESLint 9 clean sweep     │  │  - 13 dataset tests         │
+    │  - MongoMemoryServer        │  │  - 49 Vitest component tests│  │  - 6 LoRA setup tests       │
+    │  - Monotonic session audits │  │  - Vite production build    │  │  - Zero-leakage verification│
+    └─────────────────────────────┘  └─────────────────────────────┘  └─────────────────────────────┘
+                   │                                │                                │
+                   └────────────────────────────────┼────────────────────────────────┘
+                                                    │
+                                                    ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                STAGE 4: PLAYWRIGHT BROWSER AUTOMATION                                          │
+    │  - Launch fixture server with synthetic database and AI endpoints (`node scripts/run_build_qa.cjs --fixtures`) │
+    │  - Run 20 smoke workflows (`node scripts/browser_smoke.cjs`)                                                   │
+    │  - Run 21 dark theme and calculator accessibility workflows (`node scripts/browser_verify_dark_and_tools.cjs`)  │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                   │
+                   ▼
+    [ CI PASS / CONTAINER BUILD & REGISTRY PUSH ] ──► ghcr.io/ganesh172919/medassist-backend:tag
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((CI Pipeline))
+    ::icon(fa fa-cogs)
+    (01 Matrix Validation)
+      Node 24 LTS
+      Python 3.11
+      In-Memory Database
+    (02 Static & Dynamic Checks)
+      ESLint 9 Clean Sweep
+      Vite 6 Production Build
+      66 Backend Node Tests
+      49 Frontend Vitest Tests
+      19 Python Research Tests
+    (03 End-to-End Browser)
+      Playwright Chromium Headless
+      20 Core Smoke Flows
+      21 Accessibility Flows
+      Static Ingress Assertions
+    (04 Artifact Publishing)
+      Release Image Tagging
+      Multi-Arch Container Push
+      Automated Release Notes
+```
+
+### 7.1 GitHub Actions CI Workflow (`.github/workflows/ci.yml`)
+
+```yaml
+name: MedAssist AI Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: Master Verification Runner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          pip install -r "Model and Dataset/requirements.txt" || true
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Master Verification Harness (182 Checks)
+        run: node scripts/verify_project.cjs
+
+      - name: Run Browser Smoke & Accessibility Suites
+        run: |
+          node scripts/run_build_qa.cjs --fixtures &
+          sleep 5
+          node scripts/browser_smoke.cjs
+          node scripts/browser_verify_dark_and_tools.cjs
+```
+
