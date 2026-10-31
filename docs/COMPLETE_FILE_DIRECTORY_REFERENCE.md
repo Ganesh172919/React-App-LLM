@@ -49,6 +49,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── chatModel.js                     # Chat threads, messages, references, citation audits
 │   │   ├── generationModel.js               # Ephemeral in-flight generations with 24-hour TTL
 │   │   ├── providerCredentialModel.js       # AES-256-GCM encrypted user API keys
+│   │   ├── README.md                        # Database architecture & Mongoose schema reference manual
 │   │   └── userModel.js                     # User profile, salted bcrypt hash, sessionVersion
 │   │
 │   ├── routes/                              # Express Route Definitions
@@ -72,6 +73,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── providerCredentials.js           # AES-256-GCM authenticated cipher vault (seal/open)
 │   │   ├── providerSelection.js             # Multi-provider routing and key resolution logic
 │   │   ├── pubmedService.js                 # NCBI Entrez client (esearch, esummary, efetch) & XML parser
+│   │   ├── README.md                        # Backend services architecture & reference manual
 │   │   ├── safetyService.js                 # Deterministic prompt and generated output screener
 │   │   ├── sessionService.js                # Dual JWT issuance, SHA-256 hash match, cookie options
 │   │   ├── validation.js                    # Schema validators for UUIDs, email, allowed JSON keys
@@ -131,6 +133,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │
 │       ├── components/                      # Modular UI Components
 │       │   ├── Login.jsx                    # Login form view
+│       │   ├── README.md                    # Frontend component architecture & accessibility guide
 │       │   ├── Register.jsx                 # Registration form view
 │       │   ├── Sidebar.jsx                  # Conversation history navigation drawer
 │       │   ├── auth/                        # Authentication & Account Views
@@ -200,6 +203,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── test_lora_tools.py               # Unit tests for SFT record creation
 │   │   ├── test_release_lora.py             # Regression tests for review gate enforcement
 │   │   ├── train_lora.py                    # Dry-run inspector & review-gated SFT script
+│   │   ├── TRAINING_RUNBOOK.md              # Production fine-tuning runbook (SLURM, vLLM, DDP)
 │   │   └── validate_lora_setup.py           # Closed-form parameter and memory calculator
 │   │
 │   └── reports/                             # Generated Dataset & LoRA Audit Reports

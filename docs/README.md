@@ -201,9 +201,13 @@ Detailed subsystem-specific README files are located directly in their respectiv
 - **Deployment & Production Manual**: [`../deploy/README.md`](../deploy/README.md)
 - **Scripts & Automation Harness**: [`../scripts/README.md`](../scripts/README.md)
 - **Backend Architecture & API Specifications**: [`../backend/README.md`](../backend/README.md)
+- **Backend Services Architecture**: [`../backend/services/README.md`](../backend/services/README.md)
+- **Database Architecture & Models**: [`../backend/models/README.md`](../backend/models/README.md)
 - **Frontend Architecture & Client State**: [`../frontend/README.md`](../frontend/README.md)
+- **Frontend Components & Modals Guide**: [`../frontend/src/components/README.md`](../frontend/src/components/README.md)
 - **Dataset Analysis, Auditing & Splits**: [`../Model and Dataset/README.md`](../Model%20and%20Dataset/README.md)
 - **Offline LoRA Package & Parameter Estimation**: [`../Model and Dataset/lora/README.md`](../Model%20and%20Dataset/lora/README.md)
+- **LoRA Production Training Runbook**: [`../Model and Dataset/lora/TRAINING_RUNBOOK.md`](../Model%20and%20Dataset/lora/TRAINING_RUNBOOK.md)
 - **Engineering Improvement Plan & Milestones**: [`../IMPROVEMENT_PLAN.md`](../IMPROVEMENT_PLAN.md)
 
 ---
