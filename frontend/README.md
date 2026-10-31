@@ -41,7 +41,7 @@ The MedAssist AI client is an enterprise-grade, accessibility-audited single-pag
     │  - <AuthPage />         │                   │  - <Sidebar />          │                   │  - <AccountPage />      │
     │    (Login, Register,    │                   │    (History CRUD, filter│                   │    (Profile, data wipe) │
     │     Password Recovery)  │                   │  - <ClinicalCalculators>│                   │  - <AISettings />       │
-    │  - <VerifyEmail />      │                   │    (13 validated tools) │                   │    (Provider & Vault)   │
+    │  - <VerifyEmail />      │                   │    (17 validated tools) │                   │    (Provider & Vault)   │
     └─────────────────────────┘                   └─────────────────────────┘                   └─────────────────────────┘
                  │                                             │                                             │
                  └─────────────────────────────────────────────┼─────────────────────────────────────────────┘
@@ -92,7 +92,7 @@ mindmap
         History Loading State Lock
         Auto-Expanding Textarea
     (04 Clinical Calculators Modal)
-      13 Clinical Tools
+      17 Clinical Tools
         BMI Metric and Imperial
         eGFR CKD-EPI 2021 Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -106,6 +106,10 @@ mindmap
         Wells Criteria for PE
         CURB-65 Pneumonia Severity
         Glasgow Coma Scale GCS
+        HAS-BLED Bleeding Risk
+        qSOFA Sepsis Screening
+        Mosteller Body Surface Area BSA
+        APRI Liver Fibrosis and Cirrhosis
       WAI-ARIA Accessibility
         role="tablist" & role="tabpanel"
         Keyboard Arrow-Key Cycling

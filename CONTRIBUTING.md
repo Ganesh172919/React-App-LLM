@@ -264,7 +264,7 @@ All calculators reside in `frontend/src/components/tools/ClinicalCalculatorsModa
 
 1. **Tab Identifier**: Append calculator ID to `tabList`:
    ```javascript
-   const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "newcalc"];
+   const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "newcalc"];
    ```
 2. **Formula State & Bounds**: Define form inputs with strict boundary clamping.
 3. **WAI-ARIA Accessibility**: Implement `role="tab"` and `role="tabpanel"` attributes.
@@ -319,7 +319,7 @@ python "Model and Dataset/lora/validate_lora_setup.py"
 
 ## 6. Verification Harness & Pull Request Checklist
 
-Before submitting a Pull Request, run the automated verification suite to guarantee 100% compliance across all 182 test checks:
+Before submitting a Pull Request, run the automated verification suite to guarantee 100% compliance across all 204 test checks:
 
 ```powershell
 # Execute the unified multi-tier verification runner
@@ -328,11 +328,11 @@ node scripts/verify_project.cjs
 
 ### Pull Request Checklist:
 - [ ] Only `.md` files modified (if documentation PR) OR code modified with corresponding unit tests.
-- [ ] All 66 backend integration tests pass (`npm test --prefix backend`).
-- [ ] All 49 frontend Vitest tests pass (`npm test --prefix frontend`).
+- [ ] All 70 backend integration tests pass (`npm test --prefix backend`).
+- [ ] All 54 frontend Vitest tests pass (`npm test --prefix frontend`).
 - [ ] ESLint passes with 0 warnings (`npm run lint --prefix frontend`).
 - [ ] Vite production bundle compiles cleanly (`npm run build --prefix frontend`).
 - [ ] All 19 Python research unit tests pass (`python -m unittest discover -s "Model and Dataset"`).
 - [ ] Built HTTP server passes all 7 ingress probes (`node scripts/check_build_serving.cjs`).
-- [ ] All 41 Playwright browser workflows pass (`node scripts/browser_smoke.cjs` and `node scripts/browser_verify_dark_and_tools.cjs`).
+- [ ] All 54 Playwright browser workflows pass (21 smoke in `node scripts/browser_smoke.cjs` and 33 assertions in `node scripts/browser_verify_dark_and_tools.cjs`).
 - [ ] No secrets, keys, or `.env` files committed.
