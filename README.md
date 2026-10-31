@@ -21,6 +21,9 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 > [!IMPORTANT]
 > **Clinical Disclaimer**: MedAssist AI provides health and medical information strictly for educational and research purposes. It does not provide clinical diagnoses, medical advice, or treatment plans. Acute emergency symptoms require immediate contact with local emergency medical services.
 
+> [!TIP]
+> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators, medication interaction rules, backend REST models, and custom LoRA datasets.
+
 **Conversation JSON preview:** The chat sidebar can open a previously exported JSON conversation locally. The file is limited to 512 KB and 100 complete question-and-answer pairs. Imported answer text is marked unverified; citation, verification, provider, and identity metadata are discarded. The preview is not saved to the account or sent as model context. Its Markdown and JSON exports are labeled unverified. Conversation text in Markdown exports is fenced as literal text so imported links and images cannot load when the report is viewed. Start a new conversation to ask another question.
 
 ---

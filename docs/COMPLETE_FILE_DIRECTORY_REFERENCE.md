@@ -13,6 +13,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 ├── .env.docker.example                      # Production environment template for Docker Compose
 ├── .gitattributes                           # Line ending normalization (LF for scripts, auto for text)
 ├── .gitignore                               # Git ignore list (node_modules, logs, tmp, prepared data)
+├── CONTRIBUTING.md                          # Comprehensive developer contribution & extensibility manual
 ├── docker-compose.yml                       # Multi-container orchestration (mongo, backend, frontend)
 ├── IMPROVEMENT_PLAN.md                      # Release checklist, roadmap, and milestone tracking
 ├── LICENSE                                  # MIT Software License
@@ -89,7 +90,8 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │
 ├── deploy/                                  # Deployment & Infrastructure Automation
 │   ├── create_env.cjs                       # Generates production .env with random 32-byte hex secrets
-│   └── mongo-init.js                        # Mongo container bootstrap script (creates app user)
+│   ├── mongo-init.js                        # Mongo container bootstrap script (creates app user)
+│   └── README.md                            # Comprehensive deployment & infrastructure operations manual
 │
 ├── docs/                                    # Technical Documentation Suite (Volumes 01–14)
 │   ├── AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md # Concise AI grounding & multi-provider summary
@@ -212,6 +214,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
     ├── browser_verify_dark_and_tools.cjs    # Playwright accessibility & dark mode suite (21 workflows)
     ├── check_build_serving.cjs              # Automated HTTP assertions against built-output server (7 checks)
     ├── generate_project_report.py           # Compiles documentation and test logs into PDF report
+    ├── README.md                            # Automation scripts, verification harness & QA runbook
     ├── run_build_qa.cjs                     # Serves built frontend bundle and API on port 4173
     ├── run_local.cjs                        # Isolated local stack with in-memory Mongo & fixtures
     └── verify_project.cjs                   # Master verification aggregator executing all 182 checks
