@@ -476,19 +476,205 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 
 ## 6. Running Automated Backend Tests
 
-The backend test suite executes via Node.js native test runner (`node:test`) with in-memory MongoDB:
+The backend test suite executes via Node.js native test runner (`node:test`) with in-memory MongoDB (`MongoMemoryServer`):
 
 ```powershell
 cd backend
 npm test
 ```
 
-### Complete Test Suite Breakdown (64 Tests):
-1. `application.test.js` (14 Tests): Full integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, two-phase `/api/save`, and WebSocket notifications.
-2. `interactionService.test.js` (15 Tests): Validates detection across 14 high-risk drug pairs and ensures clean queries pass.
-3. `safetyService.test.js` (10 Tests): Verifies crisis deflection, acute emergency interception, prompt injection defense, and educational exemptions.
-4. `citationService.test.js` (9 Tests): Validates numerical bracket parsing `[N]`, valid vs invalid set partitioning, and coverage math.
-5. `pubmedService.test.js` (8 Tests): Unit tests for E-Utilities query string building, fast-xml-parser extraction, and rate throttle delays.
-6. `modelProvider.test.js` (4 Tests): Unit tests verifying provider resolution across Gemini, Groq, Together AI, and Local endpoints.
-7. `providers.test.js` (4 Tests): Unit tests for PubMed sorting, XML parsing, and Gemini candidate extraction.
-8. `chatTitle.test.js` (2 Tests): Validates conversation auto-titling, markdown link stripping, and length bounding.
+### Complete Test Suite Breakdown (66 Tests across 9 Suites):
+1. `application.test.js` (24 Tests): Comprehensive HTTP and WebSocket integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, single-device `sessionVersion` invalidation, two-phase generation commitment (`/api/save`), cursor pagination, rate limiters, and WebSocket notifications.
+2. `interactionService.test.js` (15 Tests): Validates deterministic name matching across all 14 FDA black-box drug interaction rules and ensures benign/unrelated medications pass without warnings.
+3. `safetyService.test.js` (7 Tests): Verifies crisis deflection, acute emergency symptom interception, prompt injection defense, and educational/negated exemptions.
+4. `providers.test.js` (6 Tests): Unit tests for AES-256-GCM vault seal/open, PubMed numeric UID sorting, structured XML abstract parsing, and Gemini candidate normalization.
+5. `citationService.test.js` (4 Tests): Validates numerical bracket parsing `[N]`, valid vs invalid set partitioning, and reference coverage math.
+6. `modelProvider.test.js` (4 Tests): Unit tests verifying provider completion resolution across Gemini, Groq, Together AI, and Local endpoints.
+7. `pubmedService.test.js` (3 Tests): Unit tests for E-Utilities query string construction, keyword extraction, and rate throttle delays.
+8. `historySearch.test.js` (2 Tests): Unit tests for cross-conversation token overlap relevance ranking and stop-word elimination.
+9. `chatTitle.test.js` (1 Test): Validates conversation auto-titling, markdown link/image stripping, and length bounding.
+
+---
+
+## 7. Developer Extension Blueprint: Building on the Backend
+
+The MedAssist AI backend is engineered as a decoupled, modular service runtime. Developers extending this service must preserve core architectural invariants:
+
+### 7.1 Backend Extension Architecture Topology
+
+```
+========================================================================================================================
+                                     MEDASSIST AI — BACKEND EXTENSION BLUEPRINT
+========================================================================================================================
+
+    [ INCOMING HTTP / WS REQUEST ]
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ TIER 1: SECURITY & AUTHENTICATION GATES (app.js, authToken.js)  │
+    │ ├── 32KB JSON Body Limit & Strict Origin Whitelisting           │
+    │ ├── Cookie JWT Validation & Monotonic sessionVersion Check      │
+    │ └── Per-User Rate Limiting (Express-Rate-Limit)                 │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ TIER 2: ROUTING & CONTROLLERS (routes/*.js, controllers/*.js)   │
+    │ ├── Parameter Sanitization & UUIDv4 Request Tracing             │
+    │ ├── Owner Scoping: All DB Queries Filter by { userId }          │
+    │ └── Two-Phase Handshake for AI Generations                      │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ TIER 3: SERVICES & DETERMINISTIC GUARDS (services/*.js)         │
+    │ ├── Deterministic Safety Screening (safetyService.js)           │
+    │ ├── 14 FDA High-Risk Drug Interaction Rules (interactionService)│
+    │ ├── Multi-Provider AI Gateway (modelProvider.js)                │
+    │ └── AES-256-GCM Authenticated Cryptographic Vault               │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ TIER 4: PERSISTENCE & REAL-TIME (models/*.js, websocketService) │
+    │ ├── Mongoose Schemas with Compound Indexes ({ userId, date })   │
+    │ ├── 24-Hour Ephemeral Generation TTL Expiry                     │
+    │ └── WebSocket User-Scoped Fanout with 1MB Backpressure Drop     │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 7.2 Backend Extension Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Backend Extension))
+    ::icon(fa fa-server)
+    (01 Adding AI Providers)
+      ::icon(fa fa-microchip)
+      Register in providerSelection.js
+        Append to PROVIDER_CHOICES
+        Define personal vs deployment key resolution
+      Implement in modelProvider.js
+        Enforce HTTPS-only and reject private IPs
+        Cap parameters: temp 0.25, max_tokens 900
+        Assert choice finish_reason is stop
+      Add Unit Tests
+        backend/test/modelProvider.test.js
+    (02 Adding Medication Rules)
+      ::icon(fa fa-prescription-bottle-medical)
+      Define Rule in interactionService.js
+        Regex patterns for Class A and Class B
+        Severity: CRITICAL vs HIGH
+        Detailed pharmacological description
+      Emergency Invariant
+        Preserve warnings during 911 deflections
+    (03 Adding REST APIs & Models)
+      ::icon(fa fa-database)
+      Mongoose Schema in models/
+        Compound index on userId and createdAt
+        TTL expiration for ephemeral buffers
+      Route & Controller
+        Apply authToken middleware
+        Validate inputs within 32KB JSON ceiling
+    (04 Real-Time WebSockets)
+      ::icon(fa fa-bolt)
+      Register Event in websocketService.js
+        Broadcast strictly to connection owner
+        Respect 1MB client backpressure ceiling
+```
+
+### 7.3 Step-by-Step: Adding an Authenticated REST API & Model
+
+When adding a new feature (such as Clinical Notes or Patient Queries), follow these steps:
+
+#### Step 1: Define Mongoose Model with Owner Tenancy Isolation
+
+```javascript
+// File: backend/models/clinicalNoteModel.js
+const mongoose = require("mongoose");
+
+const ClinicalNoteSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true, // Guarantees owner isolation
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 120,
+    },
+    content: {
+      type: String,
+      required: true,
+      maxlength: 10000,
+    },
+    tags: [{ type: String, trim: true, maxlength: 30 }],
+  },
+  { timestamps: true }
+);
+
+// Compound index for fast chronological retrieval
+ClinicalNoteSchema.index({ userId: 1, createdAt: -1 });
+
+module.exports = mongoose.model("ClinicalNote", ClinicalNoteSchema);
+```
+
+#### Step 2: Implement Controller with Strict Owner Scoping
+
+```javascript
+// File: backend/controllers/clinicalNoteController.js
+const ClinicalNote = require("../models/clinicalNoteModel");
+
+async function listNotes(req, res) {
+  // Invariant: Always filter by req.userId verified from JWT
+  const notes = await ClinicalNote.find({ userId: req.userId })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean();
+
+  return res.json({ notes });
+}
+
+async function createNote(req, res) {
+  const { title, content, tags } = req.body;
+  if (!title || !content) {
+    return res.status(400).json({ error: "Title and content are required." });
+  }
+
+  const note = await ClinicalNote.create({
+    userId: req.userId,
+    title,
+    content,
+    tags: Array.isArray(tags) ? tags.slice(0, 10) : [],
+  });
+
+  return res.status(201).json({ note });
+}
+
+module.exports = { listNotes, createNote };
+```
+
+#### Step 3: Register Route with Authentication & Rate Limiting
+
+```javascript
+// File: backend/routes/clinicalNoteRoute.js
+const express = require("express");
+const router = express.Router();
+const authToken = require("../middleware/authToken");
+const { listNotes, createNote } = require("../controllers/clinicalNoteController");
+
+// Invariant: authToken middleware guarantees valid monotonic sessionVersion
+router.use(authToken);
+
+router.get("/", listNotes);
+router.post("/", createNote);
+
+module.exports = router;
+```
+

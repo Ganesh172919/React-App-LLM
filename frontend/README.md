@@ -488,9 +488,190 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (47 tests across 6 suites)
+# 3. Execute Vitest automated unit and component test suite (49 tests across 6 suites)
 npm test
 
 # 4. Compile optimized production distribution bundle
 npm run build
 ```
+
+---
+
+## 7. Developer Extensibility: Building New Frontend Views, Calculators & Modals
+
+The React 19 frontend is architected for clean modularity, strict accessibility (WCAG AA), and resilient state caching.
+
+### 7.1 Frontend Component Extension Blueprint
+
+```
+========================================================================================================================
+                                     MEDASSIST AI — FRONTEND EXTENSION TOPOLOGY
+========================================================================================================================
+
+    [ USER INPUT / SHORTCUT (e.g. Alt+C) ]
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ COMPONENT LAYER (components/tools/, components/chat/)           │
+    │ ├── Modal Focus Trap & ESC Key Dismissal                        │
+    │ ├── WAI-ARIA Tabpanel Cycling (ArrowRight, ArrowLeft, Home, End)│
+    │ └── Physiological Range Clamping on Form Math                   │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ CACHE & PERSISTENCE LAYER (lib/tabStorage.js)                   │
+    │ ├── Scoped sessionStorage Partitioning by Active Tab            │
+    │ ├── Graceful Fallback to In-Memory Map (Incognito Support)      │
+    │ └── Auto-Restoration of Uncommitted Drafts on Navigation Remount│
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ API & CONCURRENCY LAYER (lib/api.js, context/AuthContext.jsx)   │
+    │ ├── Single-Flight Token Renewal via Web Locks API               │
+    │ ├── Transparent 401 Interception & Replay Buffer                │
+    │ └── Two-Phase Handshake: Ephemeral /api/chat -> Commit /api/save│
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 7.2 Frontend Extension Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Frontend Extension))
+    ::icon(fa fa-desktop)
+    (01 Adding Calculators)
+      ::icon(fa fa-calculator)
+      Register in tabList array
+      Add Tab Button with role tab
+      Add Panel with role tabpanel
+      Implement Keyboard Cycling
+      Add Insert Prompt Action
+      Test in clinicalCalculators.test.jsx
+    (02 Resilient Tab Storage)
+      ::icon(fa fa-hard-drive)
+      Use writeTab for drafts
+      Use readPending for generations
+      Memory fallback for private browsing
+    (03 API Client & Auth)
+      ::icon(fa fa-shield-halved)
+      Web Locks API single-flight renewal
+      Transparent 401 token retry
+      Two-phase generation save flow
+    (04 Theme & Styling)
+      ::icon(fa fa-palette)
+      Tailwind CSS 4 color tokens
+      WCAG AA compliant contrast ratios
+      Automatic OS prefers-color-scheme
+```
+
+### 7.3 Step-by-Step: Adding a New Clinical Calculator
+
+When contributing a new evidence-based clinical calculator to [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx):
+
+#### Step 1: Append Calculator Key to `tabList`
+
+```javascript
+// File: frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+const tabList = [
+  "bmi", "egfr", "chads", "map", "crcl", "calcium", 
+  "aniongap", "fena", "feurea", "fluids", "wells", 
+  "curb65", "gcs", 
+  "hasbled" // <-- Add unique tab ID
+];
+```
+
+#### Step 2: Implement Calculation Logic with Physiological Bounds
+
+```javascript
+// Example: HAS-BLED bleeding risk calculation
+const calculateHasBled = () => {
+  let score = 0;
+  if (hasbledHypertension) score += 1;
+  if (hasbledRenal) score += 1;
+  if (hasbledLiver) score += 1;
+  if (hasbledStroke) score += 1;
+  if (hasbledBleeding) score += 1;
+  if (hasbledLabileInr) score += 1;
+  if (hasbledElderly) score += 1;
+  if (hasbledDrugs) score += 1;
+  if (hasbledAlcohol) score += 1;
+
+  return {
+    score,
+    riskCategory: score >= 3 ? "High Risk" : score === 2 ? "Moderate Risk" : "Low Risk",
+    bleedRate: score >= 3 ? "≥3.74 major bleeds / 100 pt-yrs" : score === 2 ? "~1.88 bleeds / 100 pt-yrs" : "~1.02 bleeds / 100 pt-yrs",
+  };
+};
+```
+
+#### Step 3: Implement WAI-ARIA Tab & Panel Markup
+
+```jsx
+{/* Accessible Tab Button */}
+<button
+  type="button"
+  role="tab"
+  id="tab-hasbled"
+  aria-selected={activeTab === "hasbled"}
+  aria-controls="panel-hasbled"
+  className={`calc-tab-btn ${activeTab === "hasbled" ? "active" : ""}`}
+  onClick={() => setActiveTab("hasbled")}
+>
+  HAS-BLED Score
+</button>
+
+{/* Accessible Tabpanel */}
+{activeTab === "hasbled" && (
+  <div
+    role="tabpanel"
+    id="panel-hasbled"
+    aria-labelledby="tab-hasbled"
+    className="calc-panel"
+  >
+    <h3 className="calc-panel-title">HAS-BLED Bleeding Risk Score</h3>
+    <p className="calc-disclaimer">
+      Educational scoring for 1-year major bleeding risk in atrial fibrillation anticoagulation.
+    </p>
+
+    {/* Form inputs with strict bounds ... */}
+
+    {/* Insert into chat action */}
+    <button
+      type="button"
+      className="calc-insert-btn"
+      onClick={() => {
+        const prompt = `Educational inquiry regarding anticoagulation risk: Assessment indicates a HAS-BLED score of ${res.score} (${res.riskCategory}, major bleeding rate ${res.bleedRate}). What evidence-based strategies exist for managing modifiable bleeding risks while balancing thrombotic protection?`;
+        onInsertPrompt?.(prompt);
+        onClose?.();
+      }}
+    >
+      Insert Educational Summary into Chat
+    </button>
+  </div>
+)}
+```
+
+#### Step 4: Add Vitest Component Unit Tests
+
+```javascript
+// File: frontend/src/test/clinicalCalculators.test.jsx
+it("calculates HAS-BLED bleeding risk score accurately", async () => {
+  render(<ClinicalCalculatorsModal isOpen={true} onClose={() => {}} onInsertPrompt={() => {}} />);
+  
+  // Navigate to HAS-BLED tab
+  const tab = screen.getByRole("tab", { name: /has-bled/i });
+  fireEvent.click(tab);
+  
+  // Select Hypertension and Elderly
+  const htnCheck = screen.getByLabelText(/hypertension/i);
+  fireEvent.click(htnCheck);
+  
+  expect(screen.getByText(/score: 1/i)).toBeInTheDocument();
+  expect(screen.getByText(/low risk/i)).toBeInTheDocument();
+});
+```
+
