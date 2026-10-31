@@ -294,3 +294,104 @@ python "Model and Dataset/lora/infer_adapter.py" --adapter "output/adapters/gpt2
 1. **Isolation from Web Server**: No API endpoint in Express connects to or imports from `Model and Dataset/lora/`.
 2. **Clinical Sign-Off Required**: `train_lora.py` explicitly rejects execution unless the `--train` flag is passed and clinical approval metadata is verified.
 3. **Loss Integrity**: Prompt tokens are always masked with `-100` to prevent catastrophic memorization of user phrasing.
+
+---
+
+## 7. Developer Extensibility: Adapting Contemporary LLMs (Llama 3, Mistral, Gemma) & Edge Serving
+
+The offline LoRA training framework can be easily extended to fine-tune modern open-weights instruction models.
+
+### 7.1 Modern Transformer LoRA Decomposition Flow
+
+```
+========================================================================================================================
+                          CONTEMPORARY TRANSFORMER LOW-RANK ATTENTION INJECTION
+========================================================================================================================
+
+                 Input Vector x (Dimension d_model = 4096)
+                               │
+               ┌───────────────┴───────────────┐
+               │                               │
+               ▼                               ▼
+  ┌─────────────────────────┐     ┌─────────────────────────┐
+  │   FROZEN BASE WEIGHTS   │     │    DOWN-PROJECTION A    │
+  │          W0             │     │      (r x d_model)      │  r = 8
+  │   (d_model x d_model)   │     │   Gaussian ~ N(0, 1/r)  │
+  └─────────────────────────┘     └─────────────────────────┘
+               │                               │
+               │                               ▼
+               │                  ┌─────────────────────────┐
+               │                  │     UP-PROJECTION B     │
+               │                  │      (d_model x r)      │  Initialized to 0
+               │                  │     Scaled by (alpha/r) │
+               │                  └─────────────────────────┘
+               │                               │
+               ▼                               ▼
+              (+) ─────────────────────────────┘
+               │
+               ▼
+   Output Vector h = W0*x + (alpha/r)*(B*A)*x
+========================================================================================================================
+```
+
+### 7.2 Custom Adapter Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Modern LoRA))
+    ::icon(fa fa-brain)
+    (01 Target Modules)
+      ::icon(fa fa-layer-group)
+      GPT-2: c_attn
+      Llama-3: q_proj, k_proj, v_proj, o_proj
+      Mistral: gate_proj, up_proj, down_proj
+    (02 Hyperparameters)
+      ::icon(fa fa-sliders)
+      Rank r=8
+      Alpha=16
+      Dropout=0.05
+    (03 Label Masking)
+      ::icon(fa fa-mask)
+      Prompt tokens masked with -100
+      Loss calculated strictly on answer
+    (04 Edge Serving)
+      ::icon(fa fa-server)
+      Export adapter_model.safetensors
+      Deploy with vLLM --enable-lora
+      Route via MedAssist LOCAL_AI_ENDPOINT
+```
+
+### 7.3 Step-by-Step: Configuring LoRA for Llama-3-8B
+
+```python
+# Custom PEFT Adapter for Modern Architectures
+from peft import LoraConfig, TaskType
+
+def build_llama3_biomedical_lora():
+    return LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        r=8,
+        lora_alpha=16,
+        lora_dropout=0.05,
+        bias="none",
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    )
+```
+
+#### Analytical Parameter Formulation for Llama-3-8B:
+- $L = 32$ layers, $d_{\text{model}} = 4096$, $r = 8$:
+- Attention Projections ($q, k, v, o$): $163,840\text{ parameters per layer}$
+- Total Adapter Parameters: $32 \times 163,840 = 5,242,880\text{ parameters} \approx 5.24\text{M}$
+- Storage Footprint (BF16): $5,242,880 \times 2\text{ bytes} \approx 10.49\text{ MB}$
+
+#### Deploying with vLLM for MedAssist AI:
+```bash
+vllm serve meta-llama/Meta-Llama-3-8B-Instruct \
+  --enable-lora \
+  --lora-modules medassist-adapter=/path/to/exported/adapter \
+  --port 8000 \
+  --host 127.0.0.1
+```
+Configure `LOCAL_AI_ENDPOINT="http://127.0.0.1:8000/v1/chat/completions"` in `backend/.env` to allow the Express backend to query the local model with automated PubMed evidence retrieval.
+

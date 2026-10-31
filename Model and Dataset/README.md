@@ -261,3 +261,106 @@ python -m unittest discover -s "Model and Dataset" -p "test_*.py"
 1. **Deterministic Hashing**: Partitions are never assigned randomly. Hashing the normalized question string guarantees identical assignments across every run.
 2. **Ambiguity Isolation**: Questions with contradictory answer texts are stored in `quarantine.jsonl` and excluded from model training to prevent conflicting gradient updates.
 3. **Immutability of Source**: The source CSV is treated as read-only; all outputs are written to dedicated `reports/` and `prepared/` directories.
+
+---
+
+## 7. Developer Extensibility: Ingesting Custom Clinical Corpora & Domain Datasets
+
+Researchers and developers looking to adapt new biomedical domains (such as oncology, pediatrics, pharmacology, or clinical trial guidelines) can extend the data preparation pipeline by following these architectural guidelines:
+
+### 7.1 Custom Dataset Ingestion Flow
+
+```
+========================================================================================================================
+                                     CUSTOM CLINICAL CORPUS INGESTION TOPOLOGY
+========================================================================================================================
+
+    [ RAW CLINICAL RECORDS ] (CSV / Parquet / JSON Lines)
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 1. CANONICALIZATION & NORMALIZATION                             │
+    │ ├── Case folding, punctuation trimming, whitespace collapsing   │
+    │ ├── Standard column mapping: "question" -> Q, "answer" -> A     │
+    │ └── Minimum answer length filter (e.g. >= 5 words)              │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 2. SIMILARITY AUDITING & AMBIGUITY QUARANTINE                   │
+    │ ├── Compute Pairwise Jaccard Index across normalized question Q │
+    │ ├── Identify multi-answer divergence (Jaccard >= 0.85)          │
+    │ └── Output conflicting pairs to quarantine.jsonl                │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 3. DETERMINISTIC REPRODUCIBLE PARTITIONING                      │
+    │ ├── Compute SHA-256 digest of normalized question string        │
+    │ ├── Hex-to-integer modulo 100 assignment:                       │
+    │ │   ├── [0..79]  ──► train.jsonl (80% training partition)       │
+    │ │   ├── [80..89] ──► validation.jsonl (10% validation)          │
+    │ │   └── [90..99] ──► test.jsonl (10% held-out test evaluation)  │
+    │ └── Assert zero set intersection across partitions              │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 7.2 Custom Dataset Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Dataset Pipeline))
+    ::icon(fa fa-database)
+    (01 Ingestion Format)
+      ::icon(fa fa-file-csv)
+      Required columns: question and answer
+      Drop empty answers or < 5 words
+      Standardize UTF-8 character encoding
+    (02 Semantic Divergence)
+      ::icon(fa fa-filter)
+      Calculate pairwise Jaccard similarity
+      Detect near-duplicate questions >= 0.85
+      Quarantine contradictory clinical answers
+    (03 Zero-Leakage Hashing)
+      ::icon(fa fa-shuffle)
+      SHA-256 modulo 100 integer mapping
+      Strict 80 / 10 / 10 partitions
+      Formal disjoint set assertion
+    (04 Export Artifacts)
+      ::icon(fa fa-box-archive)
+      train.csv and train.jsonl
+      validation.csv and validation.jsonl
+      test.csv and test.jsonl
+      quarantine.jsonl and manifest.json
+```
+
+### 7.3 Step-by-Step: Adding a New Medical Dataset
+
+```python
+# Implementation Template: Ingesting custom CSV records
+import csv
+import hashlib
+import json
+
+def process_custom_dataset(input_csv_path, output_dir):
+    clean_records = []
+    seen_questions = {}
+
+    with open(input_csv_path, mode="r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            q = (row.get("question") or "").strip()
+            a = (row.get("answer") or "").strip()
+            
+            # Filter low-quality or truncated answers
+            if len(q) < 5 or len(a.split()) < 5:
+                continue
+                
+            clean_records.append({"question": q, "answer": a})
+
+    print(f"Loaded {len(clean_records)} validated clinical Q&A records.")
+    return clean_records
+```
+
