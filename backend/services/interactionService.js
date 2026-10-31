@@ -22,6 +22,8 @@
  *   - Methotrexate + NSAIDs/Aspirin (Fatal Bone Marrow Suppression & AKI)
  *   - Warfarin + Trimethoprim-Sulfamethoxazole (Bactrim INR Surge & Hemorrhage)
  *   - Clopidogrel + Omeprazole/Esomeprazole (Loss of Antiplatelet Efficacy)
+ *   - SSRIs/SNRIs/MAOIs + Triptans (Serotonin Syndrome)
+ *   - Bactrim + ACE Inhibitors/ARBs/K-Sparing Diuretics (Refractory Hyperkalemia & Arrhythmia)
  * ============================================================================
  */
 
@@ -314,6 +316,53 @@ const HIGH_RISK_INTERACTION_RULES = [
       /\besomeprazole\b/i, /\bnexium\b/i,
     ],
     description: "Major clinical contraindication (FDA Boxed Warning): Omeprazole and esomeprazole potently inhibit CYP2C19, the primary enzyme required to bioactivate the prodrug clopidogrel into its active antiplatelet metabolite. Concurrent use significantly reduces platelet inhibition, increasing risks of stent thrombosis, recurrent myocardial infarction, and cardiovascular death.",
+  },
+  {
+    pair: "SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity)",
+    drugA: "Serotonergic Antidepressants (e.g., Fluoxetine, Sertraline, Escitalopram, Duloxetine, Venlafaxine, Phenelzine)",
+    drugB: "Triptans / 5-HT1 Receptor Agonists (e.g., Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bfluoxetine\b/i, /\bprozac\b/i,
+      /\bsertraline\b/i, /\bzoloft\b/i,
+      /\bescitalopram\b/i, /\blexapro\b/i,
+      /\bcitalopram\b/i, /\bcelexa\b/i,
+      /\bparoxetine\b/i, /\bpaxil\b/i,
+      /\bduloxetine\b/i, /\bcymbalta\b/i,
+      /\bvenlafaxine\b/i, /\beffexor\b/i,
+      /\bphenelzine\b/i, /\bnardil\b/i,
+      /\btranylcypromine\b/i, /\bparnate\b/i,
+    ],
+    drugsB: [
+      /\bsumatriptan\b/i, /\bimitrex\b/i,
+      /\brizatriptan\b/i, /\bmaxalt\b/i,
+      /\bzolmitriptan\b/i, /\bzomig\b/i,
+      /\beletriptan\b/i, /\brelpax\b/i,
+      /\bnaratriptan\b/i, /\bamerge\b/i,
+      /\bfrovatriptan\b/i, /\bfrova\b/i,
+      /\balmotriptan\b/i, /\baxert\b/i,
+    ],
+    description: "FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome (autonomic instability, hyperthermia, clonus, delirium, and neuromuscular rigidity).",
+  },
+  {
+    pair: "Trimethoprim-Sulfamethoxazole + ACE Inhibitor / ARB / K-Sparing Diuretic",
+    drugA: "Trimethoprim-Sulfamethoxazole (Bactrim, Septra)",
+    drugB: "ACE Inhibitors / ARBs / Potassium-Sparing Diuretics (e.g., Lisinopril, Losartan, Spironolactone)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\btrimethoprim\b/i, /\bsulfamethoxazole\b/i,
+      /\bbactrim\b/i, /\bseptra\b/i, /\bco-trimoxazole\b/i, /\btmp-smx\b/i,
+    ],
+    drugsB: [
+      /\blisinopril\b/i, /\bprinivil\b/i, /\bzestril\b/i,
+      /\benalapril\b/i, /\bvasotec\b/i,
+      /\bramipril\b/i, /\baltace\b/i,
+      /\blosartan\b/i, /\bcozaar\b/i,
+      /\bvalsartan\b/i, /\bdiovan\b/i,
+      /\bspironolactone\b/i, /\baldactone\b/i,
+      /\beplerenone\b/i, /\binspra\b/i,
+    ],
+    description: "Major clinical contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with renin-angiotensin-aldosterone system (RAAS) inhibitors, renal potassium elimination is severely impaired, precipitating acute refractory hyperkalemia and sudden cardiac arrest.",
   },
 ];
 

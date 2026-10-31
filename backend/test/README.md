@@ -38,9 +38,9 @@ The MedAssist AI backend test harness (`backend/test/`) verifies the server runt
                                                │
                                                ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │                                66 TESTS PASSED ACROSS 9 TEST FILES (100% PASS RATE)                            │
-    │  - Execution Duration: ~40.9 seconds (single concurrency mode for memory safety)                               │
-    │  - Verified Invariants: Monotonic sessionVersion, SHA-256 tokens, 14 DDI rules, [N] citation grounding         │
+    │                                70 TESTS PASSED ACROSS 9 TEST FILES (100% PASS RATE)                            │
+    │  - Execution Duration: ~25.7 seconds (single concurrency mode for memory safety)                               │
+    │  - Verified Invariants: Monotonic sessionVersion, SHA-256 tokens, 18 DDI rules, [N] citation grounding         │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
 ```
@@ -70,11 +70,13 @@ mindmap
         988 Crisis & Self-Harm Redirection
         Acute Emergency Symptoms
         Prompt Injection Template Tokens
-      interactionService.test.js (15 tests)
-        14 FDA Black-Box Drug Pairs
+      interactionService.test.js (19 tests)
+        18 FDA Black-Box Drug Pairs
         Warfarin + NSAID / Aspirin
         Nitroglycerin + Sildenafil
         Tramadol + Sertraline
+        SSRI / SNRI + Triptans
+        Bactrim + ACEi / ARBs
     (03 Biomedical Evidence & RAG)
       pubmedService.test.js (3 tests)
         Query Term Deduplication
@@ -94,7 +96,7 @@ mindmap
 | Test Suite File | Test Framework | Test Count | Key Invariants Verified |
 |:---|:---:|:---:|:---|
 | `application.test.js` | `node:test` + MongoMemoryServer | **24** | Auth lifecycle, token rotation, session invalidation, two-phase generation, owner isolation, AES vault. |
-| `interactionService.test.js` | `node:test` | **15** | 14 FDA black-box drug-drug interaction pairs, brand-name detection, safe combinations. |
+| `interactionService.test.js` | `node:test` | **19** | 18 FDA black-box drug-drug interaction pairs, brand-name detection, safe combinations. |
 | `safetyService.test.js` | `node:test` | **7** | Self-harm interception, acute emergency symptoms, prompt injection containment, output screening. |
 | `providers.test.js` | `node:test` | **6** | PubMed UID sorting, MEDLINE XML abstract parsing, Gemini normalization. |
 | `modelProvider.test.js` | `node:test` | **4** | Multi-provider resolution, OpenAI-compatible payload format, Together AI bounds. |
@@ -102,7 +104,7 @@ mindmap
 | `pubmedService.test.js` | `node:test` | **3** | Query tokenization, conversational noise removal, clinical keyword extraction. |
 | `historySearch.test.js` | `node:test` | **2** | Conversational context retrieval, relevance ranking by token overlap. |
 | `chatTitle.test.js` | `node:test` | **1** | Title sanitization, Markdown link stripping, length bounds. |
-| **TOTAL** | — | **66 Tests** | **100% Passing** |
+| **TOTAL** | — | **70 Tests** | **100% Passing** |
 
 ---
 

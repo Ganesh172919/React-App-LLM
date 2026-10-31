@@ -125,6 +125,31 @@ test("detects clopidogrel and omeprazole / esomeprazole contraindication", () =>
   assert.equal(nexiumResult[0].pair, "Clopidogrel + Omeprazole / Esomeprazole");
 });
 
+test("detects SSRI / SNRI and triptan serotonergic toxicity risk", () => {
+  const result = detectDrugInteractions("Can I take sumatriptan for a migraine while I am on sertraline?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity)");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /Serotonin Syndrome/i);
+
+  const brandResult = detectDrugInteractions("Patient taking Zoloft needs Imitrex for acute migraine attacks.");
+  assert.equal(brandResult.length, 1);
+  assert.equal(brandResult[0].pair, "SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity)");
+});
+
+test("detects bactrim and ACE inhibitor / ARB hyperkalemia risk", () => {
+  const result = detectDrugInteractions("Prescribing Bactrim for cellulitis in an elderly patient taking lisinopril.");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Trimethoprim-Sulfamethoxazole + ACE Inhibitor / ARB / K-Sparing Diuretic");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /hyperkalemia/i);
+  assert.match(result[0].description, /distal nephron epithelial sodium channels/i);
+
+  const arbResult = detectDrugInteractions("Patient on losartan is prescribed Septra.");
+  assert.equal(arbResult.length, 1);
+  assert.equal(arbResult[0].pair, "Trimethoprim-Sulfamethoxazole + ACE Inhibitor / ARB / K-Sparing Diuretic");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);

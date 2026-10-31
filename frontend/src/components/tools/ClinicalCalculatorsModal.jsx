@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -142,6 +142,18 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [qsofaMental, setQsofaMental] = useState(false);
   const [qsofaResp, setQsofaResp] = useState(false);
   const [qsofaBp, setQsofaBp] = useState(false);
+
+  // BSA (Body Surface Area - Mosteller) State
+  const [bsaUnit, setBsaUnit] = useState("metric"); // metric | imperial
+  const [bsaHeightCm, setBsaHeightCm] = useState("175");
+  const [bsaWeightKg, setBsaWeightKg] = useState("70");
+  const [bsaHeightIn, setBsaHeightIn] = useState("69");
+  const [bsaWeightLbs, setBsaWeightLbs] = useState("154");
+
+  // APRI (AST to Platelet Ratio Index) State
+  const [apriAst, setApriAst] = useState("45"); // U/L
+  const [apriAstUln, setApriAstUln] = useState("40"); // U/L
+  const [apriPlatelets, setApriPlatelets] = useState("150"); // 10^9/L or x10^3/uL
 
   const titleId = useId();
 
@@ -388,6 +400,43 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     qsofaStratification = "High risk for in-hospital sepsis mortality (prompt evaluation for acute organ dysfunction, blood cultures, lactate, and sepsis protocols recommended)";
   }
 
+  // 16. Mosteller Body Surface Area (BSA)
+  let bsaVal = null;
+  if (bsaUnit === "metric") {
+    const h = parseFloat(bsaHeightCm);
+    const w = parseFloat(bsaWeightKg);
+    if (h >= 30 && h <= 250 && w >= 2 && w <= 350) {
+      bsaVal = Math.sqrt((h * w) / 3600).toFixed(2);
+    }
+  } else {
+    const h = parseFloat(bsaHeightIn);
+    const w = parseFloat(bsaWeightLbs);
+    if (h >= 12 && h <= 100 && w >= 5 && w <= 800) {
+      bsaVal = Math.sqrt((h * w) / 3131).toFixed(2);
+    }
+  }
+
+  // 17. AST to Platelet Ratio Index (APRI)
+  let apriVal = null;
+  let apriStratification = "";
+  const ast = parseFloat(apriAst);
+  const astUln = parseFloat(apriAstUln);
+  const platelets = parseFloat(apriPlatelets);
+  if (ast >= 5 && ast <= 2000 && astUln >= 10 && astUln <= 100 && platelets >= 10 && platelets <= 1000) {
+    const calc = ((ast / astUln) / platelets) * 100;
+    apriVal = calc.toFixed(2);
+    const valNum = parseFloat(apriVal);
+    if (valNum <= 0.50) {
+      apriStratification = "Low probability of significant fibrosis (APRI ≤ 0.50; high negative predictive value)";
+    } else if (valNum <= 1.00) {
+      apriStratification = "Indeterminate / intermediate fibrosis probability (0.50 < APRI ≤ 1.00)";
+    } else if (valNum <= 1.50) {
+      apriStratification = "High probability of significant fibrosis (APRI > 1.00; METAVIR F2–F4)";
+    } else {
+      apriStratification = "High probability of cirrhosis (APRI > 1.50; METAVIR F4)";
+    }
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -586,6 +635,28 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("qsofa")}
           >
             qSOFA (Sepsis Screening)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-bsa"
+            aria-selected={activeTab === "bsa"}
+            aria-controls="tabpanel-bsa"
+            className={`calc-tab ${activeTab === "bsa" ? "active" : ""}`}
+            onClick={() => setActiveTab("bsa")}
+          >
+            BSA (Mosteller)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-apri"
+            aria-selected={activeTab === "apri"}
+            aria-controls="tabpanel-apri"
+            className={`calc-tab ${activeTab === "apri" ? "active" : ""}`}
+            onClick={() => setActiveTab("apri")}
+          >
+            APRI (Liver Fibrosis)
           </button>
         </div>
 
@@ -1869,6 +1940,213 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 16: BSA (Body Surface Area - Mosteller) */}
+          {activeTab === "bsa" && (
+            <div id="tabpanel-bsa" role="tabpanel" aria-labelledby="tab-bsa" className="calc-pane">
+              <p className="small-text muted">
+                The Mosteller formula is the widely utilized clinical standard for estimating Body Surface Area (BSA), applied in antineoplastic chemotherapy dosing, cardiac index calculations (L/min/m²), and normalizing glomerular filtration and hemodynamic parameters.
+              </p>
+              <div className="calc-unit-toggle">
+                <button
+                  type="button"
+                  className={`button small ${bsaUnit === "metric" ? "" : "secondary"}`}
+                  onClick={() => setBsaUnit("metric")}
+                >
+                  Metric (cm / kg)
+                </button>
+                <button
+                  type="button"
+                  className={`button small ${bsaUnit === "imperial" ? "" : "secondary"}`}
+                  onClick={() => setBsaUnit("imperial")}
+                >
+                  Imperial (in / lbs)
+                </button>
+              </div>
+
+              {bsaUnit === "metric" ? (
+                <div className="settings-grid">
+                  <label>
+                    Height (cm)
+                    <input
+                      type="number"
+                      step="1"
+                      min="30"
+                      max="250"
+                      value={bsaHeightCm}
+                      onChange={(e) => setBsaHeightCm(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Weight (kg)
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="2"
+                      max="350"
+                      value={bsaWeightKg}
+                      onChange={(e) => setBsaWeightKg(e.target.value)}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <div className="settings-grid">
+                  <label>
+                    Height (inches)
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="12"
+                      max="100"
+                      value={bsaHeightIn}
+                      onChange={(e) => setBsaHeightIn(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Weight (lbs)
+                    <input
+                      type="number"
+                      step="1"
+                      min="5"
+                      max="800"
+                      value={bsaWeightLbs}
+                      onChange={(e) => setBsaWeightLbs(e.target.value)}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {bsaVal !== null ? (
+                <div className="calc-result">
+                  <div className="calc-result-metric">
+                    <strong>{bsaVal} m²</strong>
+                    <span className="badge">Mosteller BSA</span>
+                  </div>
+                  <p className="small-text">
+                    Average adult reference BSA is ~1.73 m² (adult males ~1.9 m², adult females ~1.6 m²).
+                  </p>
+                  <p className="small-text muted">
+                    Educational reference only. In oncology chemotherapy and critical care, institutional protocols often cap BSA (e.g. at 2.0 m²) or utilize ideal/adjusted body weight dosing in severe obesity to prevent drug toxicity.
+                  </p>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="button small"
+                      onClick={() =>
+                        insertAndClose(
+                          `For educational purposes, explain how a Mosteller Body Surface Area (BSA) of ${bsaVal} m² is utilized in oncology chemotherapy dosing, cardiac index calculations (L/min/m²), and physiological normalization, and why clinical protocols sometimes cap BSA in obesity.`
+                        )
+                      }
+                    >
+                      Ask MedAssist about this BSA
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary small"
+                      onClick={() =>
+                        handleCopy(
+                          `Estimated Body Surface Area (Mosteller): ${bsaVal} m² (reference adult norm ~1.73 m²; educational estimate only; not a chemotherapy or medication order)`
+                        )
+                      }
+                    >
+                      {copied ? "Copied" : "Copy result"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted small-text" style={{ marginTop: "12px" }}>
+                  Please enter a valid height ({bsaUnit === "metric" ? "30–250 cm" : "12–100 in"}) and weight ({bsaUnit === "metric" ? "2–350 kg" : "5–800 lbs"}).
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* TAB 17: APRI (AST to Platelet Ratio Index) */}
+          {activeTab === "apri" && (
+            <div id="tabpanel-apri" role="tabpanel" aria-labelledby="tab-apri" className="calc-pane">
+              <p className="small-text muted">
+                The AST to Platelet Ratio Index (APRI) is a non-invasive biomarker index for assessing hepatic fibrosis and cirrhosis in patients with chronic liver disease (e.g., chronic hepatitis C, NAFLD/MASLD): [(AST / AST ULN) / Platelet Count (10⁹/L)] × 100.
+              </p>
+              <div className="settings-grid">
+                <label>
+                  AST (Aspartate Aminotransferase) (U/L)
+                  <input
+                    type="number"
+                    step="1"
+                    min="5"
+                    max="2000"
+                    value={apriAst}
+                    onChange={(e) => setApriAst(e.target.value)}
+                  />
+                </label>
+                <label>
+                  AST Upper Limit of Normal (ULN) (U/L)
+                  <input
+                    type="number"
+                    step="1"
+                    min="10"
+                    max="100"
+                    value={apriAstUln}
+                    onChange={(e) => setApriAstUln(e.target.value)}
+                  />
+                </label>
+                <label>
+                  Platelet Count (10⁹/L or ×10³/µL)
+                  <input
+                    type="number"
+                    step="1"
+                    min="10"
+                    max="1000"
+                    value={apriPlatelets}
+                    onChange={(e) => setApriPlatelets(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              {apriVal !== null ? (
+                <div className="calc-result">
+                  <div className="calc-result-metric">
+                    <strong>Score: {apriVal}</strong>
+                    <span className="badge">{apriStratification}</span>
+                  </div>
+                  <p className="small-text">
+                    APRI ≤ 0.50 offers high negative predictive value to rule out significant fibrosis; APRI &gt; 1.00 indicates high probability of significant fibrosis (METAVIR F2–F4); APRI &gt; 1.50 indicates high probability of cirrhosis (METAVIR F4).
+                  </p>
+                  <p className="small-text muted">
+                    Educational screening estimate only. APRI does not replace liver biopsy, transient elastography (FibroScan), or direct clinical evaluation by a gastroenterologist/hepatologist.
+                  </p>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="button small"
+                      onClick={() =>
+                        insertAndClose(
+                          `For educational purposes, explain how an AST to Platelet Ratio Index (APRI) score of ${apriVal} (${apriStratification}) is interpreted in chronic liver disease evaluation, how APRI compares to FIB-4 and transient elastography (FibroScan), and which clinical follow-up is indicated.`
+                        )
+                      }
+                    >
+                      Ask MedAssist about this APRI score
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary small"
+                      onClick={() =>
+                        handleCopy(
+                          `AST to Platelet Ratio Index (APRI) estimate: score ${apriVal} (${apriStratification}; educational estimate only; not diagnostic or treatment advice)`
+                        )
+                      }
+                    >
+                      {copied ? "Copied" : "Copy result"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted small-text" style={{ marginTop: "12px" }}>
+                  Please enter valid AST (5–2000 U/L), AST ULN (10–100 U/L), and Platelet count (10–1000 ×10⁹/L).
+                </p>
+              )}
             </div>
           )}
         </div>

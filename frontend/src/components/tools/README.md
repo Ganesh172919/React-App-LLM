@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive Overview & Clinical Tools Topology
 
-The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 13 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
+The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 15 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
 
 > [!CAUTION]
 > **Educational & Learning Notice**: These tools are educational demonstrations. Numeric scores do not establish clinical diagnoses, treatment plans, or formal prognosis. Clinical decisions must always be guided by qualified healthcare providers and institutional protocols.
@@ -98,6 +98,12 @@ mindmap
         Hypoalbuminemia Formula
       Serum Anion Gap
         Formula: Na - (Cl + HCO3)
+      Mosteller BSA
+        Metric: sqrt(Ht*Wt/3600)
+        Imperial: sqrt(Ht*Wt/3131)
+      APRI (Liver Fibrosis)
+        Formula: (AST/ULN)*100 / Platelets
+        Cutoffs: <0.50 vs >1.50
 ```
 
 ---
@@ -106,34 +112,50 @@ mindmap
 
 ### 3.1 Body Mass Index (BMI) & DuBois Body Surface Area (BSA)
 $$\text{BMI} = \frac{\text{Weight (kg)}}{[\text{Height (m)}]^2}$$
-$$\text{BSA} = 0.007184 \times [\text{Height (cm)}]^{0.725} \times [\text{Weight (kg)}]^{0.425}$$
+$$\text{BSA (DuBois)} = 0.007184 \times [\text{Height (cm)}]^{0.725} \times [\text{Weight (kg)}]^{0.425}$$
 - **Physiological Clamping**: Weight $20 - 300\text{ kg}$, Height $50 - 250\text{ cm}$.
 
-### 3.2 eGFR (CKD-EPI 2021 Race-Free Equation)
+### 3.2 Mosteller Body Surface Area (BSA)
+$$\text{BSA (Metric)} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$$
+$$\text{BSA (Imperial)} = \sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$$
+- **Clinical Role**: Universally adopted standard for indexing physiological parameters (e.g., cardiac output, GFR), renal replacement therapy dosing, and body-surface indexed oncologic chemotherapy.
+- **Reference Ranges**: Average adult female $\approx 1.6\text{ m}^2$; average adult male $\approx 1.9\text{ m}^2$.
+
+### 3.3 AST to Platelet Ratio Index (APRI) for Liver Fibrosis
+$$\text{APRI} = \frac{(\text{AST} / \text{AST}_{\text{ULN}}) \times 100}{\text{Platelet Count (}\times 10^9/\text{L})}$$
+Where:
+- $\text{AST}_{\text{ULN}}$ defaults to $40\text{ U/L}$ (standard institutional laboratory upper limit of normal).
+- **Physiological Clamping**: AST $5 - 2000\text{ U/L}$, Platelets $10 - 1500 \times 10^9/\text{L}$.
+- **Risk Stratification Bands**:
+  - $\text{Score} < 0.50$: Cirrhosis / advanced fibrosis unlikely (high negative predictive value).
+  - $0.50 \le \text{Score} \le 1.50$: Indeterminate / intermediate fibrosis probability (warrants secondary elastography).
+  - $\text{Score} > 1.50$: High probability of significant fibrosis / cirrhosis (prompt hepatology evaluation).
+
+### 3.4 eGFR (CKD-EPI 2021 Race-Free Equation)
 $$\text{eGFR} = 142 \times \min\left(\frac{S_{\text{cr}}}{\kappa}, 1\right)^\alpha \times \max\left(\frac{S_{\text{cr}}}{\kappa}, 1\right)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$$
 Where:
 - $\kappa = 0.7$ (Female) or $0.9$ (Male)
 - $\alpha = -0.241$ (Female) or $-0.302$ (Male)
 - **Physiological Clamping**: Age $18 - 120\text{ years}$, $S_{\text{cr}} = 0.1 - 25.0\text{ mg/dL}$.
 
-### 3.3 Cockcroft-Gault Creatinine Clearance (CrCl)
+### 3.5 Cockcroft-Gault Creatinine Clearance (CrCl)
 $$\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight (kg)}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$$
 - **Physiological Clamping**: Age $18 - 120$, Weight $20 - 300\text{ kg}$, $S_{\text{cr}} = 0.1 - 25.0\text{ mg/dL}$.
 
-### 3.4 Mean Arterial Pressure (MAP)
+### 3.6 Mean Arterial Pressure (MAP)
 $$\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$$
 - **Physiological Clamping**: $\text{SBP} = 40 - 300\text{ mmHg}$, $\text{DBP} = 20 - 200\text{ mmHg}$.
 
-### 3.5 Corrected Calcium (Payne Formula)
+### 3.7 Corrected Calcium (Payne Formula)
 $$\text{Corrected Calcium (mg/dL)} = \text{Serum Calcium} + 0.8 \times (4.0 - \text{Serum Albumin})$$
 - **Physiological Clamping**: Calcium $4.0 - 20.0\text{ mg/dL}$, Albumin $0.5 - 6.0\text{ g/dL}$.
 
-### 3.6 Fractional Excretion of Sodium (FeNa) & Urea (FeUrea)
+### 3.8 Fractional Excretion of Sodium (FeNa) & Urea (FeUrea)
 $$\text{FeNa (\%)} = \frac{\text{Urine Na} \times \text{Serum Cr}}{\text{Serum Na} \times \text{Urine Cr}} \times 100$$
 $$\text{FeUrea (\%)} = \frac{\text{Urine Urea} \times \text{Serum Cr}}{\text{Serum BUN} \times \text{Urine Cr}} \times 100$$
 - **Interpretation Bands**: $\text{FeNa} < 1\%$ (Prerenal etiology); $\text{FeNa} > 2\%$ (Intrinsic acute tubular necrosis). $\text{FeUrea} < 35\%$ indicates prerenal azotemia when loop diuretics are active.
 
-### 3.7 Maintenance Fluids (4-2-1 Rule)
+### 3.9 Maintenance Fluids (4-2-1 Rule)
 - $4\text{ mL/kg/h}$ for first $10\text{ kg}$ ($0 - 10\text{ kg}$)
 - $+ 2\text{ mL/kg/h}$ for next $10\text{ kg}$ ($11 - 20\text{ kg}$)
 - $+ 1\text{ mL/kg/h}$ for each $\text{kg} > 20\text{ kg}$
@@ -141,16 +163,16 @@ $$\text{FeUrea (\%)} = \frac{\text{Urine Urea} \times \text{Serum Cr}}{\text{Ser
 
 ---
 
-## 4. Developer Extensibility: Adding Calculator #14
+## 4. Developer Extensibility: Adding Calculator #16 (e.g., Child-Pugh Score)
 
-Follow this architectural guide to add a new calculator (e.g., `MELD-Na`):
+Follow this architectural guide to add calculator #16:
 
 ```jsx
 // Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx
 // Step 1: Add tab key to tabList array:
 const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
-  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "meld"
+  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "bsa", "apri", "childpugh"
 ];
 
 // Step 2: Implement deterministic formula with clamping:
@@ -195,7 +217,7 @@ function calculateMeldScore(creatinine, bilirubin, inr, sodium) {
 
 ## 5. Automated Verification Commands
 
-All 13 clinical calculators are verified by 11 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
+All 17 clinical calculators are verified by 15 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
 
 ```powershell
 # Run the clinical calculators test suite

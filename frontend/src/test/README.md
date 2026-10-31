@@ -39,8 +39,8 @@ The MedAssist AI frontend test harness (`frontend/src/test/`) verifies React 19 
                                                  │
                                                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │                                49 TESTS PASSED ACROSS 6 TEST FILES (100% PASS RATE)                            │
-    │  - Verified Invariants: 13 Calculator physiological bounds, Web Locks single-flight refresh, tab recovery      │
+    │                                54 TESTS PASSED ACROSS 6 TEST FILES (100% PASS RATE)                            │
+    │  - Verified Invariants: 17 Calculator physiological bounds, Web Locks single-flight refresh, tab recovery      │
     │  - Accessibility Verification: WAI-ARIA tabpanel cycling, Escape key dismiss, and focus restoration           │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
@@ -56,16 +56,18 @@ mindmap
   root((Frontend Tests))
     ::icon(fa fa-vial)
     (01 UI Lifecycle Suite)
-      ui.test.jsx (24 tests)
+      ui.test.jsx (25 tests)
         Account Management & Passwords
         Chat Two-Phase Save Handshake
         Navigation Blocking During Generation
         Unsaved Answer Recovery on Remount
         Dark/Light Mode Theme Toggle
     (02 Clinical Calculators)
-      clinicalCalculators.test.jsx (11 tests)
-        13 Evidence-Based Tools Form Math
+      clinicalCalculators.test.jsx (15 tests)
+        17 Evidence-Based Tools Form Math
         Physiological Bounds Clamping
+        Mosteller BSA Metric & Imperial
+        APRI Liver Fibrosis Risk Bands
         WAI-ARIA Tablist & Tab Cycling
         Educational Action Prompt Generation
     (03 Concurrency & Caching)
@@ -88,13 +90,13 @@ mindmap
 
 | Test Suite File | Test Framework | Test Count | Key Invariants Verified |
 |:---|:---:|:---:|:---|
-| `ui.test.jsx` | Vitest + RTL | **24** | Auth flow, pending feedback, chat lifecycle, two-phase save retry, navigation guard, draft recovery. |
-| `clinicalCalculators.test.jsx` | Vitest + RTL | **11** | 13 calculators math, input clamping (age, creatinine), WAI-ARIA tabpanel semantics. |
+| `ui.test.jsx` | Vitest + RTL | **25** | Auth flow, pending feedback, chat lifecycle, two-phase save retry, navigation guard, draft recovery. |
+| `clinicalCalculators.test.jsx` | Vitest + RTL | **15** | 17 calculators math, input clamping (age, creatinine), Mosteller BSA, APRI, WAI-ARIA tabpanel semantics. |
 | `api.test.js` | Vitest | **5** | Single-flight token renewal via Web Locks mutex, concurrent 401 resolution, error payload extraction. |
 | `medicalDetector.test.js` | Vitest | **5** | Clinical keyword detection, negation handling, non-medical inquiry passthrough. |
 | `conversationImport.test.js` | Vitest | **2** | JSON export sanitization, anti-spoofing evidence strip, `importPreview: true` composer lock. |
 | `tabStorage.test.js` | Vitest | **2** | Resilient `sessionStorage` wrapper, transparent in-memory Map fallback. |
-| **TOTAL** | — | **49 Tests** | **100% Passing** |
+| **TOTAL** | — | **54 Tests** | **100% Passing** |
 
 ---
 

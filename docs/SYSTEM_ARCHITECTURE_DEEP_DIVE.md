@@ -129,7 +129,7 @@ mindmap
       Memory Backpressure Drop Code 1013
       Owner-Scoped Event Fanout
     (06 Evidence Clinical Tools)
-      15 Clinical Calculators
+      17 Clinical Calculators
         BMI Metric and Imperial
         CKD-EPI 2021 eGFR
         CHA2DS2-VASc Stroke Risk
@@ -144,6 +144,8 @@ mindmap
         Glasgow Coma Scale GCS
         HAS-BLED Bleeding Risk
         qSOFA Sepsis Screening
+        Mosteller Body Surface Area BSA
+        APRI Liver Fibrosis and Cirrhosis
       Accessibility Invariants
         WAI-ARIA Tabpanel Semantics
         Keyboard Alt-Plus-C Shortcut
@@ -788,7 +790,7 @@ export async function apiRequest(path, options = {}) {
 
 ## 10. Pharmacological Drug Interaction Detection & Preservation (`interactionService.js`)
 
-MedAssist AI implements deterministic regular expression screening for 16 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
+MedAssist AI implements deterministic regular expression screening for 18 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
 
 ```
 ====================================================================================================
@@ -818,7 +820,7 @@ MedAssist AI implements deterministic regular expression screening for 16 major 
 ====================================================================================================
 ```
 
-### 10.1 16 FDA Black-Box Interaction Pairs
+### 10.1 18 FDA Black-Box Interaction Pairs
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Primary Risk & Mechanism |
 |:---|:---|:---|:---:|:---|
@@ -838,6 +840,8 @@ MedAssist AI implements deterministic regular expression screening for 16 major 
 | **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Meloxicam, Aspirin | `CRITICAL` | Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning). |
 | **Warfarin + TMP-SMX (Bactrim / Septra)** | Warfarin (Coumadin, Jantoven) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | `CRITICAL` | Potent CYP2C9 metabolic inhibition blocks active S-warfarin clearance and gut microbiota depletion reduces vitamin K synthesis, precipitating acute supratherapeutic INR surges and life-threatening hemorrhages. |
 | **Clopidogrel + Omeprazole / Esomeprazole** | Clopidogrel (Plavix) | Omeprazole, Prilosec, Esomeprazole, Nexium | `CRITICAL` | Major contraindication (FDA Boxed Warning): CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing risk of stent thrombosis and myocardial infarction. |
+| **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
+| **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | `CRITICAL` | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 
 ---
 
@@ -862,7 +866,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
                  │
                  ▼
    ┌─────────────────────────────────────────────────────────────────┐
-   │ 13 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
+   │ 17 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
    │ ├── 01. Adult BMI (Metric: kg/m², Imperial: lbs/in² * 703)      │
    │ ├── 02. CKD-EPI 2021 Creatinine eGFR (Race-Free ASN-NKF Formula)│
    │ ├── 03. CHA₂DS₂-VASc Score for Atrial Fibrillation Stroke Risk  │
@@ -876,7 +880,10 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
    │ ├── 11. Wells' Criteria for Pulmonary Embolism (Pre-Test Prob)  │
    │ ├── 12. CURB-65 Pneumonia Severity Score (30-Day Mortality)     │
    │ ├── 13. Glasgow Coma Scale (GCS Consciousness Assessment)       │
-   │ └── [*] HAS-BLED Bleeding Risk Score (Documented Extension Guide)│
+   │ ├── 14. HAS-BLED Bleeding Risk Score (9-point AF stratification)│
+   │ ├── 15. qSOFA Bedside Sepsis Mortality Screening                │
+   │ ├── 16. Mosteller Body Surface Area (BSA Metric & Imperial)     │
+   │ └── 17. AST to Platelet Ratio Index (APRI Liver Fibrosis/Cirrh) │
    └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -903,6 +910,8 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
 | **HAS-BLED Bleeding Risk** | Hypertension (1), Abnormal renal/liver (1-2), Stroke (1), Bleeding (1), Labile INR (1), Elderly >65 (1), Drugs/Alcohol (1-2) | $\text{HAS-BLED} = \sum \text{Risk Factors}$ (Range: 0–9) | Binary toggles | 0–1: Low bleeding risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; evaluate modifiable bleeding risks). |
 | **qSOFA Sepsis Screening** | Altered mentation GCS <15 (+1), Tachypnea RR ≥22 (+1), Hypotension SBP ≤100 (+1) | $\text{qSOFA} = \sum \text{Criteria}$ (Range: 0–3) | Binary toggles | 0–1: Not high risk for in-hospital sepsis mortality.<br>2–3: High risk for in-hospital sepsis mortality (prompt evaluation for organ dysfunction, blood cultures, lactate, and sepsis protocols). |
+| **Mosteller Body Surface Area (BSA)** | Height (cm or in), Weight (kg or lbs) | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Reference adult norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
+| **AST to Platelet Ratio Index (APRI)** | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
 
 ### 11.2 Production Implementation Snippet (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 

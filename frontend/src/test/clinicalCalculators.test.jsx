@@ -235,6 +235,75 @@ it("calculates qSOFA sepsis screening score without diagnostic claims and update
   expect(promptCall).toContain("qSOFA");
 });
 
+it("calculates Mosteller Body Surface Area (BSA) in metric and imperial units without diagnostic claims", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "BSA (Mosteller)" }));
+  expect(screen.getByText(/Mosteller formula is the widely utilized clinical standard for estimating Body Surface Area/)).toBeTruthy();
+  expect(screen.getByText("1.84 m²")).toBeTruthy();
+  expect(screen.getByText("Mosteller BSA")).toBeTruthy();
+  expect(screen.getByText(/Educational reference only\. In oncology chemotherapy and critical care/)).toBeTruthy();
+
+  // Switch to Imperial
+  fireEvent.click(screen.getByRole("button", { name: "Imperial (in / lbs)" }));
+  expect(screen.getByText("1.84 m²")).toBeTruthy();
+
+  // Change imperial measurements: 72 inches, 180 lbs -> sqrt(72*180/3131) = sqrt(4.13925) = 2.03 m²
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Height (inches)" }), { target: { value: "72" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Weight (lbs)" }), { target: { value: "180" } });
+  expect(screen.getByText("2.03 m²")).toBeTruthy();
+
+  // Test input bounds rejection
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Weight (lbs)" }), { target: { value: "2" } });
+  expect(screen.queryByText("2.03 m²")).toBeNull();
+  expect(screen.getByText(/Please enter a valid height/)).toBeTruthy();
+
+  // Restore and test prompt insertion
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Weight (lbs)" }), { target: { value: "180" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this BSA" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const promptCall = onInsertPrompt.mock.calls[0][0];
+  expect(promptCall).toContain("2.03 m²");
+  expect(promptCall).toContain("Mosteller Body Surface Area (BSA)");
+});
+
+it("calculates AST to Platelet Ratio Index (APRI) with fibrosis risk stratification and input bounds", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "APRI (Liver Fibrosis)" }));
+  expect(screen.getByText(/AST to Platelet Ratio Index \(APRI\) is a non-invasive biomarker index/)).toBeTruthy();
+  expect(screen.getByText("Score: 0.75")).toBeTruthy();
+  expect(screen.getByText(/Indeterminate \/ intermediate fibrosis probability/)).toBeTruthy();
+
+  // Test Low fibrosis probability (APRI <= 0.50): AST 20 -> ((20/40)/150)*100 = 0.33
+  fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "20" } });
+  expect(screen.getByText("Score: 0.33")).toBeTruthy();
+  expect(screen.getByText(/Low probability of significant fibrosis/)).toBeTruthy();
+
+  // Test High fibrosis probability (1.00 < APRI <= 1.50): AST 70 -> ((70/40)/150)*100 = 1.17
+  fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "70" } });
+  expect(screen.getByText("Score: 1.17")).toBeTruthy();
+  expect(screen.getByText(/High probability of significant fibrosis/)).toBeTruthy();
+
+  // Test Cirrhosis (APRI > 1.50): AST 120 -> ((120/40)/150)*100 = 2.00
+  fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "120" } });
+  expect(screen.getByText("Score: 2.00")).toBeTruthy();
+  expect(screen.getByText(/High probability of cirrhosis/)).toBeTruthy();
+
+  // Test input rejection out of bounds
+  fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "2" } });
+  expect(screen.queryByText("Score: 2.00")).toBeNull();
+  expect(screen.getByText(/Please enter valid AST/)).toBeTruthy();
+
+  // Restore and check prompt insertion
+  fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "120" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this APRI score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const promptCall = onInsertPrompt.mock.calls[0][0];
+  expect(promptCall).toContain("score of 2.00");
+  expect(promptCall).toContain("APRI");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -245,11 +314,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (qSOFA) to first (BMI) and back
-  const qsofaTab = screen.getByRole("tab", { name: "qSOFA (Sepsis Screening)" });
-  qsofaTab.focus();
-  fireEvent.keyDown(qsofaTab, { key: "ArrowRight" });
+  // Wrapping from last tab (APRI) to first (BMI) and back
+  const apriTab = screen.getByRole("tab", { name: "APRI (Liver Fibrosis)" });
+  apriTab.focus();
+  fireEvent.keyDown(apriTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(qsofaTab.getAttribute("aria-selected")).toBe("true");
+  expect(apriTab.getAttribute("aria-selected")).toBe("true");
 });

@@ -28,7 +28,7 @@ The MedAssist AI backend service layer (`backend/services/`) encapsulates pure d
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                    DETERMINISTIC CLINICAL SAFETY GATES                                         │
     │  - safetyService.js: Deterministic Pre/Post-Generation Screener (Self-Harm, Acute Emergency, Injection Defense)│
-    │  - interactionService.js: 14 FDA Black-Box Drug-Drug Interaction Rules (Preserved across Deflections)          │
+    │  - interactionService.js: 18 FDA Black-Box Drug-Drug Interaction Rules (Preserved across Deflections)          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -73,7 +73,7 @@ mindmap
         Emergency Deflections (Chest Pain, Stroke)
         Prompt Injection Token Stripping
       interactionService.js
-        14 Limited Drug-Drug Caution Pairs
+        18 High-Risk Drug Caution Pairs
         Bidirectional Regex Matchers
         Preservation Across Deflections
       citationService.js
@@ -142,10 +142,10 @@ mindmap
 - **Invariants**: Any citation referencing an index $> \text{sourceCount}$ triggers an `invalid_citations` state, suppressing ungrounded model claims.
 
 ### 3.4 `interactionService.js` — Drug-Drug Interaction Screener
-- **Role**: Scans clinical queries and responses for 14 high-risk medication pairs based on FDA black-box warnings.
+- **Role**: Scans clinical queries and responses for 18 high-risk medication pairs based on FDA black-box warnings.
 - **Exported Symbols**:
-  - `detectDrugInteractions(text)`: Scans input text using bidirectional regular expressions covering generic and brand names (e.g., Warfarin + Aspirin, Nitroglycerin + Sildenafil, Tramadol + Sertraline).
-  - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 14 rule definitions with risk severity (`CRITICAL`, `HIGH`).
+  - `detectDrugInteractions(text)`: Scans input text using bidirectional regular expressions covering generic and brand names (e.g., Warfarin + Aspirin, Nitroglycerin + Sildenafil, Tramadol + Sertraline, SSRI/SNRI + Triptan, Bactrim + ACEi/ARB).
+  - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 18 rule definitions with risk severity (`CRITICAL`, `HIGH`).
 - **Invariants**: Detected interaction warnings are preserved even if a query is deflected by emergency screening.
 
 ### 3.5 `providerCredentials.js` — AES-256-GCM Personal Key Vault
@@ -216,15 +216,15 @@ export function detectAllergyRisks(patientAllergies = [], queryText = "") {
 
 ## 5. Automated Verification Commands
 
-All backend services are covered by 66 unit and integration tests:
+All backend services are covered by 70 unit and integration tests:
 
 ```powershell
 # Run the entire backend test suite
 npm test --prefix backend
 
 # Run specific service tests
-node --test backend/tests/safetyService.test.js
-node --test backend/tests/citationService.test.js
-node --test backend/tests/interactionService.test.js
-node --test backend/tests/pubmedService.test.js
+node --test backend/test/safetyService.test.js
+node --test backend/test/citationService.test.js
+node --test backend/test/interactionService.test.js
+node --test backend/test/pubmedService.test.js
 ```

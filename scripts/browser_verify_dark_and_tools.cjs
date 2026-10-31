@@ -145,17 +145,43 @@ async function main() {
   await page.screenshot({ path: path.join(output, "qsofa-dark-modal.png") });
   console.log("PASS qSOFA sepsis screening calculator verified and captured in dark styles");
 
-  // Test 3k: Arrow Key Navigation across tabs wrapping from last tab (qSOFA) to first tab (BMI)
-  const qsofaTab = page.getByRole("tab", { name: /qSOFA \(Sepsis Screening\)/i });
-  await qsofaTab.focus();
+  // Test 3k: Mosteller BSA Tab in Clinical Calculators
+  await page.getByRole("tab", { name: "BSA (Mosteller)" }).click();
+  await page.getByText(/Mosteller formula is the widely utilized clinical standard for estimating Body Surface Area/).waitFor();
+  await page.getByText("1.84 m²", { exact: true }).waitFor();
+  await page.getByText("Mosteller BSA", { exact: true }).waitFor();
+  // Switch to Imperial and fill height 72 in, weight 180 lbs
+  await page.getByRole("button", { name: "Imperial (in / lbs)" }).click();
+  await page.getByText("1.84 m²", { exact: true }).waitFor();
+  await page.getByRole("spinbutton", { name: "Height (inches)" }).fill("72");
+  await page.getByRole("spinbutton", { name: "Weight (lbs)" }).fill("180");
+  await page.getByText("2.03 m²", { exact: true }).waitFor();
+  await page.screenshot({ path: path.join(output, "bsa-dark-modal.png") });
+  console.log("PASS Mosteller BSA calculator verified and captured in dark styles");
+
+  // Test 3l: APRI (Liver Fibrosis) Tab in Clinical Calculators
+  await page.getByRole("tab", { name: "APRI (Liver Fibrosis)" }).click();
+  await page.getByText(/AST to Platelet Ratio Index \(APRI\) is a non-invasive biomarker index/).waitFor();
+  await page.getByText("Score: 0.75", { exact: true }).waitFor();
+  await page.getByText(/Indeterminate \/ intermediate fibrosis probability/).waitFor();
+  // Change AST to 120 -> Score: 2.00, High probability of cirrhosis
+  await page.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }).fill("120");
+  await page.getByText("Score: 2.00", { exact: true }).waitFor();
+  await page.getByText(/High probability of cirrhosis/).waitFor();
+  await page.screenshot({ path: path.join(output, "apri-dark-modal.png") });
+  console.log("PASS APRI liver fibrosis calculator verified and captured in dark styles");
+
+  // Test 3m: Arrow Key Navigation across tabs wrapping from last tab (APRI) to first tab (BMI)
+  const apriTab = page.getByRole("tab", { name: "APRI (Liver Fibrosis)" });
+  await apriTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (qSOFA) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (APRI) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const qsofaSelected = await qsofaTab.getAttribute("aria-selected");
-  assert.equal(qsofaSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (qSOFA)");
+  const apriSelected = await apriTab.getAttribute("aria-selected");
+  assert.equal(apriSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (APRI)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -250,6 +276,24 @@ async function main() {
   await page.getByText(/stent thrombosis/i).waitFor();
   await page.screenshot({ path: path.join(output, "clopidogrel-omeprazole-dark.png") });
   console.log("PASS clopidogrel and omeprazole contraindication warning verified in dark mode");
+
+  // Test 5f: SSRI / SNRI + Triptan serotonergic toxicity risk
+  await page.getByLabel("Your question", { exact: true }).fill("Can I take Imitrex for a migraine while I am taking Zoloft?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity)").waitFor();
+  await page.getByText(/Serotonin Syndrome/i).waitFor();
+  await page.screenshot({ path: path.join(output, "triptan-ssri-dark.png") });
+  console.log("PASS SSRI and triptan serotonergic toxicity alert verified in dark mode");
+
+  // Test 5g: Bactrim + Lisinopril hyperkalemia contraindication
+  await page.getByLabel("Your question", { exact: true }).fill("Prescribing Bactrim for a skin infection in a patient taking lisinopril.");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Trimethoprim-Sulfamethoxazole + ACE Inhibitor / ARB / K-Sparing Diuretic").waitFor();
+  await page.getByText(/hyperkalemia/i).waitFor();
+  await page.screenshot({ path: path.join(output, "bactrim-lisinopril-dark.png") });
+  console.log("PASS Bactrim and ACE inhibitor hyperkalemia alert verified in dark mode");
 
   // Test 6: Dashboard in Dark Mode
   await page.getByRole("link", { name: "Dashboard", exact: true }).click();
