@@ -156,7 +156,8 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   ├── header/Header.jsx            # Top navigation bar with auth status
 │       │   ├── home/Home.jsx                # Public landing page with system notices
 │       │   └── tools/                       # Evidence-Based Clinical Tools
-│       │       └── ClinicalCalculatorsModal.jsx # 13-calculator educational suite with WAI-ARIA tabs
+│       │       ├── ClinicalCalculatorsModal.jsx # 13-calculator educational suite with WAI-ARIA tabs
+│       │       └── README.md                # Clinical calculators architecture & reference manual
 │       │
 │       ├── context/                         # React State Contexts
 │       │   ├── AuthContext.jsx              # User session state, sign-in, sign-out handler
@@ -179,7 +180,8 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   └── ui.test.jsx                  # Component tests for auth, chat, and dashboard
 │       │
 │       └── utils/
-│           └── medicalDetector.js           # Client-side heuristic medical keyword detector
+│           ├── medicalDetector.js           # Client-side heuristic medical keyword detector
+│           └── README.md                    # Client heuristic query classifier reference
 │
 ├── Model and Dataset/                       # Dataset Engineering & Offline LoRA Pipeline
 │   ├── Final data set... (1).csv            # Raw medical Q&A dataset (16,412 rows)
@@ -219,6 +221,16 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       ├── dataset_audit.json               # Multi-answer variant similarity output
 │       ├── dataset_audit.md                 # Markdown summary of dataset audit
 │       └── lora_validation.json             # Parameter estimation report (147,456 params)
+│
+├── output/                                  # Build Artifacts, Reports & Quality Assurance
+│   ├── project-review/                      # Continuous Improvement Prompts & Audits
+│   │   ├── CONTINUOUS_IMPROVEMENT_PROMPT.md # 200-word cycle prompt
+│   │   └── PROJECT_ANALYSIS.md              # Project verification report & CI/CD pipeline
+│   └── qa/                                  # Automated Test Logs & Headless Browser Screenshots
+│       ├── automated-results.json           # 182-check verification summary
+│       ├── browser-results.json             # 20 browser smoke workflow logs
+│       ├── build-serving-results.json       # 7 HTTP ingress assertions
+│       └── README.md                        # Quality assurance evidence catalog & artifact reference
 │
 └── scripts/                                 # Verification & Operations Automation
     ├── browser_smoke.cjs                    # Playwright browser smoke test suite (20 automated workflows)
