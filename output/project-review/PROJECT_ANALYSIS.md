@@ -226,8 +226,8 @@ To maintain code quality, prevent regressions, and ensure that every pull reques
                    ▼                                ▼                                ▼
     ┌─────────────────────────────┐  ┌─────────────────────────────┐  ┌─────────────────────────────┐
     │  STAGE 1: BACKEND TESTS     │  │  STAGE 2: FRONTEND SUITE    │  │  STAGE 3: PYTHON RESEARCH   │
-    │  - 66 tests passing         │  │  - ESLint 9 clean sweep     │  │  - 13 dataset tests         │
-    │  - MongoMemoryServer        │  │  - 49 Vitest component tests│  │  - 6 LoRA setup tests       │
+    │  - 71 tests passing         │  │  - ESLint 9 clean sweep     │  │  - 13 dataset tests         │
+    │  - MongoMemoryServer        │  │  - 55 Vitest component tests│  │  - 6 LoRA setup tests       │
     │  - Monotonic session audits │  │  - Vite production build    │  │  - Zero-leakage verification│
     └─────────────────────────────┘  └─────────────────────────────┘  └─────────────────────────────┘
                    │                                │                                │
@@ -237,7 +237,7 @@ To maintain code quality, prevent regressions, and ensure that every pull reques
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                STAGE 4: PLAYWRIGHT BROWSER AUTOMATION                                          │
     │  - Launch fixture server with synthetic database and AI endpoints (`node scripts/run_build_qa.cjs --fixtures`) │
-    │  - Run 20 smoke workflows (`node scripts/browser_smoke.cjs`)                                                   │
+    │  - Run 21 smoke workflows (`node scripts/browser_smoke.cjs`)                                                   │
     │  - Run 21 dark theme and calculator accessibility workflows (`node scripts/browser_verify_dark_and_tools.cjs`)  │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                    │

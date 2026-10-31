@@ -708,7 +708,7 @@ MedAssist AI enforces a deterministic acceptance checklist and automated rollbac
                  ▼ PASS
     [ Tier 3: Browser End-to-End Acceptance ]
     ├── Execute: node scripts/browser_verify_dark_and_tools.cjs
-    └── Verifies 13 clinical calculators, 14 FDA DDI banners, and emergency deflections
+    └── Verifies 18 clinical calculators, 19 FDA DDI banners, and emergency deflections
                  │
                  ├── FAIL ──► CANARY ISOLATION: Host Nginx remains on stable upstream
                  │
@@ -727,10 +727,10 @@ mindmap
       Express Process /api/health
       Database Wire /api/ready
     (02 End-to-End Verification)
-      178+ Master Gate Tests
+      206 Master Gate Tests
       Browser Smoke Playwright
       Dark Theme & ARIA Trapping
-      13 Clinical Calculators
+      18 Clinical Calculators
     (03 Rollback Playbook)
       Immediate Container Stop
       Tag-Pinned Docker Image Rollback

@@ -108,7 +108,7 @@ mindmap
         efetch MEDLINE XML Parsing
       fast-xml-parser Text Extraction
     (03 Pharmacological Screening)
-      14 FDA Black-Box Drug Interactions
+      19 FDA Black-Box Drug Interactions
         Preserved in Emergency Deflections
         Non-Diagnostic Safety Banners
     (04 Multi-Provider Synthesis)
@@ -258,7 +258,16 @@ const HIGH_RISK_INTERACTION_RULES = [
     drugsB: [/\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i, /\bnaproxen\b/i, /\baleve\b/i, /\bketorolac\b/i, /\btoradol\b/i, /\baspirin\b/i],
     description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
   },
-  // 11 additional FDA black-box contraindication rules (14 total active rules)
+  {
+    pair: "Theophylline + Fluoroquinolones (Ciprofloxacin)",
+    drugA: "Theophylline (e.g., Theo-24, Uniphyl, Elixophyllin)",
+    drugB: "Fluoroquinolones (e.g., Ciprofloxacin, Enoxacin)",
+    severity: "CRITICAL",
+    drugsA: [/\btheophylline\b/i, /\btheo-?24\b/i, /\buniphyl\b/i, /\belixophyllin\b/i, /\baminophylline\b/i],
+    drugsB: [/\bciprofloxacin\b/i, /\bcipro\b/i, /\benoxacin\b/i],
+    description: "Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin or enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable nausea/vomiting, cardiac arrhythmias, and fatal seizures.",
+  },
+  // 15 additional FDA black-box contraindication rules (19 total active rules)
 ];
 
 const detectDrugInteractions = (text) => {
@@ -280,7 +289,7 @@ const detectDrugInteractions = (text) => {
 };
 ```
 
-#### Complete 14 FDA Black-Box Medication Interaction Inventory
+#### Complete 19 FDA Black-Box Medication Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Clinical Pathophysiology & FDA Warning |
 |:---|:---|:---|:---|:---:|:---|
@@ -298,6 +307,11 @@ const detectDrugInteractions = (text) => {
 | **12** | MAOIs + Serotonergic Agents | Phenelzine, Tranylcypromine, Selegiline | SSRIs, SNRIs, Pseudoephedrine, Amphetamines | **CRITICAL** | Monoamine degradation blockade triggers malignant hypertensive crisis and hyperthermia. |
 | **13** | Xanthine Oxidase + Thiopurines| Allopurinol (Zyloprim), Febuxostat (Uloric)| Azathioprine (Imuran), 6-MP (Purixan) | **CRITICAL** | Xanthine oxidase inhibition suppresses thiopurine degradation, causing severe pancytopenia. |
 | **14** | Methotrexate + NSAIDs / Aspirin| Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Aspirin | **CRITICAL** | Tubular secretion inhibition reduces methotrexate clearance, precipitating fatal marrow suppression. |
+| **15** | Warfarin + TMP-SMX (Bactrim) | Warfarin (Coumadin, Jantoven) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | **CRITICAL** | Potent CYP2C9 metabolic inhibition blocks S-warfarin clearance and gut flora suppression depletes vitamin K, triggering acute supratherapeutic INR hemorrhages. |
+| **16** | Clopidogrel + Omeprazole / Esomeprazole | Clopidogrel (Plavix) | Omeprazole (Prilosec), Esomeprazole (Nexium) | **CRITICAL** | Major contraindication (FDA Boxed Warning): CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing risk of stent thrombosis and myocardial infarction. |
+| **17** | SSRI / SNRI / MAOI + Triptan | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | **CRITICAL** | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
+| **18** | TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | **CRITICAL** | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
+| **19** | Theophylline + Fluoroquinolones | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
 ```
 
 ### 3.3 Secondary Consensus Model Review (`backend/services/answerVerifier.js`)

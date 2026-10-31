@@ -140,3 +140,17 @@ export function useTheme() {
   return context;
 }
 ```
+
+---
+
+## 5. Automated Verification Commands
+
+All contexts and reactive UI state workflows are verified by Vitest component tests:
+
+```powershell
+# Run the complete frontend test suite (55 tests passing across 6 suites)
+npm test --prefix frontend
+
+# Verify context-driven UI rendering
+npm test --prefix frontend -- ui.test.jsx
+```

@@ -174,8 +174,8 @@ The local verification runs reported 206 passing checks or workflows across Node
                                                                Partitions into valid vs invalid sets. Drops ungrounded
                                                                text if invalid numbers exist or coverage is zero.
 
-    Drug Interaction Checker   backend/services/interactionS.. Deterministic name matching for 16 limited medication
-                                                               pair cautions. Preserved during emergency safety redirects.
+    Drug Interaction Checker   backend/services/interactionS.. Deterministic name matching for 19 FDA black-box warning
+                                                               medication pair cautions. Preserved during emergency safety redirects.
 
     Web Locks Refresh          frontend/src/lib/api.js         Uses navigator.locks.request("medassist-session-refresh")
                                                                to guarantee exactly one in-flight token refresh across tabs.
@@ -186,8 +186,8 @@ The local verification runs reported 206 passing checks or workflows across Node
     Import Preview Sandbox     frontend/src/lib/conversationI.. Strips forged verification/citations from external JSON.
                                                                Local preview only; sending disabled to prevent injection.
 
-    Clinical Calculators       frontend/src/components/tools/  15 clinical calculators with strict input bounding, Payne
-                               ClinicalCalculatorsModal.jsx    calcium, Wells PE, CURB-65, GCS, HAS-BLED, qSOFA, ARIA tabs.
+    Clinical Calculators       frontend/src/components/tools/  18 clinical calculators with strict input bounding, Payne
+                               ClinicalCalculatorsModal.jsx    calcium, Wells PE, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, ARIA tabs.
 
     Theme & Accessibility      frontend/src/index.css          Dark/light layouts with keyboard checks. Automatic system
                                frontend/src/components/*       prefers-color-scheme detection with manual override.

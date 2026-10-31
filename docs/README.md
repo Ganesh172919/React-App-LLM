@@ -40,7 +40,7 @@ This comprehensive technical documentation suite provides deep engineering speci
 +==================================================================================================+
 |                                    CLIENT TIER (Web Browser)                                     |
 |  React 19 SPA | Vite 6 | Tailwind CSS 4 | Web Locks API | tabStorage (Resilient Session Recovery) |
-|  13 Validated Clinical Calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Wells PE, Payne, etc.)    |
+|  18 Validated Clinical Calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Wells PE, Payne, etc.)    |
 +==================================================================================================+
                                            │              ▲
                HTTP (Port 8080; external HTTPS required) │   WebSocket (/ws)
@@ -68,7 +68,7 @@ This comprehensive technical documentation suite provides deep engineering speci
 |    ├── aiController.js       <--> answerService.js (Two-Phase Idempotent Generation)             |
 |    ├── medicalController.js  <--> pubmedService.js (NCBI E-Utilities: esearch, esummary, efetch)  |
 |    ├── citationService.js    <--> Deterministic Numerical Set Partitioning [N] Audit             |
-|    ├── interactionService.js <--> Limited 14-pair medication-name caution checker              |
+|    ├── interactionService.js <--> 19 FDA black-box drug-drug interaction warning checker         |
 |    ├── answerVerifier.js     <--> Secondary LLM Draft Consensus Review                          |
 |    └── websocketService.js   <--> 30s Heartbeat Watchdog & 1MB Backpressure Protection           |
 +==================================================================================================+
@@ -102,7 +102,7 @@ mindmap
       Web Locks Single-Flight Refresh
       Resilient tabStorage Recovery
       IME Composition Guard
-      13 Clinical Calculators
+      18 Clinical Calculators
     (02 Ingress & Security)
       Nginx Reverse Proxy
       Origin Verification Gate
@@ -131,7 +131,7 @@ mindmap
         Acute Emergency Interception
         Harmful Synthesis Rejection
         Prompt Injection Token Stripping
-      14 Medication-Name Pair Cautions
+      19 FDA Black-Box Drug Interaction Rules
         Preserved in Emergency Redirects
     (05 Model Orchestration)
       Multi-Provider Engine
@@ -183,7 +183,7 @@ The comprehensive system documentation is organized into focused architectural v
 | **06** | **[`COMPLETE_FILE_DIRECTORY_REFERENCE.md`](COMPLETE_FILE_DIRECTORY_REFERENCE.md)** | Exhaustive, line-by-line engineering inventory of every file in the repository across `backend/`, `frontend/`, `Model and Dataset/`, `scripts/`, and root configurations, including exported symbols, dependencies, and architectural roles. |
 | **07** | **[`DEPLOYMENT_RUNBOOK.md`](DEPLOYMENT_RUNBOOK.md)** | Production operations manual, multi-container Docker Compose orchestration, bare-metal deployment, automated secrets generation (`deploy/create_env.cjs`), SSL/TLS Nginx configuration, database backup/restore, health probes, and Section 11 Kubernetes & Blue-Green Extensibility. |
 | **08** | **[`EVALUATION_AND_INTEGRATION.md`](EVALUATION_AND_INTEGRATION.md)** | Empirical evaluation framework, paired case-level ablation scoring (`evaluate_benchmark.py`), offline document retrieval with OCR (`document_retrieval.py`), privacy boundaries, and Section 8 Developer Extensibility. |
-| **09** | **[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (66), frontend (49), Python (19), built HTTP (7), and separately run browser workflows (41). Master Software Regression Total: 182 passed checks. |
+| **09** | **[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (71), frontend (55), Python (19), built HTTP (7), and separately run browser workflows (54). Master Software Regression Total: 206 passed checks. |
 | **10** | **[`ISSUES_AND_RISKS.md`](ISSUES_AND_RISKS.md)** | Prioritized risk register and engineering mitigations, multi-tier defense-in-depth model, clinical boundaries, pharmacological heuristic limitations, cryptographic key dependencies, STRIDE threat model, SSRF defense, and Section 10 Custom Guardrails. |
 | **11** | **[`AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md)** | Condensed architectural handbook summarizing the clinical query routing pipeline, PubMed grounding steps, Gemini system instructions, citation validation rules, and Section 9 Custom Harvesters. |
 | **12** | **[`AI_FINE_TUNING_AND_LORA_GUIDE.md`](AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, modern transformer configurations (Llama-3/Mistral/Gemma), review-gated training commands, and Section 8 Custom Adapters. |
@@ -233,13 +233,13 @@ For new contributors and developers building on MedAssist AI, follow this struct
 
     [ CORE ORIENTATION ]
     └── Step 1: Read `CONTRIBUTING.md` & `README.md`
-    └── Step 2: Run verification runner: `node scripts/verify_project.cjs` (Verifies all 182 software checks)
+    └── Step 2: Run verification runner: `node scripts/verify_project.cjs` (Verifies all 206 software checks)
 
     [ PATH A: FULL-STACK WEB & API EXTENSION ]
     ├── Volume 01: `SYSTEM_ARCHITECTURE_DEEP_DIVE.md` (Ingress, Web Locks, Two-Phase Persistence)
     ├── Volume 02: `CURRENT_IMPLEMENTATION.md` (REST APIs, Mongoose Schemas, Extensibility Guides A-E)
     ├── Frontend: `frontend/README.md` (Accessible components, responsive layout, Vitest tests)
-    └── Backend: `backend/README.md` (66 unit tests, middleware pipeline, service blueprints)
+    └── Backend: `backend/README.md` (71 unit tests, middleware pipeline, service blueprints)
 
     [ PATH B: AI, BIOMEDICAL RAG & CITATIONS ]
     ├── Volume 03: `DEEP_DIVE_AI_WORKING_PRINCIPLES.md` (Entrez protocol, XML flattening, [N] math)
@@ -268,7 +268,7 @@ mindmap
     (01 Onboarding)
       CONTRIBUTING.md
       Run verify_project.cjs
-      Pass 182 Software Checks
+      Pass 206 Software Checks
     (02 Backend & APIs)
       CURRENT_IMPLEMENTATION.md
       SYSTEM_ARCHITECTURE_DEEP_DIVE.md

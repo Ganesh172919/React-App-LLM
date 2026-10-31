@@ -174,10 +174,10 @@ export async function submitClinicalFeedback(req, res) {
 All controllers are verified by the backend Node.js integration test runner:
 
 ```powershell
-# Run the complete backend test suite (66 tests passing)
+# Run the complete backend test suite (71 tests passing)
 npm test --prefix backend
 
 # Run controller integration tests directly
-node --test backend/tests/application.test.js
-node --test backend/tests/chatTitle.test.js
+node --test backend/test/application.test.js
+node --test backend/test/chatTitle.test.js
 ```

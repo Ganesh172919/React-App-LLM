@@ -137,3 +137,17 @@ import { createFeedbackRoute } from "./routes/feedbackRoute.js";
 // Mount router under /api/feedback:
 app.use("/api/feedback", createFeedbackRoute({ rateLimiters }));
 ```
+
+---
+
+## 5. Automated Verification Commands
+
+All routes and middleware pipelines are verified by the 71 passing backend integration tests:
+
+```powershell
+# Run the complete backend test suite
+npm test --prefix backend
+
+# Verify specific route and controller integration
+node --test backend/test/application.test.js
+```

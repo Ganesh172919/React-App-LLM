@@ -169,3 +169,17 @@ export function createAuditLogger() {
   };
 }
 ```
+
+---
+
+## 5. Automated Verification Commands
+
+All middleware components and boundary guards are verified by the 71 passing backend integration tests:
+
+```powershell
+# Run the complete backend test suite (71 tests passing)
+npm test --prefix backend
+
+# Verify middleware security invariants
+node --test backend/test/application.test.js
+```

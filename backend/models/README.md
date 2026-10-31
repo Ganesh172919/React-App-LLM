@@ -171,3 +171,17 @@ PatientProfileSchema.index({ owner: 1, createdAt: -1 });
 
 export const PatientProfile = mongoose.model("PatientProfile", PatientProfileSchema);
 ```
+
+---
+
+## 5. Automated Verification Commands
+
+All models and database persistence invariants are verified by the backend test runner with in-memory MongoDB:
+
+```powershell
+# Run the complete backend test suite (71 tests passing)
+npm test --prefix backend
+
+# Verify model persistence and owner tenancy
+node --test backend/test/application.test.js
+```

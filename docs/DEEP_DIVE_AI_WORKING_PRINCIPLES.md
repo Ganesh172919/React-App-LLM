@@ -415,7 +415,7 @@ module.exports = { screenPrompt, screenGeneratedAnswer, MAX_PROMPT_LENGTH };
 
 ## 8. Pharmacological Drug Interaction Screening (`backend/services/interactionService.js`)
 
-To guard against hazardous medication combinations frequently inquired about in health queries, MedAssist AI incorporates a deterministic regular expression screening layer covering 12 major FDA black-box warning medication interaction pairs.
+To guard against hazardous medication combinations frequently inquired about in health queries, MedAssist AI incorporates a deterministic regular expression screening layer covering 19 major FDA black-box warning medication interaction pairs.
 
 ```
 ====================================================================================================
@@ -425,7 +425,7 @@ To guard against hazardous medication combinations frequently inquired about in 
    [Incoming User Prompt x]
               │
               ├──► 1. detectDrugInteractions(prompt)
-              │    Matches against 14 FDA Black-Box Rule Sets (drugsA & drugsB)
+              │    Matches against 19 FDA Black-Box Rule Sets (drugsA & drugsB)
               │
               ▼
    [Safety Screener: screenPrompt(prompt)]
@@ -453,7 +453,7 @@ To guard against hazardous medication combinations frequently inquired about in 
 ====================================================================================================
 ```
 
-### 8.1 14 High-Risk Interaction Rules & Clinical Severities
+### 8.1 19 High-Risk Interaction Rules & Clinical Severities
 
 | Rule Name | Class A Drugs | Class B Drugs | Severity | Clinical Pathophysiology & Risk |
 |:---|:---|:---|:---:|:---|
@@ -471,6 +471,11 @@ To guard against hazardous medication combinations frequently inquired about in 
 | **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline, Isocarboxazid | Fluoxetine, Sertraline, Paroxetine, Venlafaxine, Pseudoephedrine | `CRITICAL` | Massive catecholamine and serotonin surge triggering malignant hyperthermia, hypertensive emergency, and circulatory collapse. |
 | **Allopurinol / Febuxostat + Azathioprine / 6-MP** | Allopurinol (Zyloprim), Febuxostat (Uloric) | Azathioprine (Imuran), 6-Mercaptopurine (Purinethol) | `CRITICAL` | Xanthine oxidase inhibition blocks 6-mercaptopurine inactivation, precipitating lethal active metabolite accumulation and severe pancytopenia. |
 | **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Trexall, Rheumatrex) | Ibuprofen, Naproxen, Ketorolac, Meloxicam, Aspirin | `CRITICAL` | Renal prostaglandin synthesis inhibition and competitive tubular secretion blockage by NSAIDs markedly reduces methotrexate clearance, causing fatal bone marrow suppression and AKI (FDA Black Box Warning). |
+| **Warfarin + TMP-SMX (Bactrim / Septra)** | Warfarin (Coumadin, Jantoven) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | `CRITICAL` | Potent CYP2C9 metabolic inhibition blocks active S-warfarin clearance and gut microbiota depletion reduces vitamin K synthesis, precipitating acute supratherapeutic INR surges and life-threatening hemorrhages. |
+| **Clopidogrel + Omeprazole / Esomeprazole** | Clopidogrel (Plavix) | Omeprazole, Prilosec, Esomeprazole, Nexium | `CRITICAL` | Major contraindication (FDA Boxed Warning): CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing risk of stent thrombosis and myocardial infarction. |
+| **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
+| **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | `CRITICAL` | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
+| **Theophylline + Fluoroquinolones (Ciprofloxacin)** | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
 
 ### 8.2 Production Implementation (`backend/services/interactionService.js`)
 
@@ -517,7 +522,16 @@ const HIGH_RISK_INTERACTION_RULES = [
     drugsB: [/\bibuprofen\b/i, /\bmotrin\b/i, /\badvil\b/i, /\bnaproxen\b/i, /\baleve\b/i, /\bketorolac\b/i, /\btoradol\b/i, /\baspirin\b/i],
     description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
   },
-  // ... 11 additional evidence-based pairs
+  {
+    pair: "Theophylline + Fluoroquinolones (Ciprofloxacin)",
+    drugA: "Theophylline (e.g., Theo-24, Uniphyl, Elixophyllin)",
+    drugB: "Fluoroquinolones (e.g., Ciprofloxacin, Enoxacin)",
+    severity: "CRITICAL",
+    drugsA: [/\btheophylline\b/i, /\btheo-?24\b/i, /\buniphyl\b/i, /\belixophyllin\b/i, /\baminophylline\b/i],
+    drugsB: [/\bciprofloxacin\b/i, /\bcipro\b/i, /\benoxacin\b/i],
+    description: "Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin or enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable nausea/vomiting, cardiac arrhythmias, and fatal seizures.",
+  },
+  // ... 15 additional evidence-based pairs
 ];
 
 function detectDrugInteractions(text) {

@@ -1000,7 +1000,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `backend/models/generationModel.js` | Generation Model | `aiController.js` | 24-hour TTL ephemeral generation storage |
 | `backend/models/providerCredentialModel.js` | ProviderCredential Model| `settingsController.js`| AES-256-GCM encrypted user personal API keys |
 | `backend/services/answerService.js` | `answer` Function | `aiController.js` | Master biomedical grounding pipeline, PubMed retrieval, citation verification |
-| `backend/services/interactionService.js` | `detectDrugInteractions` | `answerService.js` | 14 FDA black-box drug interaction rules & preserved context |
+| `backend/services/interactionService.js` | `detectDrugInteractions` | `answerService.js` | 19 FDA black-box drug interaction rules & preserved context |
 | `backend/services/modelProvider.js` | Provider Completion Engine | `answerService.js` | Multi-provider API abstraction (Gemini, Groq, Together, Local) |
 | `backend/services/providerCredentials.js` | `seal` & `open` Vault | `settingsController.js`| Symmetric AES-256-GCM encryption/decryption engine |
 | `backend/services/providerSelection.js` | Key & Provider Resolver | `answerService.js` | Fallback hierarchy: personal keys -> deployment keys |
@@ -1532,10 +1532,10 @@ function seal(text, secretKey) {
 Before opening a pull request or cutting a production release, run the unified verification matrix to ensure all system invariants hold:
 
 ```powershell
-# 1. Run backend MongoDB and session lifecycle tests (66 tests)
+# 1. Run backend MongoDB and session lifecycle tests (71 tests)
 npm test --prefix backend
 
-# 2. Run frontend React component and accessibility tests (49 tests)
+# 2. Run frontend React component and accessibility tests (55 tests)
 npm test --prefix frontend
 
 # 3. Run ESLint across frontend components

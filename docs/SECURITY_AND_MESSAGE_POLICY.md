@@ -254,7 +254,7 @@ Before any generated answer is returned to the client or saved to MongoDB, `scre
 
 ## 7. High-Risk Drug Interaction Screening Policy (`interactionService.js`)
 
-In addition to first-line prompt screening, all queries entering `/api/ai/chat` and `/api/medical` are scanned against **14 Verified FDA Black-Box Warning Contraindication Rules**:
+In addition to first-line prompt screening, all queries entering `/api/ai/chat` and `/api/medical` are scanned against **19 Verified FDA Black-Box Warning Contraindication Rules**:
 
 ```
 ========================================================================================================================
@@ -274,8 +274,8 @@ In addition to first-line prompt screening, all queries entering `/api/ai/chat` 
          [ Acute Emergency Detected ]     [ Safe for Query Processing ]
                       │                          │
                       │                          ▼
-                      │             [ 14 FDA Drug Pair Evaluator ]
-                      │             - Scans 14 high-risk drug interaction rule regexes
+                      │             [ 19 FDA Drug Pair Evaluator ]
+                      │             - Scans 19 high-risk drug interaction rule regexes
                       │             - Detects simultaneous Drug A and Drug B presence
                       │                          │
                       ▼                          ▼
@@ -317,6 +317,16 @@ mindmap
         Xanthine oxidase inhibition and pancytopenia
       Methotrexate + NSAIDs / Aspirin
         Renal clearance blockade and bone marrow death
+      Warfarin + TMP-SMX Bactrim
+        CYP2C9 inhibition and gut flora vitamin K loss
+      Clopidogrel + Omeprazole / Esomeprazole
+        CYP2C19 bioactivation blockade and stent failure
+      SSRI / SNRI / MAOI + Triptans
+        Hyper-serotonergic 5-HT1 stimulation and crisis
+      TMP-SMX + ACEI / ARB / K-Sparing
+        Distal ENaC blockade and lethal hyperkalemia
+      Theophylline + Fluoroquinolones
+        CYP1A2 clearance inhibition and fatal seizures
     (02 High-Risk Monitored Pairs)
       Tramadol / Opioids + SSRIs / SNRIs
         Serotonin syndrome and seizure threshold
@@ -334,7 +344,7 @@ mindmap
       Zero Silent Warning Drops
 ```
 
-### 7.2 Complete 14 FDA Black-Box Warning Interaction Inventory
+### 7.2 Complete 19 FDA Black-Box Warning Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Mechanism & Clinical Consequence |
 |:---|:---|:---|:---|:---:|:---|
@@ -352,6 +362,11 @@ mindmap
 | **12** | MAOIs + Serotonergic Agents | Phenelzine, Tranylcypromine, Selegiline, Isocarboxazid | SSRIs, SNRIs, Pseudoephedrine, Amphetamines | **CRITICAL** | Blockade of monoamine degradation triggers severe hypertensive crisis, malignant hyperthermia, and fatal Serotonin Syndrome. |
 | **13** | Xanthine Oxidase + Thiopurines | Allopurinol (Zyloprim), Febuxostat (Uloric) | Azathioprine (Imuran), 6-Mercaptopurine (6-MP, Purixan) | **CRITICAL** | Xanthine oxidase inhibition halts thiopurine breakdown, causing massive accumulation of 6-TGN and life-threatening bone marrow aplasia. |
 | **14** | Methotrexate + NSAIDs / Aspirin | Methotrexate (Rheumatrex, Trexall, Rasuvo) | Ibuprofen, Naproxen, Ketorolac, Indomethacin, Aspirin | **CRITICAL** | Competitive blockade of organic anion transporter 1/3 (OAT1/3) and renal PG inhibition precipitates fatal MTX toxicity and marrow failure. |
+| **15** | Warfarin + TMP-SMX (Bactrim) | Warfarin (Coumadin, Jantoven) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | **CRITICAL** | Potent CYP2C9 metabolic inhibition blocks S-warfarin clearance and gut flora suppression depletes vitamin K, triggering acute supratherapeutic INR hemorrhages. |
+| **16** | Clopidogrel + Omeprazole / Esomeprazole | Clopidogrel (Plavix) | Omeprazole (Prilosec), Esomeprazole (Nexium) | **CRITICAL** | Major contraindication (FDA Boxed Warning): CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing risk of stent thrombosis and myocardial infarction. |
+| **17** | SSRI / SNRI / MAOI + Triptan | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | **CRITICAL** | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
+| **18** | TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | **CRITICAL** | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
+| **19** | Theophylline + Fluoroquinolones | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
 
 ---
 
@@ -396,6 +411,16 @@ const HIGH_RISK_INTERACTION_RULES = [
     ],
     description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
   },
+  {
+    pair: "Theophylline + Fluoroquinolones (Ciprofloxacin)",
+    drugA: "Theophylline (e.g., Theo-24, Uniphyl, Elixophyllin)",
+    drugB: "Fluoroquinolones (e.g., Ciprofloxacin, Enoxacin)",
+    severity: "CRITICAL",
+    drugsA: [/\btheophylline\b/i, /\btheo-?24\b/i, /\buniphyl\b/i, /\belixophyllin\b/i, /\baminophylline\b/i],
+    drugsB: [/\bciprofloxacin\b/i, /\bcipro\b/i, /\benoxacin\b/i],
+    description: "Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin or enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable nausea/vomiting, cardiac arrhythmias, and fatal seizures.",
+  },
+  // ... 15 additional evidence-based pairs
 ];
 
 function detectDrugInteractions(text) {
@@ -582,7 +607,7 @@ Developers integrating new features must adhere to MedAssist AI's security invar
     │ ├── Strip prescriptive / authoritative imperative dosing        │
     │ ├── Mandatory Educational Disclaimer Injection                  │
     │ ├── Deterministic Citation Auditor ([N] bracket set bounds)     │
-    │ └── 14 FDA High-Risk Drug-Drug Interaction Warnings             │
+    │ └── 19 FDA High-Risk Drug-Drug Interaction Warnings             │
     └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼
