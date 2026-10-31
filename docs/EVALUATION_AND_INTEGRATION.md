@@ -289,3 +289,117 @@ python -m unittest "Model and Dataset/test_document_retrieval.py"
 2. **Local Isolation**: The document retrieval tool strictly validates `path.resolve().is_relative_to(root)` to prevent path traversal attacks or directory escapes.
 3. **No Clinical Coercion**: Missing scores in evaluation CSVs are parsed as `None`, never coerced to `0`, ensuring unreviewed cases do not distort statistical rates.
 4. **Air-Gapped Embedding Execution**: Documents, text chunks, and embedding vectors are saved strictly to the local JSON index. No user document bytes are transmitted to external LLM APIs.
+
+---
+
+## 8. Developer Extensibility: Integrating Clinical Evaluation Protocols & Custom Document Indexers
+
+Researchers evaluating AI models for healthcare must move beyond generic perplexity or BLEU/ROUGE metrics to rigorous, clinically meaningful evaluation:
+
+### 8.1 Clinical Evaluation Protocol Topology
+
+```
+========================================================================================================================
+                                     CLINICAL EVALUATION & ABLATION WORKFLOW
+========================================================================================================================
+
+    [ HELD-OUT CLINICAL CASE SUITE ] (evaluation_cases.json)
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 1. MULTI-ARM INFERENCE HARNESS                                  │
+    │ ├── Arm A: Base Model (Zero Context)                            │
+    │ ├── Arm B: RAG Grounded (PubMed Retrieval)                      │
+    │ └── Arm C: Complete System (RAG + Verifier + Interaction Screen)│
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 2. BLINDED CLINICAL REVIEW PROTOCOL                             │
+    │ ├── Randomize presentation order of outputs per case            │
+    │ ├── Medical Expert Reviewers score independently (0 or 1):      │
+    │ │   - Factual Accuracy: Biomedical claims are truthful          │
+    │ │   - Omission Detection: Does not omit critical warnings       │
+    │ │   - Hallucination-Free: Citations map to real PMIDs           │
+    │ │   - Actionability: Clear non-prescriptive guidance            │
+    │ └── Record in benchmark_scores.csv (Strict completeness check)  │
+    └─────────────────────────────────────────────────────────────────┘
+                 │
+                 ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ 3. PAIRED STATISTICAL ABLATION (evaluate_benchmark.py)          │
+    │ ├── Compute paired differences: Δ = Score(Arm C) - Score(Arm B) │
+    │ ├── Track Wins / Ties / Losses per case across all metrics      │
+    │ └── Calculate McNemar's exact test for marginal homogeneity     │
+    └─────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 8.2 Evaluation Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Clinical Evaluation))
+    ::icon(fa fa-stethoscope)
+    (01 Blinded Scoring)
+      ::icon(fa fa-user-doctor)
+      Binary 0 or 1 metrics
+      Factual Accuracy
+      Omission Detection
+      Hallucination Elimination
+    (02 Paired Ablation)
+      ::icon(fa fa-scale-balanced)
+      Compare Arm C vs Arm B vs Base
+      Strict case completeness assertion
+      McNemar exact test p-values
+    (03 Local Document Indexing)
+      ::icon(fa fa-file-pdf)
+      PyMuPDF text extraction
+      Tesseract OCR for scanned charts
+      Local cosine similarity ranking
+    (04 Reproducibility)
+      ::icon(fa fa-check-double)
+      Fixed evaluation case seeds
+      Air-gapped execution
+```
+
+### 8.3 Step-by-Step: Adding Custom Clinical Evaluation Metrics
+
+```python
+# Implementation Template: Extending evaluate_benchmark.py
+def calculate_clinical_metrics(rows, require_complete=True):
+    cases = {}
+    for row in rows:
+        cid = row["case_id"]
+        variant = row["variant"]
+        if cid not in cases:
+            cases[cid] = {}
+        cases[cid][variant] = {
+            "accuracy": float(row.get("accuracy", 0)),
+            "omission_free": float(row.get("omission_free", 0)),
+            "hallucination_free": float(row.get("hallucination_free", 0)),
+        }
+
+    # Paired win/tie/loss calculation
+    wins, ties, losses = 0, 0, 0
+    for cid, arm_scores in cases.items():
+        if "full" not in arm_scores or "rag" not in arm_scores:
+            if require_complete:
+                raise ValueError(f"Incomplete case {cid} missing variant score.")
+            continue
+
+        full_score = arm_scores["full"]["accuracy"] + arm_scores["full"]["omission_free"]
+        rag_score = arm_scores["rag"]["accuracy"] + arm_scores["rag"]["omission_free"]
+
+        if full_score > rag_score:
+            wins += 1
+        elif full_score == rag_score:
+            ties += 1
+        else:
+            losses += 1
+
+    print(f"Paired Evaluation Results -> Wins: {wins}, Ties: {ties}, Losses: {losses}")
+    return {"wins": wins, "ties": ties, "losses": losses}
+```
+
