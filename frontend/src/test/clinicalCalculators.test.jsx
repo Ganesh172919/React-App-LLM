@@ -178,6 +178,63 @@ it("calculates Glasgow Coma Scale (GCS) without diagnostic claims and updates sc
   expect(promptCall).toContain("Glasgow Coma Scale");
 });
 
+it("calculates HAS-BLED bleeding risk score without diagnostic claims and updates score dynamically", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "HAS-BLED (Bleeding Risk)" }));
+  expect(screen.getByText(/assesses 1-year major bleeding risk in patients receiving anticoagulation/)).toBeTruthy();
+  expect(screen.getByText("0 / 9 points")).toBeTruthy();
+  expect(screen.getByText(/Low bleeding risk/)).toBeTruthy();
+  expect(screen.getByText(/is not an absolute reason to withhold oral anticoagulation/)).toBeTruthy();
+
+  // Toggle Hypertension (+1) and Abnormal renal function (+1) -> 2 / 9 -> Moderate
+  fireEvent.click(screen.getByLabelText(/H: Hypertension/));
+  fireEvent.click(screen.getByLabelText(/A: Abnormal renal function/));
+  expect(screen.getByText("2 / 9 points")).toBeTruthy();
+  expect(screen.getByText(/Moderate bleeding risk/)).toBeTruthy();
+
+  // Toggle Stroke (+1) and Bleeding history (+1) -> 4 / 9 -> High
+  fireEvent.click(screen.getByLabelText(/S: Stroke history/));
+  fireEvent.click(screen.getByLabelText(/B: Bleeding history/));
+  expect(screen.getByText("4 / 9 points")).toBeTruthy();
+  expect(screen.getByText(/High bleeding risk/)).toBeTruthy();
+
+  // Check prompt insertion
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this HAS-BLED score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const promptCall = onInsertPrompt.mock.calls[0][0];
+  expect(promptCall).toContain("4/9 points");
+  expect(promptCall).toContain("HAS-BLED");
+});
+
+it("calculates qSOFA sepsis screening score without diagnostic claims and updates score dynamically", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "qSOFA (Sepsis Screening)" }));
+  expect(screen.getByText(/educational bedside screening tool used to identify adult patients with suspected infection/)).toBeTruthy();
+  expect(screen.getByText("0 / 3 points")).toBeTruthy();
+  expect(screen.getByText(/Not high risk for in-hospital sepsis mortality/)).toBeTruthy();
+  expect(screen.getByText(/prompting immediate bedside clinical assessment for acute organ dysfunction/)).toBeTruthy();
+
+  // Toggle Altered mental status (+1) and Tachypnea (+1) -> 2 / 3 -> High risk
+  fireEvent.click(screen.getByLabelText(/Altered Mental Status/));
+  fireEvent.click(screen.getByLabelText(/Tachypnea/));
+  expect(screen.getByText("2 / 3 points")).toBeTruthy();
+  expect(screen.getByText(/High risk for in-hospital sepsis mortality/)).toBeTruthy();
+
+  // Toggle Hypotension (+1) -> 3 / 3
+  fireEvent.click(screen.getByLabelText(/Hypotension/));
+  expect(screen.getByText("3 / 3 points")).toBeTruthy();
+  expect(screen.getByText(/High risk for in-hospital sepsis mortality/)).toBeTruthy();
+
+  // Check prompt insertion
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this qSOFA score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const promptCall = onInsertPrompt.mock.calls[0][0];
+  expect(promptCall).toContain("3/3 points");
+  expect(promptCall).toContain("qSOFA");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -188,11 +245,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (GCS) to first (BMI) and back
-  const gcsTab = screen.getByRole("tab", { name: "GCS (Coma Scale)" });
-  gcsTab.focus();
-  fireEvent.keyDown(gcsTab, { key: "ArrowRight" });
+  // Wrapping from last tab (qSOFA) to first (BMI) and back
+  const qsofaTab = screen.getByRole("tab", { name: "qSOFA (Sepsis Screening)" });
+  qsofaTab.focus();
+  fireEvent.keyDown(qsofaTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(gcsTab.getAttribute("aria-selected")).toBe("true");
+  expect(qsofaTab.getAttribute("aria-selected")).toBe("true");
 });

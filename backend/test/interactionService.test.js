@@ -103,6 +103,28 @@ test("detects methotrexate and NSAID critical interaction", () => {
   assert.match(result[0].description, /FDA Black Box Warning/i);
 });
 
+test("detects warfarin and bactrim critical interaction", () => {
+  const result = detectDrugInteractions("Patient on Coumadin needs Bactrim for a urinary tract infection.");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Warfarin + Trimethoprim-Sulfamethoxazole");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /CYP2C9/i);
+  assert.match(result[0].description, /INR surges/i);
+});
+
+test("detects clopidogrel and omeprazole / esomeprazole contraindication", () => {
+  const result = detectDrugInteractions("Can I take Plavix with omeprazole to protect my stomach?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Clopidogrel + Omeprazole / Esomeprazole");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /CYP2C19/i);
+  assert.match(result[0].description, /stent thrombosis/i);
+
+  const nexiumResult = detectDrugInteractions("Starting clopidogrel and Nexium together.");
+  assert.equal(nexiumResult.length, 1);
+  assert.equal(nexiumResult[0].pair, "Clopidogrel + Omeprazole / Esomeprazole");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);

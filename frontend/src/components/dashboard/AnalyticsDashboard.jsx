@@ -16,6 +16,13 @@ export default function AnalyticsDashboard() {
       ["Date (UTC)", "New Conversations", "Q&A Exchanges"],
       ...data.trend.map((pt) => [pt.date, pt.sessions, pt.exchanges]),
     ];
+    if (data.verification?.interactions?.length) {
+      rows.push([]);
+      rows.push(["Medication Interaction Pair", "Severity", "Alert Count"]);
+      for (const item of data.verification.interactions) {
+        rows.push([`"${item.pair}"`, item.severity, item.count]);
+      }
+    }
     const csvContent = rows.map((r) => r.join(",")).join("\n");
     downloadText(`medassist-activity-${data.rangeDays}d.csv`, csvContent, "text/csv;charset=utf-8");
   };
@@ -32,6 +39,7 @@ export default function AnalyticsDashboard() {
       </section>
       <div className="feature-grid"><section className="card"><h2>Answer outcomes</h2>{Object.keys(data.verification.statuses).length ? <table><thead><tr><th>Outcome</th><th>Responses</th></tr></thead><tbody>{Object.entries(data.verification.statuses).map(([label, count]) => <tr key={label}><td>{label.replaceAll("_", " ")}</td><td>{number(count)}</td></tr>)}</tbody></table> : <p className="muted">No saved answers yet.</p>}</section>
       {data.verification?.providers && Object.keys(data.verification.providers).length > 0 && <section className="card"><h2>AI providers</h2><table><thead><tr><th>Provider</th><th>Responses</th></tr></thead><tbody>{Object.entries(data.verification.providers).map(([provider, count]) => <tr key={provider}><td>{provider}</td><td>{number(count)}</td></tr>)}</tbody></table></section>}
+      {data.verification?.interactions && data.verification.interactions.length > 0 && <section className="card"><h2>Medication interaction alerts</h2><table><thead><tr><th>Interaction pair</th><th>Severity</th><th>Alerts</th></tr></thead><tbody>{data.verification.interactions.map((item) => <tr key={item.pair}><td>{item.pair}</td><td><span className={`badge ${item.severity === "CRITICAL" ? "error" : "warning"}`}>{item.severity}</span></td><td>{number(item.count)}</td></tr>)}</tbody></table></section>}
       <section className="card"><h2>Dataset quality</h2>{data.dataset ? <><p className="muted small-text">Offline descriptive reports. These counts do not establish clinical accuracy.</p><table><tbody>{[["Source rows", data.dataset.rows.total], ["Valid Q&A pairs", data.dataset.rows.valid_question_answer_pairs], ["Missing answers", data.dataset.qualityFlags.missing_answer_rows], ["Exact duplicate pairs", data.dataset.qualityFlags.exact_duplicate_rows_after_whitespace_normalization], ["Multi-answer question groups", data.dataset.audit?.multipleAnswerQuestions.question_groups]].map(([label, value]) => <tr key={label}><th>{label}</th><td>{number(value)}</td></tr>)}</tbody></table><p className="muted small-text">Report generated: {data.dataset.generatedAt ? new Date(data.dataset.generatedAt).toLocaleString() : "Not recorded"}</p></> : <p className="notice">Dataset reports are unavailable in this deployment.</p>}</section></div>
     </div>}
   </main>;

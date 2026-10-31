@@ -282,3 +282,20 @@ it("renders AI provider distribution in dashboard when present", async () => {
   expect(await screen.findByRole("heading", { name: "AI providers" })).toBeTruthy();
   expect(screen.getByText("Gemini")).toBeTruthy();
 });
+it("renders medication interaction alerts in dashboard when present", async () => {
+  apiRequest.mockResolvedValue({
+    rangeDays: 7,
+    summary: { totalSessions: 2, totalMessages: 4, medicalResponses: 2, citations: 2, sourceAttachmentRate: 100 },
+    trend: [],
+    verification: {
+      statuses: { citation_checked: 2 },
+      providers: { Gemini: 2 },
+      interactions: [{ pair: "Warfarin + Trimethoprim-Sulfamethoxazole", severity: "CRITICAL", count: 1 }],
+    },
+    dataset: null,
+  });
+  mount(<Dashboard />);
+  expect(await screen.findByRole("heading", { name: "Medication interaction alerts" })).toBeTruthy();
+  expect(screen.getByText("Warfarin + Trimethoprim-Sulfamethoxazole")).toBeTruthy();
+  expect(screen.getByText("CRITICAL")).toBeTruthy();
+});

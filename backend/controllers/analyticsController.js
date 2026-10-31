@@ -30,6 +30,7 @@ exports.getOverview = async (req, res, next) => {
         messages: [{ $unwind: "$messages" }, { $group: { _id: null, total: { $sum: 1 }, medical: { $sum: { $cond: ["$messages.isMedical", 1, 0] } }, cited: { $sum: { $cond: [{ $and: ["$messages.isMedical", { $gt: [{ $size: { $ifNull: ["$messages.references", []] } }, 0] }] }, 1, 0] } }, citations: { $sum: { $size: { $ifNull: ["$messages.references", []] } } } } }],
         statuses: [{ $unwind: "$messages" }, { $group: { _id: { $ifNull: ["$messages.verification.status", "not_recorded"] }, count: { $sum: 1 } } }],
         providers: [{ $unwind: "$messages" }, { $match: { "messages.verification.provider": { $type: "string" } } }, { $group: { _id: "$messages.verification.provider", count: { $sum: 1 } } }],
+        interactions: [{ $unwind: "$messages" }, { $unwind: "$messages.verification.drugInteractions" }, { $group: { _id: "$messages.verification.drugInteractions.pair", count: { $sum: 1 }, severity: { $first: "$messages.verification.drugInteractions.severity" } } }, { $sort: { count: -1 } }],
         sessionTrend: [{ $match: { createdAt: { $gte: start } } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", onNull: null } }, count: { $sum: 1 } } }],
         messageTrend: [{ $unwind: "$messages" }, { $match: { "messages.timestamp": { $gte: start } } }, { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$messages.timestamp", onNull: null } }, count: { $sum: 1 } } }],
       } },
@@ -42,7 +43,7 @@ exports.getOverview = async (req, res, next) => {
       generatedAt: new Date().toISOString(), rangeDays: days, summaryScope: "lifetime", timezone: "UTC",
       summary: { totalSessions: sessions.total || 0, totalMessages: messages.total || 0, medicalSessions: sessions.medical || 0, medicalResponses: messages.medical || 0, citedResponses: messages.cited || 0, citations: messages.citations || 0, averageMessagesPerSession: sessions.total ? Number((messages.total / sessions.total).toFixed(1)) || 0 : 0, sourceAttachmentRate: rate },
       breakdown: [{ label: "Medical", value: sessions.medical || 0 }, { label: "General", value: (sessions.total || 0) - (sessions.medical || 0) }],
-      trend, verification: { statuses: Object.fromEntries(group.statuses.map((item) => [item._id, item.count])), providers: Object.fromEntries(group.providers.map((item) => [item._id, item.count])) },
+      trend, verification: { statuses: Object.fromEntries(group.statuses.map((item) => [item._id, item.count])), providers: Object.fromEntries(group.providers.map((item) => [item._id, item.count])), interactions: (group.interactions || []).map((item) => ({ pair: item._id, count: item.count, severity: item.severity })) },
       dataset: await readDatasetSummary(),
     });
   } catch (error) { next(error); }

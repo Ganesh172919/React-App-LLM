@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -126,6 +126,22 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [gcsEye, setGcsEye] = useState("4");
   const [gcsVerbal, setGcsVerbal] = useState("5");
   const [gcsMotor, setGcsMotor] = useState("6");
+
+  // HAS-BLED State
+  const [hasbledHtn, setHasbledHtn] = useState(false);
+  const [hasbledRenal, setHasbledRenal] = useState(false);
+  const [hasbledLiver, setHasbledLiver] = useState(false);
+  const [hasbledStroke, setHasbledStroke] = useState(false);
+  const [hasbledBleeding, setHasbledBleeding] = useState(false);
+  const [hasbledLabileInr, setHasbledLabileInr] = useState(false);
+  const [hasbledElderly, setHasbledElderly] = useState(false);
+  const [hasbledDrugs, setHasbledDrugs] = useState(false);
+  const [hasbledAlcohol, setHasbledAlcohol] = useState(false);
+
+  // qSOFA State
+  const [qsofaMental, setQsofaMental] = useState(false);
+  const [qsofaResp, setQsofaResp] = useState(false);
+  const [qsofaBp, setQsofaBp] = useState(false);
 
   const titleId = useId();
 
@@ -338,6 +354,40 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     gcsStratification = "Mild brain injury / Alert (13–15)";
   }
 
+  // 14. HAS-BLED Bleeding Risk Score
+  let hasbledScore = 0;
+  if (hasbledHtn) hasbledScore += 1;
+  if (hasbledRenal) hasbledScore += 1;
+  if (hasbledLiver) hasbledScore += 1;
+  if (hasbledStroke) hasbledScore += 1;
+  if (hasbledBleeding) hasbledScore += 1;
+  if (hasbledLabileInr) hasbledScore += 1;
+  if (hasbledElderly) hasbledScore += 1;
+  if (hasbledDrugs) hasbledScore += 1;
+  if (hasbledAlcohol) hasbledScore += 1;
+
+  let hasbledStratification = "";
+  if (hasbledScore <= 1) {
+    hasbledStratification = "Low bleeding risk (~1.0–1.5% annual risk)";
+  } else if (hasbledScore === 2) {
+    hasbledStratification = "Moderate bleeding risk (~1.9% annual risk)";
+  } else {
+    hasbledStratification = "High bleeding risk (≥ 3.7% annual risk; close clinical monitoring & addressing reversible risk factors recommended)";
+  }
+
+  // 15. qSOFA (Quick Sepsis-related Organ Failure Assessment)
+  let qsofaScore = 0;
+  if (qsofaMental) qsofaScore += 1;
+  if (qsofaResp) qsofaScore += 1;
+  if (qsofaBp) qsofaScore += 1;
+
+  let qsofaStratification = "";
+  if (qsofaScore <= 1) {
+    qsofaStratification = "Not high risk for in-hospital sepsis mortality (continue clinical monitoring)";
+  } else {
+    qsofaStratification = "High risk for in-hospital sepsis mortality (prompt evaluation for acute organ dysfunction, blood cultures, lactate, and sepsis protocols recommended)";
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -514,6 +564,28 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("gcs")}
           >
             GCS (Coma Scale)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-hasbled"
+            aria-selected={activeTab === "hasbled"}
+            aria-controls="tabpanel-hasbled"
+            className={`calc-tab ${activeTab === "hasbled" ? "active" : ""}`}
+            onClick={() => setActiveTab("hasbled")}
+          >
+            HAS-BLED (Bleeding Risk)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-qsofa"
+            aria-selected={activeTab === "qsofa"}
+            aria-controls="tabpanel-qsofa"
+            className={`calc-tab ${activeTab === "qsofa" ? "active" : ""}`}
+            onClick={() => setActiveTab("qsofa")}
+          >
+            qSOFA (Sepsis Screening)
           </button>
         </div>
 
@@ -1604,6 +1676,192 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onClick={() =>
                       handleCopy(
                         `Glasgow Coma Scale (GCS) estimate: ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor}; ${gcsStratification}; educational reference only; not diagnostic or triage advice)`
+                      )
+                    }
+                  >
+                    {copied ? "Copied" : "Copy result"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 14: HAS-BLED Bleeding Risk Score */}
+          {activeTab === "hasbled" && (
+            <div id="tabpanel-hasbled" role="tabpanel" aria-labelledby="tab-hasbled" className="calc-pane">
+              <p className="small-text muted">
+                The HAS-BLED score assesses 1-year major bleeding risk in patients receiving anticoagulation for non-valvular atrial fibrillation to identify and correct modifiable bleeding risk factors.
+              </p>
+              <div style={{ display: "grid", gap: "8px", marginBottom: "14px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledHtn}
+                    onChange={(e) => setHasbledHtn(e.target.checked)}
+                  />
+                  <span><strong>H: Hypertension</strong> (uncontrolled, systolic BP &gt; 160 mmHg) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledRenal}
+                    onChange={(e) => setHasbledRenal(e.target.checked)}
+                  />
+                  <span><strong>A: Abnormal renal function</strong> (dialysis, renal transplant, or Cr &ge; 2.26 mg/dL / 200 &mu;mol/L) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledLiver}
+                    onChange={(e) => setHasbledLiver(e.target.checked)}
+                  />
+                  <span><strong>A: Abnormal liver function</strong> (cirrhosis or bilirubin &gt; 2&times; ULN with AST/ALT/ALP &gt; 3&times; ULN) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledStroke}
+                    onChange={(e) => setHasbledStroke(e.target.checked)}
+                  />
+                  <span><strong>S: Stroke history</strong> (prior ischemic or hemorrhagic stroke) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledBleeding}
+                    onChange={(e) => setHasbledBleeding(e.target.checked)}
+                  />
+                  <span><strong>B: Bleeding history or predisposition</strong> (prior major bleeding, severe anemia, thrombocytopenia) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledLabileInr}
+                    onChange={(e) => setHasbledLabileInr(e.target.checked)}
+                  />
+                  <span><strong>L: Labile INRs</strong> (unstable, high, or time in therapeutic range TTR &lt; 60% on VKA) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledElderly}
+                    onChange={(e) => setHasbledElderly(e.target.checked)}
+                  />
+                  <span><strong>E: Elderly</strong> (age &gt; 65 years) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledDrugs}
+                    onChange={(e) => setHasbledDrugs(e.target.checked)}
+                  />
+                  <span><strong>D: Drugs concomitantly</strong> (antiplatelets, NSAIDs) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={hasbledAlcohol}
+                    onChange={(e) => setHasbledAlcohol(e.target.checked)}
+                  />
+                  <span><strong>D: Alcohol excess</strong> (&ge; 8 alcoholic drinks per week) (+1)</span>
+                </label>
+              </div>
+
+              <div className="calc-result">
+                <div className="calc-result-metric">
+                  <strong>{hasbledScore} / 9 points</strong>
+                  <span className="badge">{hasbledStratification}</span>
+                </div>
+                <p className="small-text">
+                  Educational risk estimate only. A high HAS-BLED score (&ge; 3) is not an absolute reason to withhold oral anticoagulation; rather, it prompts identification and correction of modifiable bleeding risk factors and schedules more frequent clinical follow-up.
+                </p>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() =>
+                      insertAndClose(
+                        `For educational purposes, explain how a HAS-BLED score of ${hasbledScore}/9 points (${hasbledStratification}) is interpreted in atrial fibrillation anticoagulation management, which modifiable bleeding risk factors clinicians target, and why guidelines emphasize that high bleeding risk scores should not automatically lead to withholding needed stroke thromboprophylaxis.`
+                      )
+                    }
+                  >
+                    Ask MedAssist about this HAS-BLED score
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    onClick={() =>
+                      handleCopy(
+                        `HAS-BLED bleeding risk score estimate: ${hasbledScore}/9 points (${hasbledStratification}; educational risk estimate only; not diagnostic or prescriptive advice)`
+                      )
+                    }
+                  >
+                    {copied ? "Copied" : "Copy result"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 15: qSOFA (Quick Sepsis-related Organ Failure Assessment) */}
+          {activeTab === "qsofa" && (
+            <div id="tabpanel-qsofa" role="tabpanel" aria-labelledby="tab-qsofa" className="calc-pane">
+              <p className="small-text muted">
+                The Quick Sepsis-related Organ Failure Assessment (qSOFA) is an educational bedside screening tool used to identify adult patients with suspected infection outside the ICU who are at high risk of in-hospital mortality.
+              </p>
+              <div style={{ display: "grid", gap: "10px", marginBottom: "14px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={qsofaMental}
+                    onChange={(e) => setQsofaMental(e.target.checked)}
+                  />
+                  <span><strong>Altered Mental Status</strong> (Glasgow Coma Scale &lt; 15) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={qsofaResp}
+                    onChange={(e) => setQsofaResp(e.target.checked)}
+                  />
+                  <span><strong>Tachypnea</strong> (Respiratory rate &ge; 22 breaths/min) (+1)</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <input
+                    type="checkbox"
+                    checked={qsofaBp}
+                    onChange={(e) => setQsofaBp(e.target.checked)}
+                  />
+                  <span><strong>Hypotension</strong> (Systolic blood pressure &le; 100 mmHg) (+1)</span>
+                </label>
+              </div>
+
+              <div className="calc-result">
+                <div className="calc-result-metric">
+                  <strong>{qsofaScore} / 3 points</strong>
+                  <span className="badge">{qsofaStratification}</span>
+                </div>
+                <p className="small-text">
+                  Educational screening estimate only. A positive qSOFA (&ge; 2 points) suggests a high risk of poor outcome in suspected infection, prompting immediate bedside clinical assessment for acute organ dysfunction, measuring serum lactate, obtaining blood cultures, and initiating timely sepsis management protocols. It is not a diagnostic test for sepsis or septic shock.
+                </p>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() =>
+                      insertAndClose(
+                        `For educational purposes, explain how a qSOFA score of ${qsofaScore}/3 points (${qsofaStratification}) is interpreted according to the Sepsis-3 consensus guidelines, how qSOFA differs from the full SOFA score and SIRS criteria, and what immediate diagnostic and resuscitation steps are prioritized in suspected sepsis.`
+                      )
+                    }
+                  >
+                    Ask MedAssist about this qSOFA score
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    onClick={() =>
+                      handleCopy(
+                        `qSOFA sepsis screening estimate: ${qsofaScore}/3 points (${qsofaStratification}; educational screening estimate only; not diagnostic or treatment advice)`
                       )
                     }
                   >

@@ -1,0 +1,21 @@
+{
+  "title": "Browser smoke 1793434489263",
+  "sessionId": null,
+  "exportedAt": "2026-10-31T08:14:50.339Z",
+  "exportKind": "unverified-local-preview",
+  "warning": "Imported text was not generated or verified by MedAssist AI and is not saved to the account.",
+  "messages": [
+    {
+      "id": "import-0",
+      "isUser": true,
+      "text": "What are migraine triggers? slow response [unreviewed](https://example.invalid/track) ![pixel](https://example.invalid/pixel)",
+      "timestamp": "2026-10-31T08:14:48.958Z"
+    },
+    {
+      "id": "import-1",
+      "isUser": false,
+      "text": "This is a synthetic educational test answer [1]. Review the linked source with a qualified clinician. This checks the chat workflow, not clinical accuracy.",
+      "timestamp": "2026-10-31T08:14:48.958Z"
+    }
+  ]
+}

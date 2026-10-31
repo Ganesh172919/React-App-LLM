@@ -20,6 +20,8 @@
  *   - Lithium + NSAIDs/ACE Inhibitors (Lithium Neurotoxicity)
  *   - Allopurinol/Febuxostat + Azathioprine/6-Mercaptopurine (Severe Pancytopenia)
  *   - Methotrexate + NSAIDs/Aspirin (Fatal Bone Marrow Suppression & AKI)
+ *   - Warfarin + Trimethoprim-Sulfamethoxazole (Bactrim INR Surge & Hemorrhage)
+ *   - Clopidogrel + Omeprazole/Esomeprazole (Loss of Antiplatelet Efficacy)
  * ============================================================================
  */
 
@@ -284,6 +286,34 @@ const HIGH_RISK_INTERACTION_RULES = [
       /\baspirin\b/i, /\bacetylsalicylic acid\b/i,
     ],
     description: "Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning).",
+  },
+  {
+    pair: "Warfarin + Trimethoprim-Sulfamethoxazole",
+    drugA: "Warfarin (Coumadin, Jantoven)",
+    drugB: "Trimethoprim-Sulfamethoxazole (Bactrim, Septra)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bwarfarin\b/i, /\bcoumadin\b/i, /\bjantoven\b/i,
+    ],
+    drugsB: [
+      /\btrimethoprim\b/i, /\bsulfamethoxazole\b/i,
+      /\bbactrim\b/i, /\bseptra\b/i, /\bco-trimoxazole\b/i, /\btmp-smx\b/i,
+    ],
+    description: "Potent CYP2C9 metabolic inhibition blocks active S-warfarin clearance and gut microbiota depletion reduces vitamin K synthesis, precipitating acute supratherapeutic INR surges and life-threatening hemorrhages.",
+  },
+  {
+    pair: "Clopidogrel + Omeprazole / Esomeprazole",
+    drugA: "Clopidogrel (Plavix)",
+    drugB: "Proton Pump Inhibitors (Omeprazole, Prilosec, Esomeprazole, Nexium)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bclopidogrel\b/i, /\bplavix\b/i,
+    ],
+    drugsB: [
+      /\bomeprazole\b/i, /\bprilosec\b/i, /\blosec\b/i, /\bzegerid\b/i,
+      /\besomeprazole\b/i, /\bnexium\b/i,
+    ],
+    description: "Major clinical contraindication (FDA Boxed Warning): Omeprazole and esomeprazole potently inhibit CYP2C19, the primary enzyme required to bioactivate the prodrug clopidogrel into its active antiplatelet metabolite. Concurrent use significantly reduces platelet inhibition, increasing risks of stent thrombosis, recurrent myocardial infarction, and cardiovascular death.",
   },
 ];
 

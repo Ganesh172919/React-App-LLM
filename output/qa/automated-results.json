@@ -1,12 +1,12 @@
 {
-  "completedAt": "2026-10-30T00:59:08.496Z",
+  "completedAt": "2026-10-31T08:21:01.153Z",
   "node": "v24.16.0",
   "checks": [
     {
       "name": "backend",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 64135,
+      "durationMs": 22725,
       "error": null,
       "log": "backend.log"
     },
@@ -14,7 +14,7 @@
       "name": "frontend-lint",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 21640,
+      "durationMs": 3558,
       "error": null,
       "log": "frontend-lint.log"
     },
@@ -22,7 +22,7 @@
       "name": "frontend-tests",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 57728,
+      "durationMs": 27721,
       "error": null,
       "log": "frontend-tests.log"
     },
@@ -30,7 +30,7 @@
       "name": "frontend-build",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 36341,
+      "durationMs": 5525,
       "error": null,
       "log": "frontend-build.log"
     },
@@ -38,7 +38,7 @@
       "name": "dataset-tests",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 2134,
+      "durationMs": 421,
       "error": null,
       "log": "dataset-tests.log"
     },
@@ -46,7 +46,7 @@
       "name": "lora-tests",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 1248,
+      "durationMs": 329,
       "error": null,
       "log": "lora-tests.log"
     },
@@ -54,7 +54,7 @@
       "name": "lora-dry-run",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 1422,
+      "durationMs": 422,
       "error": null,
       "log": "lora-dry-run.log"
     },

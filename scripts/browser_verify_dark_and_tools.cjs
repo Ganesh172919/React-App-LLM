@@ -113,17 +113,49 @@ async function main() {
   await page.screenshot({ path: path.join(output, "curb65-dark-modal.png") });
   console.log("PASS CURB-65 pneumonia severity calculator verified and captured in dark styles");
 
-  // Test 3h: Arrow Key Navigation across tabs wrapping from last tab (GCS) to first tab (BMI)
-  const gcsTab = page.getByRole("tab", { name: /GCS \(Coma Scale\)/i });
-  await gcsTab.focus();
+  // Test 3h: Glasgow Coma Scale (GCS) Tab in Clinical Calculators
+  await page.getByRole("tab", { name: /GCS \(Coma Scale\)/i }).click();
+  await page.getByText(/objective evaluation of level of consciousness/).waitFor();
+  await page.getByText("15 / 15 points (E4V5M6)", { exact: true }).waitFor();
+  await page.getByText("Mild brain injury / Alert (13–15)").waitFor();
+  await page.screenshot({ path: path.join(output, "gcs-dark-modal.png") });
+  console.log("PASS Glasgow Coma Scale calculator verified and captured in dark styles");
+
+  // Test 3i: HAS-BLED Bleeding Risk Score Tab in Clinical Calculators
+  await page.getByRole("tab", { name: /HAS-BLED \(Bleeding Risk\)/i }).click();
+  await page.getByText(/assesses 1-year major bleeding risk in patients receiving anticoagulation/).waitFor();
+  await page.getByText("0 / 9 points", { exact: true }).waitFor();
+  await page.getByText(/Low bleeding risk/).waitFor();
+  await page.getByLabel(/H: Hypertension/).check();
+  await page.getByLabel(/A: Abnormal renal function/).check();
+  await page.getByText("2 / 9 points", { exact: true }).waitFor();
+  await page.getByText(/Moderate bleeding risk/).waitFor();
+  await page.screenshot({ path: path.join(output, "hasbled-dark-modal.png") });
+  console.log("PASS HAS-BLED bleeding risk calculator verified and captured in dark styles");
+
+  // Test 3j: qSOFA Sepsis Screening Tab in Clinical Calculators
+  await page.getByRole("tab", { name: /qSOFA \(Sepsis Screening\)/i }).click();
+  await page.getByText(/educational bedside screening tool used to identify adult patients with suspected infection/).waitFor();
+  await page.getByText("0 / 3 points", { exact: true }).waitFor();
+  await page.getByText(/Not high risk for in-hospital sepsis mortality/).waitFor();
+  await page.getByLabel(/Altered Mental Status/).check();
+  await page.getByLabel(/Tachypnea/).check();
+  await page.getByText("2 / 3 points", { exact: true }).waitFor();
+  await page.getByText(/High risk for in-hospital sepsis mortality/).waitFor();
+  await page.screenshot({ path: path.join(output, "qsofa-dark-modal.png") });
+  console.log("PASS qSOFA sepsis screening calculator verified and captured in dark styles");
+
+  // Test 3k: Arrow Key Navigation across tabs wrapping from last tab (qSOFA) to first tab (BMI)
+  const qsofaTab = page.getByRole("tab", { name: /qSOFA \(Sepsis Screening\)/i });
+  await qsofaTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (GCS) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (qSOFA) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const gcsSelected = await gcsTab.getAttribute("aria-selected");
-  assert.equal(gcsSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (GCS)");
+  const qsofaSelected = await qsofaTab.getAttribute("aria-selected");
+  assert.equal(qsofaSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (qSOFA)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -199,11 +231,32 @@ async function main() {
   await page.screenshot({ path: path.join(output, "allopurinol-imuran-dark.png") });
   console.log("PASS allopurinol and azathioprine (Imuran) contraindication alert verified in dark mode");
 
+  // Test 5d: Warfarin + Bactrim high-risk bleeding interaction
+  await page.getByLabel("Your question", { exact: true }).fill("Can I take Coumadin with Bactrim for my infection?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Warfarin + Trimethoprim-Sulfamethoxazole").waitFor();
+  await page.getByText(/CYP2C9/i).waitFor();
+  await page.getByText(/INR surges/i).waitFor();
+  await page.screenshot({ path: path.join(output, "warfarin-bactrim-dark.png") });
+  console.log("PASS warfarin and Bactrim high-risk bleeding interaction warning verified in dark mode");
+
+  // Test 5e: Clopidogrel + Omeprazole loss of antiplatelet efficacy contraindication
+  await page.getByLabel("Your question", { exact: true }).fill("Is it safe to take Plavix with omeprazole to protect my stomach?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Clopidogrel + Omeprazole / Esomeprazole").waitFor();
+  await page.getByText(/CYP2C19/i).waitFor();
+  await page.getByText(/stent thrombosis/i).waitFor();
+  await page.screenshot({ path: path.join(output, "clopidogrel-omeprazole-dark.png") });
+  console.log("PASS clopidogrel and omeprazole contraindication warning verified in dark mode");
+
   // Test 6: Dashboard in Dark Mode
   await page.getByRole("link", { name: "Dashboard", exact: true }).click();
   await page.getByRole("heading", { name: "Activity dashboard" }).waitFor();
+  await page.getByRole("heading", { name: "Medication interaction alerts" }).waitFor();
   await page.screenshot({ path: path.join(output, "dashboard-dark-desktop.png"), fullPage: true });
-  console.log("PASS dashboard rendered in dark mode");
+  console.log("PASS dashboard rendered in dark mode with medication interaction alerts");
 
   // Test 7: Mobile 320px viewport in dark mode
   await page.setViewportSize({ width: 320, height: 740 });

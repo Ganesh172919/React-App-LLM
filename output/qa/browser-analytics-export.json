@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-10-30T00:53:04.810Z",
+  "generatedAt": "2026-10-31T08:14:52.069Z",
   "rangeDays": 7,
   "summaryScope": "lifetime",
   "timezone": "UTC",
   "summary": {
-    "totalSessions": 1,
+    "totalSessions": 2,
     "totalMessages": 6,
-    "medicalSessions": 1,
+    "medicalSessions": 2,
     "medicalResponses": 6,
     "citedResponses": 3,
     "citations": 3,
-    "averageMessagesPerSession": 6,
+    "averageMessagesPerSession": 3,
     "sourceAttachmentRate": 50
   },
   "breakdown": [
     {
       "label": "Medical",
-      "value": 1
+      "value": 2
     },
     {
       "label": "General",
@@ -24,11 +24,6 @@
     }
   ],
   "trend": [
-    {
-      "date": "2026-10-24",
-      "sessions": 0,
-      "exchanges": 0
-    },
     {
       "date": "2026-10-25",
       "sessions": 0,
@@ -56,18 +51,30 @@
     },
     {
       "date": "2026-10-30",
-      "sessions": 1,
+      "sessions": 0,
+      "exchanges": 0
+    },
+    {
+      "date": "2026-10-31",
+      "sessions": 2,
       "exchanges": 6
     }
   ],
   "verification": {
     "statuses": {
-      "safety_redirect": 3,
-      "citation_checked": 3
+      "citation_checked": 3,
+      "safety_redirect": 3
     },
     "providers": {
       "Gemini": 3
-    }
+    },
+    "interactions": [
+      {
+        "pair": "Anticoagulant / Antiplatelet + NSAIDs / Aspirin",
+        "count": 1,
+        "severity": "CRITICAL"
+      }
+    ]
   },
   "dataset": {
     "rows": {

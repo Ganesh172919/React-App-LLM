@@ -66,7 +66,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 15 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
+     │  - 16 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -111,7 +111,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      15 Heuristic Medication Interaction Patterns
+      16 Heuristic Medication Interaction Patterns
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -122,7 +122,7 @@ mindmap
       AES-256-GCM Authenticated Vault
       Google OAuth 2.0 PKCE Flow
     (04 Clinical Educational Calculators)
-      14 Clinical Tools
+      15 Clinical Tools
         Adult BMI Metric and Imperial
         CKD-EPI 2021 eGFR Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -136,6 +136,7 @@ mindmap
         CURB-65 Pneumonia Severity
         Glasgow Coma Scale GCS
         HAS-BLED Bleeding Risk
+        qSOFA Sepsis Mortality Screening
       Accessibility Controls
         WAI-ARIA Tabpanel Cycling
         Keyboard Alt-Plus-C Shortcut
@@ -381,17 +382,17 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       66 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       48 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       68 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (9 suites)       52 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
     Headless Browser Smoke Test Suite           Playwright Chromium Headless      21 Passed          PASSED
-    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      26 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      28 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       187 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       195 Passed         PASSED
 ========================================================================================================================
 ```
 

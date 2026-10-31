@@ -129,7 +129,7 @@ mindmap
       Memory Backpressure Drop Code 1013
       Owner-Scoped Event Fanout
     (06 Evidence Clinical Tools)
-      13 Clinical Calculators
+      15 Clinical Calculators
         BMI Metric and Imperial
         CKD-EPI 2021 eGFR
         CHA2DS2-VASc Stroke Risk
@@ -142,8 +142,8 @@ mindmap
         Wells PE Pre-Test Score
         CURB-65 Pneumonia Score
         Glasgow Coma Scale GCS
-      Extension Blueprint
-        HAS-BLED Bleeding Risk Guide
+        HAS-BLED Bleeding Risk
+        qSOFA Sepsis Screening
       Accessibility Invariants
         WAI-ARIA Tabpanel Semantics
         Keyboard Alt-Plus-C Shortcut
@@ -788,7 +788,7 @@ export async function apiRequest(path, options = {}) {
 
 ## 10. Pharmacological Drug Interaction Detection & Preservation (`interactionService.js`)
 
-MedAssist AI implements deterministic regular expression screening for 14 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
+MedAssist AI implements deterministic regular expression screening for 16 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
 
 ```
 ====================================================================================================
@@ -818,7 +818,7 @@ MedAssist AI implements deterministic regular expression screening for 14 major 
 ====================================================================================================
 ```
 
-### 10.1 14 FDA Black-Box Interaction Pairs
+### 10.1 16 FDA Black-Box Interaction Pairs
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Primary Risk & Mechanism |
 |:---|:---|:---|:---:|:---|
@@ -836,6 +836,8 @@ MedAssist AI implements deterministic regular expression screening for 14 major 
 | **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline | Sertraline, Fluoxetine, Pseudoephedrine | `CRITICAL` | Malignant hypertensive crisis and hyperthermic Serotonin Syndrome. |
 | **Allopurinol / Febuxostat + Azathioprine / 6-MP** | Allopurinol, Febuxostat | Azathioprine, 6-Mercaptopurine | `CRITICAL` | Major contraindication: Xanthine oxidase inhibition blocks thiopurine degradation, precipitating severe active metabolite accumulation, life-threatening bone marrow suppression, and profound pancytopenia. |
 | **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Meloxicam, Aspirin | `CRITICAL` | Inhibition of renal prostaglandin synthesis and competitive tubular secretion blockage by NSAIDs markedly reduces renal methotrexate clearance, precipitating life-threatening bone marrow suppression, pancytopenia, and acute kidney injury (FDA Black Box Warning). |
+| **Warfarin + TMP-SMX (Bactrim / Septra)** | Warfarin (Coumadin, Jantoven) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | `CRITICAL` | Potent CYP2C9 metabolic inhibition blocks active S-warfarin clearance and gut microbiota depletion reduces vitamin K synthesis, precipitating acute supratherapeutic INR surges and life-threatening hemorrhages. |
+| **Clopidogrel + Omeprazole / Esomeprazole** | Clopidogrel (Plavix) | Omeprazole, Prilosec, Esomeprazole, Nexium | `CRITICAL` | Major contraindication (FDA Boxed Warning): CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing risk of stent thrombosis and myocardial infarction. |
 
 ---
 
@@ -900,6 +902,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **CURB-65 Pneumonia Score** | Confusion (+1), Urea >19 mg/dL (+1), RR ≥30 (+1), Low BP SBP <90 or DBP ≤60 (+1), Age ≥65 (+1) | Point summation (Range: 0–5) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient management).<br>2: Intermediate risk (~9% mortality, short inpatient admission).<br>3–5: High / severe risk (15–40% mortality, urgent admission/ICU). |
 | **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
 | **HAS-BLED Bleeding Risk** | Hypertension (1), Abnormal renal/liver (1-2), Stroke (1), Bleeding (1), Labile INR (1), Elderly >65 (1), Drugs/Alcohol (1-2) | $\text{HAS-BLED} = \sum \text{Risk Factors}$ (Range: 0–9) | Binary toggles | 0–1: Low bleeding risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; evaluate modifiable bleeding risks). |
+| **qSOFA Sepsis Screening** | Altered mentation GCS <15 (+1), Tachypnea RR ≥22 (+1), Hypotension SBP ≤100 (+1) | $\text{qSOFA} = \sum \text{Criteria}$ (Range: 0–3) | Binary toggles | 0–1: Not high risk for in-hospital sepsis mortality.<br>2–3: High risk for in-hospital sepsis mortality (prompt evaluation for organ dysfunction, blood cultures, lactate, and sepsis protocols). |
 
 ### 11.2 Production Implementation Snippet (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 
