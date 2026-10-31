@@ -208,12 +208,13 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       └── lora_validation.json             # Parameter estimation report (147,456 params)
 │
 └── scripts/                                 # Verification & Operations Automation
-    ├── browser_smoke.cjs                    # Playwright browser smoke test suite (12 scenarios)
-    ├── check_build_serving.cjs              # Automated HTTP assertions against built-output server
+    ├── browser_smoke.cjs                    # Playwright browser smoke test suite (20 automated workflows)
+    ├── browser_verify_dark_and_tools.cjs    # Playwright accessibility & dark mode suite (21 workflows)
+    ├── check_build_serving.cjs              # Automated HTTP assertions against built-output server (7 checks)
     ├── generate_project_report.py           # Compiles documentation and test logs into PDF report
     ├── run_build_qa.cjs                     # Serves built frontend bundle and API on port 4173
     ├── run_local.cjs                        # Isolated local stack with in-memory Mongo & fixtures
-    └── verify_project.cjs                   # Master verification aggregator executing all checks
+    └── verify_project.cjs                   # Master verification aggregator executing all 182 checks
 ```
 
 ---
@@ -232,16 +233,17 @@ mindmap
       Mongoose Models (user, chat, generation, providerCredential)
       Routes (auth, chat, ai, medical, settings, analytics)
       Services (answer, pubmed, ai, citation, verifier, providerSelection, session, websocket)
-      Automated Tests (node test runner suites)
+      Automated Tests (node test runner suites - 66 tests)
     (02 Frontend Subsystem)
       Core Views (Home, ChatWorkspace, AnalyticsDashboard, AccountPage, AISettings)
       Context Providers (AuthContext, SidebarContext)
       Client Utilities (api.js Web Locks, tabStorage.js)
+      13 Clinical Calculators (ClinicalCalculatorsModal.jsx)
       Vite & Tailwind (vite.config.js, tailwind.config.js, index.css)
       Nginx Configuration (nginx.conf)
-      Vitest Test Suites (api, tabStorage, ui)
+      Vitest Test Suites (49 tests across 6 suites)
     (03 Model & Dataset Subsystem)
-      Source Data (Final dataset CSV)
+      Source Data (Final dataset CSV - 16,412 rows)
       Dataset Profilers (analyze_dataset, audit_dataset)
       Dataset Preparation (prepare_dataset, verify_splits)
       Offline Semantic Search (document_retrieval.py)
@@ -249,8 +251,9 @@ mindmap
       LoRA Package (build_lora_package, validate_lora_setup, train_lora)
     (04 Automation & Tooling)
       Docker Compose & Deployment (docker-compose.yml, create_env.cjs, mongo-init.js)
-      Test Automation (verify_project.cjs, browser_smoke.cjs, run_build_qa.cjs)
+      Test Automation (verify_project.cjs, browser_smoke.cjs, browser_verify_dark_and_tools.cjs)
       PDF Report Generator (generate_project_report.py)
+      Master Quality Verification (182 Passed Checks)
 ```
 
 ---
@@ -325,3 +328,16 @@ mindmap
 | `Model and Dataset/lora/train_lora.py` | SFT Script | `train_lora()`, dry-run inspector | `torch`, `transformers`, `peft` |
 | `Model and Dataset/lora/infer_adapter.py` | Adapter Test CLI | Interactive generation CLI | `peft`, `transformers` |
 | `Model and Dataset/lora/lora_config.py` | Config Validator | `LoraTrainingConfig`, `load_lora_config` | `dataclasses`, `json` |
+
+---
+
+## 4. Master Developer Extensibility & Contribution Reference
+
+| Extension Area | Target Source File | Guide Location | Key Implementation Contracts |
+|:---|:---|:---|:---|
+| **AI Model Providers** | `backend/services/modelProvider.js` | [`docs/CURRENT_IMPLEMENTATION.md`](CURRENT_IMPLEMENTATION.md#103-guide-a-adding-a-custom-ai-model-provider--gateway) | HTTPS only, SSRF defense, temperature 0.25, max_tokens 900, finish_reason "stop" |
+| **Clinical Calculators** | `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | [`docs/CURRENT_IMPLEMENTATION.md`](CURRENT_IMPLEMENTATION.md#104-guide-b-adding-an-evidence-based-clinical-calculator) | Physiological input clamping, WAI-ARIA tabpanel cycling, educational prompt action |
+| **Drug Interactions** | `backend/services/interactionService.js` | [`docs/CURRENT_IMPLEMENTATION.md`](CURRENT_IMPLEMENTATION.md#105-guide-c-adding-a-high-risk-medication-interaction-rule) | Bidirectional regex, CRITICAL vs HIGH severity, preserved across emergency deflections |
+| **Custom Datasets & LoRA** | `Model and Dataset/lora/train_lora.py` | [`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](AI_FINE_TUNING_AND_LORA_GUIDE.md#8-developer-extensibility-training-custom-adapters-on-new-biomedical-datasets) | Ambiguity quarantine, SHA-256 modulo 100 splitting, prompt token loss masking with -100 |
+| **Backend REST & Models** | `backend/routes/` & `backend/models/` | [`backend/README.md`](../backend/README.md#7-developer-extension-blueprint-building-on-the-backend) | Monotonic sessionVersion validation, owner tenancy isolation, 32KB JSON body limit |
+| **Frontend Caching & State** | `frontend/src/lib/tabStorage.js` & `api.js` | [`frontend/README.md`](../frontend/README.md#7-developer-extensibility-building-new-frontend-views-calculators--modals) | Web Locks single-flight renewal, scoped sessionStorage drafts with memory fallback |
