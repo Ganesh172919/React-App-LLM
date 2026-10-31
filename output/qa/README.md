@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive QA Overview & Artifact Topology
 
-The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 182 automated checks.
+The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 204 automated checks.
 
 ```
 ========================================================================================================================
@@ -20,17 +20,17 @@ The quality assurance output directory (`output/qa/`) stores automated verificat
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                TIER 1: STRUCTURED JSON VERIFICATION LOGS                                       │
     │  - automated-results.json: Aggregate code-check metrics (backend, frontend, python, build)                     │
-    │  - browser-results.json: Results of 20 core browser workflows and scenarios                                   │
+    │  - browser-results.json: Results of 21 core browser workflows and scenarios                                   │
     │  - build-serving-results.json: 7 HTTP ingress assertions (cache headers, SPA routing, proxying)               │
-    │  - frontend-results.json: Vitest JSON output covering 49 component and unit tests                             │
+    │  - frontend-results.json: Vitest JSON output covering 54 component and unit tests                             │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                 │
                                                 ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                TIER 2: CHROMIUM HEADLESS SCREENSHOT EVIDENCE                                   │
     │  - Mobile Viewports (320px, 390px): `chat-320.png`, `chat-mobile.png`, `register-mobile.png`                  │
-    │  - Dark Theme Modals: `calculators-dark-modal.png`, `wells-dark-modal.png`, `curb65-dark-modal.png`           │
-    │  - Clinical Caution Banners: `statin-clarithromycin-dark.png`, `allopurinol-imuran-dark.png`                  │
+    │  - Dark Theme Modals: `calculators-dark-modal.png`, `bsa-dark-modal.png`, `apri-dark-modal.png`, etc.         │
+    │  - Clinical Caution Banners: `triptan-ssri-dark.png`, `bactrim-lisinopril-dark.png`, etc.                     │
     │  - Desktop Workspaces: `chat-desktop.png`, `dashboard-desktop.png`, `home-desktop.png`                        │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
@@ -47,10 +47,10 @@ mindmap
     ::icon(fa fa-clipboard-check)
     (01 Structured Metrics)
       automated-results.json
-        182 Master Checks
+        204 Master Checks
         Duration & Timestamp
       browser-results.json
-        20 Smoke Workflows
+        21 Smoke Workflows
       build-serving-results.json
         7 HTTP Assertions
     (02 Visual Evidence)
@@ -59,9 +59,11 @@ mindmap
         Two-Row Header Stacking
       Dark Theme Modals
         WCAG AA Contrast
-        Clinical Calculators
+        18 Clinical Calculators
       Drug Interaction Banners
-        Warfarin + Aspirin
+        Warfarin + Bactrim
+        SSRI + Triptan
+        Bactrim + Lisinopril
         Statin + Clarithromycin
     (03 Log Audits)
       backend.log
@@ -76,11 +78,15 @@ mindmap
 
 | Artifact File | Category | Source Script | Description |
 |:---|:---:|:---:|:---|
-| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 182 automated software checks across all suites. |
-| `browser-results.json` | Report | `browser_smoke.cjs` | Verification logs for 20 browser end-to-end user workflows. |
+| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 204 automated software checks across all suites. |
+| `browser-results.json` | Report | `browser_smoke.cjs` | Verification logs for 21 browser end-to-end user workflows. |
 | `build-serving-results.json` | Report | `check_build_serving.cjs` | HTTP response header assertions (immutable cache, CSP, SPA fallbacks). |
-| `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist. |
+| `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (17 tools). |
+| `bsa-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Mosteller BSA calculator. |
+| `apri-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of APRI liver fibrosis calculator. |
 | `wells-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Wells PE score calculator. |
+| `triptan-ssri-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for SSRI + Triptan. |
+| `bactrim-lisinopril-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for Bactrim + Lisinopril. |
 | `statin-clarithromycin-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for Statin + Clarithromycin. |
 | `chat-320.png` | Visual | `browser_smoke.cjs` | Mobile layout verification at ultra-narrow 320px viewport width. |
 | `dashboard-desktop.png` | Visual | `browser_smoke.cjs` | Analytics dashboard with activity charts and evidence citation totals. |

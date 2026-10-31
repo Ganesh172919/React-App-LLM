@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive Overview & Clinical Tools Topology
 
-The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 15 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
+The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 18 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
 
 > [!CAUTION]
 > **Educational & Learning Notice**: These tools are educational demonstrations. Numeric scores do not establish clinical diagnoses, treatment plans, or formal prognosis. Clinical decisions must always be guided by qualified healthcare providers and institutional protocols.
@@ -91,9 +91,13 @@ mindmap
         Mortality Risk Stratification (0 to 5)
       Glasgow Coma Scale (GCS)
         Eye (1-4), Verbal (1-5), Motor (1-6)
+      HAS-BLED Bleeding Risk
+        Points 0 to 9 (High Risk >= 3)
+      qSOFA Sepsis Screen
+        RR >= 22, Altered Mentation, SBP <= 100
       Maintenance Fluids (4-2-1)
         Hourly Rate (4 mL/kg + 2 mL/kg + 1 mL/kg)
-    (04 Metabolic & Liver)
+    (04 Metabolic & Hepatic)
       Corrected Calcium (Payne)
         Hypoalbuminemia Formula
       Serum Anion Gap
@@ -104,6 +108,9 @@ mindmap
       APRI (Liver Fibrosis)
         Formula: (AST/ULN)*100 / Platelets
         Cutoffs: <0.50 vs >1.50
+      Child-Pugh (Cirrhosis)
+        Bilirubin, Albumin, INR, Ascites, Enceph
+        Classes: A (5-6), B (7-9), C (10-15)
 ```
 
 ---
@@ -161,18 +168,38 @@ $$\text{FeUrea (\%)} = \frac{\text{Urine Urea} \times \text{Serum Cr}}{\text{Ser
 - $+ 1\text{ mL/kg/h}$ for each $\text{kg} > 20\text{ kg}$
 - Example ($70\text{ kg}$ adult): $40 + 20 + 50 = 110\text{ mL/hour}$.
 
+### 3.10 Child-Pugh Score for Cirrhosis Mortality
+$$\text{Child-Pugh Score} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{INR Pts} + \text{Ascites Pts} + \text{Encephalopathy Pts}$$
+
+- **Physiological Clamping**:
+  - Total Bilirubin: $0.1 - 50.0\text{ mg/dL}$
+  - Serum Albumin: $0.5 - 6.0\text{ g/dL}$
+  - INR: $0.5 - 10.0$
+- **Point Assignment Matrix**:
+  | Variable | 1 Point | 2 Points | 3 Points |
+  | :--- | :--- | :--- | :--- |
+  | **Total Bilirubin** | $< 2.0\text{ mg/dL}$ | $2.0 - 3.0\text{ mg/dL}$ | $> 3.0\text{ mg/dL}$ |
+  | **Serum Albumin** | $> 3.5\text{ g/dL}$ | $2.8 - 3.5\text{ g/dL}$ | $< 2.8\text{ g/dL}$ |
+  | **INR** | $< 1.7$ | $1.7 - 2.3$ | $> 2.3$ |
+  | **Ascites** | None | Slight / Diuretic-controlled | Moderate to Severe / Refractory |
+  | **Encephalopathy** | None | Grade 1–2 (mild confusion) | Grade 3–4 (severe / coma) |
+- **Prognostic Risk Stratification**:
+  - **Class A ($5 - 6$ points)**: Well-compensated cirrhosis; 1-year survival $\approx 100\%$, 2-year survival $\approx 85\%$, perioperative abdominal mortality $\approx 10\%$.
+  - **Class B ($7 - 9$ points)**: Significant functional compromise; 1-year survival $\approx 80\%$, 2-year survival $\approx 60\%$, perioperative abdominal mortality $\approx 30\%$.
+  - **Class C ($10 - 15$ points)**: Decompensated cirrhosis; 1-year survival $\approx 45\%$, 2-year survival $\approx 35\%$, perioperative abdominal mortality $\approx 70 - 80\%$.
+
 ---
 
-## 4. Developer Extensibility: Adding Calculator #16 (e.g., Child-Pugh Score)
+## 4. Developer Extensibility: Adding Calculator #19 (e.g., MELD-Na Score)
 
-Follow this architectural guide to add calculator #16:
+Follow this architectural guide to add calculator #19:
 
 ```jsx
 // Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx
 // Step 1: Add tab key to tabList array:
 const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
-  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "bsa", "apri", "childpugh"
+  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"
 ];
 
 // Step 2: Implement deterministic formula with clamping:
@@ -217,7 +244,7 @@ function calculateMeldScore(creatinine, bilirubin, inr, sodium) {
 
 ## 5. Automated Verification Commands
 
-All 17 clinical calculators are verified by 15 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
+All 18 clinical calculators are verified by 16 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
 
 ```powershell
 # Run the clinical calculators test suite

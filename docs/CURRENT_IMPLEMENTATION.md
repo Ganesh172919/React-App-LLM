@@ -822,7 +822,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 
 ### 7.3 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 
-Performs deterministic regular-expression scanning across user queries for 14 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
+Performs deterministic regular-expression scanning across user queries for 18 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
 
 | Interacting Pair | Severity | Drug A Class & Examples | Drug B Class & Examples | Clinical Risk Description |
 | :--- | :---: | :--- | :--- | :--- |
@@ -840,12 +840,16 @@ Performs deterministic regular-expression scanning across user queries for 14 ma
 | **MAOIs + Serotonergic Agents** | **CRITICAL** | Phenelzine, Selegiline, Tranylcypromine| Fluoxetine, Escitalopram, Duloxetine | Fatal Serotonin Syndrome and acute hypertensive crisis |
 | **Allopurinol + Azathioprine** | **CRITICAL** | Allopurinol, Febuxostat | Azathioprine, 6-Mercaptopurine | Xanthine oxidase inhibition suppresses thiopurine degradation, causing severe pancytopenia |
 | **Methotrexate + NSAIDs/Aspirin** | **CRITICAL** | Methotrexate, Rheumatrex | Ibuprofen, Naproxen, Ketorolac, Aspirin | Tubular secretion inhibition reduces methotrexate clearance, precipitating fatal bone marrow suppression and AKI |
+| **Warfarin + TMP-SMX (Bactrim)** | **CRITICAL** | Warfarin (Coumadin, Jantoven) | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | CYP2C9 inhibition suppresses active S-warfarin clearance and reduces gut flora vitamin K synthesis, causing acute supratherapeutic INR surges and hemorrhage |
+| **Clopidogrel + Omeprazole / Esomeprazole** | **CRITICAL** | Clopidogrel (Plavix) | Omeprazole (Prilosec), Esomeprazole (Nexium) | CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, elevating risk of stent thrombosis and reinfarction (FDA Boxed Warning) |
+| **SSRI / SNRI / MAOI + Triptan** | **CRITICAL** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome |
+| **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | **CRITICAL** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Enalapril, Losartan, Spironolactone | Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur |
 
 ---
 
 ## 8. Clinical Educational Calculators Specification
 
-The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 13 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
+The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 17 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
 
 ```
 ========================================================================================================================
@@ -895,6 +899,19 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
 
     Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
                                Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
+
+    HAS-BLED Bleeding Risk     Sum of HTN (+1), Renal (+1), Liver (+1), Stroke (+1),     9 binary flags (0-9)
+                               Bleeding (+1), Labile INR (+1), Age >65 (+1), Drugs (+1), Low: 0-1, Mod: 2,
+                               Alcohol (+1). Range: 0 to 9 points.                       High: >=3 (>=3.7% / yr)
+
+    qSOFA Sepsis Screening     Altered mental status (GCS <15) + Tachypnea (RR >=22) +   3 binary flags (0-3)
+                               Hypotension (SBP <=100 mmHg).                             >=2: High in-hospital risk
+
+    Mosteller BSA              BSA = sqrt(Height_cm * Weight_kg / 3600)                  Height: 30-250 cm
+                               Imperial: sqrt(Height_in * Weight_lbs / 3131)             Weight: 2-350 kg
+
+    APRI Liver Fibrosis        APRI = [(AST / AST_ULN) / Platelets] * 100                AST: 5-2000, ULN: 10-100
+                               <=0.50: Low fibrosis risk; >1.50: High cirrhosis risk    Platelets: 10-1000 x10^9/L
 ========================================================================================================================
 ```
 

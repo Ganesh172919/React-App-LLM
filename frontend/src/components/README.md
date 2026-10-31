@@ -25,7 +25,7 @@ The MedAssist AI client application (`frontend/src/components/`) is constructed 
     │  - Mobile Drawer │        │  - Two-Phase Generation & Resilient Pending Handshake   │
     └──────────────────┘        │  - Markdown Renderer (react-markdown + Code Fences)   │
              │                  │  - Citation References List & Numeric Badges [N]       │
-             │                  │  - Drug-Drug Interaction Warning Banners (14 Rules)    │
+             │                  │  - Drug-Drug Interaction Warning Banners (19 Rules)    │
              │                  │  - Emergency Triage & Crisis Deflection Banners        │
              │                  └────────────────────────────────────────────────────────┘
              ▼                                           │
@@ -34,7 +34,7 @@ The MedAssist AI client application (`frontend/src/components/`) is constructed 
     │  - Sidebar.jsx   │        ┌────────────────────────────────┐ ┌────────────────────────────────┐
     │  - History List  │        │   CLINICAL CALCULATORS MODAL   │ │     SETTINGS & ACCOUNT MODALS  │
     │  - Search Filter │        │  - ClinicalCalculatorsModal.jsx│ │  - AISettings.jsx (Vault)     │
-    │  - Rename/Delete │        │  - 13 Evidence-Based Tools     │ │  - AccountPage.jsx (Sessions)  │
+    │  - Rename/Delete │        │  - 18 Evidence-Based Tools     │ │  - AccountPage.jsx (Sessions)  │
     │  - Export Engine │        │  - WAI-ARIA Tabpanel Cycling   │ │  - AnalyticsDashboard.jsx      │
     └──────────────────┘        └────────────────────────────────┘ └────────────────────────────────┘
 ========================================================================================================================
@@ -54,12 +54,12 @@ mindmap
         Markdown Safe Rendering
         Citation Source Links [N]
         Two-Phase /api/save Push
-        14 Drug Interaction Banners
+        19 Drug Interaction Banners
         IME Chinese/Japanese Input Guard
         Resilient tabStorage Recovery
     (02 Clinical Tools)
       ClinicalCalculatorsModal.jsx
-        13 Evidence-Based Calculators
+        18 Evidence-Based Calculators
         WAI-ARIA role tablist
         Arrow Key Left Right Cycling
         Escape Key Dismissal & Focus Trap
@@ -97,20 +97,24 @@ mindmap
 - **Accessibility**: Includes WAI-ARIA live regions (`aria-live="polite"`) for incoming streaming tokens.
 
 ### 3.2 `ClinicalCalculatorsModal.jsx` — Evidence-Based Clinical Tools
-- **Calculators Implemented (13 Tools)**:
-  1. **BMI & BSA**: Body Mass Index & DuBois Body Surface Area.
+- **Calculators Implemented (17 Tools)**:
+  1. **Body Mass Index (BMI)**: Metric ($kg/m^2$) and Imperial ($lbs \times 703 / in^2$).
   2. **eGFR (CKD-EPI 2021)**: Race-free glomerular filtration rate estimation.
-  3. **CHA2DS2-VASc**: Stroke risk stratification in non-valvular atrial fibrillation.
-  4. **Mean Arterial Pressure (MAP)**: $\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$.
-  5. **Creatinine Clearance (Cockcroft-Gault)**: Clamped weight and age bounds.
-  6. **Wells Criteria for Pulmonary Embolism**: Clinical probability scoring.
-  7. **Corrected Calcium (Payne Formula)**: $\text{Corrected Ca} = \text{Total Ca} + 0.8 \times (4.0 - \text{Albumin})$.
-  8. **Fractional Excretion of Sodium (FeNa)**: Acute kidney injury etiology.
-  9. **Fractional Excretion of Urea (FeUrea)**: Diuretic-tolerant renal assessment.
-  10. **CURB-65**: Community-acquired pneumonia mortality score.
-  11. **Glasgow Coma Scale (GCS)**: Eye, verbal, and motor neurological response.
-  12. **Maintenance Fluids (4-2-1 Rule)**: Pediatric and adult hourly rate estimation.
-  13. **MELD Score**: Model for End-Stage Liver Disease.
+  3. **CHA2DS2-VASc**: Stroke risk stratification in non-valvular atrial fibrillation (0-9).
+  4. **Mean Arterial Pressure (MAP)**: $\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ and pulse pressure.
+  5. **Creatinine Clearance (Cockcroft-Gault)**: Clamped weight and age bounds ($0.85$ female multiplier).
+  6. **Corrected Calcium (Payne Formula)**: $\text{Corrected Ca} = \text{Total Ca} + 0.8 \times (4.0 - \text{Albumin})$.
+  7. **Serum Anion Gap**: $\text{AG} = \text{Na} - (\text{Cl} + \text{HCO}_3)$.
+  8. **Fractional Excretion of Sodium (FeNa)**: Acute kidney injury etiology ($<1\%$ vs $>2\%$).
+  9. **Fractional Excretion of Urea (FeUrea)**: Diuretic-tolerant renal assessment ($<35\%$).
+  10. **Maintenance Fluids (4-2-1 Rule)**: Pediatric and adult hourly and 24-hour rate estimation.
+  11. **Wells' Criteria for Pulmonary Embolism**: Clinical probability scoring ($\le 4$ vs $> 4$).
+  12. **CURB-65**: Community-acquired pneumonia 30-day mortality risk stratification (0-5).
+  13. **Glasgow Coma Scale (GCS)**: Eye (1-4), verbal (1-5), and motor (1-6) neurological response (3-15).
+  14. **HAS-BLED Bleeding Risk**: Risk factor scoring in atrial fibrillation (0-9).
+  15. **qSOFA Sepsis Screening**: Bedside evaluation for sepsis mortality risk (0-3).
+  16. **Mosteller Body Surface Area (BSA)**: $\text{BSA} = \sqrt{\frac{\text{Ht (cm)} \times \text{Wt (kg)}}{3600}}$ (or $\sqrt{\frac{\text{Ht (in)} \times \text{Wt (lbs)}}{3131}}$).
+  17. **APRI Liver Fibrosis**: $\text{APRI} = \frac{(\text{AST} / \text{AST}_{\text{ULN}}) \times 100}{\text{Platelets } (10^9/\text{L})}$.
 - **WAI-ARIA Accessibility**:
   - `role="tablist"` with `aria-orientation="horizontal"`.
   - Individual calculator tabs utilize `role="tab"`, `aria-selected`, and `aria-controls`.
@@ -191,7 +195,7 @@ export function CustomToolModal({ isOpen, onClose, title, children }) {
 
 ## 5. Automated Frontend Component Verification
 
-The frontend component suite contains 49 passing Vitest tests:
+The frontend component suite contains 54 passing Vitest tests:
 
 ```powershell
 # Run the complete frontend test suite

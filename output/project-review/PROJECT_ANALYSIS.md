@@ -45,15 +45,15 @@ This review documents the verified technical state of the MedAssist AI repositor
     ┌─────────────────────────────────────────────────────────────────────────────────────┐
     │                         PLAYWRIGHT HEADLESS BROWSER E2E QA                          │
     │  - Engine: Chromium Headless                                                        │
-    │  - Smoke Suite: 20 Passed (Registration, Login, Chat, Save, History, Export)        │
-    │  - Accessibility & Dark Mode Suite: 21 Passed (WCAG Contrast, Calculators, Tabs)    │
-    │  - Total Browser Workflow Checks: 41 Passed                                         │
+    │  - Smoke Suite: 21 Passed (Registration, Login, Chat, Save, History, Export)        │
+    │  - Accessibility & Dark Mode Suite: 33 Passed (WCAG Contrast, 17 Tools, DDI Banners)│
+    │  - Total Browser Workflow Checks: 54 Passed                                         │
     └─────────────────────────────────────────────────────────────────────────────────────┘
                                                │
                                                ▼
     ┌─────────────────────────────────────────────────────────────────────────────────────┐
     │                        MASTER VERIFICATION AGGREGATE TOTAL                          │
-    │  - 182 Automated Tests Executed & Passed                                            │
+    │  - 204 Automated Tests Executed & Passed                                            │
     │  - 0 Critical Vulnerabilities Reported Across Dependencies                         │
     └─────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
@@ -71,22 +71,24 @@ mindmap
     (01 Resolved Findings)
       JSX Escaping Syntax Cleaned
       CORS Whitelist Updated
-      14 High-Risk Drug Pairs Added
-      13 Clinical Calculators Verified
+      19 High-Risk Drug Pairs Added
+      18 Clinical Calculators Verified
       Corrected Calcium Payne Formula
       Wells Criteria for PE Added
       CURB-65 Pneumonia Severity Score
       Glasgow Coma Scale GCS Added
+      HAS-BLED & qSOFA Screening Added
+      Mosteller BSA & APRI Added
       Tabpanel WAI-ARIA Implemented
       WCAG AA Contrast Compliant
     (02 Verified Test Results)
-      Backend: 66 Tests Passed
-      Frontend: 49 Tests Passed
+      Backend: 71 Tests Passed
+      Frontend: 55 Tests Passed
       Dataset: 13 Tests Passed
       LoRA Math: 6 Tests Passed
       Serving Probes: 7 Passed
-      Browser Flows: 41 Passed
-      Total: 182 Automated Checks
+      Browser Flows: 54 Passed
+      Total: 206 Automated Checks
     (03 Production Invariants)
       Single Active Device Session
       Rotating SHA-256 Tokens
@@ -111,15 +113,15 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
 | :--- | :--- | :--- | :--- | :---: |
 | **Frontend Lint Error** | Unescaped single quotes in JSX within `ClinicalCalculatorsModal.jsx` | Replaced unescaped quotes with standard XML entities (`&apos;` / `&quot;`) | `npm run lint` in `frontend` passes with 0 errors | **RESOLVED** |
 | **CORS Allowed Methods** | `AISettings.jsx` sent HTTP `PUT`, but Express CORS method array omitted it | Added `PUT` to allowed CORS methods in `backend/app.js` | Integration test verifies preflight and `PUT /api/settings/providers` succeeds | **RESOLVED** |
-| **High-Risk Medication Pairs** | Lexicon lacked common FDA black-box warning pairs | Implemented 14 comprehensive interaction rules in `interactionService.js` (including statins + CYP3A4 inhibitors, warfarin + azoles, digoxin, MAOIs, allopurinol + azathioprine, and methotrexate + NSAIDs) | 15 passing unit tests in `backend/test/interactionService.test.js` | **RESOLVED** |
+| **High-Risk Medication Pairs** | Lexicon lacked common FDA black-box warning pairs | Implemented 18 comprehensive interaction rules in `interactionService.js` (including statins + CYP3A4 inhibitors, warfarin + azoles, digoxin, MAOIs, allopurinol + azathioprine, methotrexate + NSAIDs, warfarin + Bactrim, clopidogrel + omeprazole, SSRI/SNRI + triptans, and Bactrim + ACEi/ARB) | 17 passing unit tests in `backend/test/interactionService.test.js` | **RESOLVED** |
 | **Emergency Drug Context Drop** | Safety redirects previously dropped co-occurring drug interaction warnings | Preserved `drugInteractions` array within the verification object during emergency deflections | Browser regression test verifies drug interaction alert appears alongside 911 advice | **RESOLVED** |
-| **Clinical Calculator Gaps** | Lacked standardized pre-test probability for acute pulmonary embolism and Payne calcium correction | Added Wells' Criteria for PE, Payne Corrected Calcium, CURB-65 Pneumonia Severity, and Glasgow Coma Scale (GCS) | 11 passing Vitest tests in `frontend/src/test/clinicalCalculators.test.jsx` | **RESOLVED** |
+| **Clinical Calculator Gaps** | Lacked standardized pre-test probability for acute pulmonary embolism and Payne calcium correction | Added Wells' Criteria for PE, Payne Corrected Calcium, CURB-65 Pneumonia Severity, Glasgow Coma Scale (GCS), HAS-BLED, qSOFA, Mosteller BSA, and APRI Liver Fibrosis (17 total tools) | 15 passing Vitest tests in `frontend/src/test/clinicalCalculators.test.jsx` | **RESOLVED** |
 | **ARIA Keyboard Accessibility** | Calculator tabs lacked standard keyboard cycling | Added `role="tablist"`, `role="tabpanel"`, and `ArrowRight`/`ArrowLeft`/`Home`/`End` keyboard cycling | Verified in unit test and headless Playwright browser suite | **RESOLVED** |
 | **Dark Theme Styling** | Low-light theme lacked styling for modals, links, and code blocks | Added comprehensive WCAG AA-compliant styles and automatic system `prefers-color-scheme` detection | 21 passing Playwright visual regression screenshots in `output/qa/` | **RESOLVED** |
 
 ---
 
-## 4. Current Test Suite Inventory (182 Passed Tests)
+## 4. Current Test Suite Inventory (204 Passed Tests)
 
 ```
 ========================================================================================================================
@@ -129,7 +131,7 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
     [ TEST SUITE / RUNNER ]                     [ ENVIRONMENT ]                 [ COUNT ]        [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────
     backend/test/application.test.js            Node 24 + MongoMemoryServer     24 Tests         PASSED
-    backend/test/interactionService.test.js     Node 24 Standalone              15 Tests         PASSED
+    backend/test/interactionService.test.js     Node 24 Standalone              18 Tests         PASSED
     backend/test/safetyService.test.js          Node 24 Standalone               7 Tests         PASSED
     backend/test/providers.test.js              Node 24 Standalone               6 Tests         PASSED
     backend/test/citationService.test.js        Node 24 Standalone               4 Tests         PASSED
@@ -138,16 +140,16 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
     backend/test/historySearch.test.js          Node 24 Standalone               2 Tests         PASSED
     backend/test/chatTitle.test.js              Node 24 Standalone               1 Test          PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────
-    BACKEND TEST SUITE SUB-TOTAL                                                66 Tests         PASSED
+    BACKEND TEST SUITE SUB-TOTAL                                                71 Tests         PASSED
 
-    frontend/src/test/ui.test.jsx               Vitest + jsdom                  24 Tests         PASSED
-    frontend/src/test/clinicalCalculators.test  Vitest + jsdom                  11 Tests         PASSED
+    frontend/src/test/ui.test.jsx               Vitest + jsdom                  25 Tests         PASSED
+    frontend/src/test/clinicalCalculators.test  Vitest + jsdom                  16 Tests         PASSED
     frontend/src/test/medicalDetector.test.js   Vitest + jsdom                   5 Tests         PASSED
     frontend/src/test/api.test.js               Vitest + jsdom                   5 Tests         PASSED
     frontend/src/test/tabStorage.test.js        Vitest + jsdom                   2 Tests         PASSED
     frontend/src/test/conversationImport.test.js Vitest + jsdom                  2 Tests         PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────
-    FRONTEND TEST SUITE SUB-TOTAL                                               49 Tests         PASSED
+    FRONTEND TEST SUITE SUB-TOTAL                                               55 Tests         PASSED
 
     Model and Dataset/test_dataset_tools.py     Python 3.10+ unittest            5 Tests         PASSED
     Model and Dataset/test_release_data.py      Python 3.10+ unittest            4 Tests         PASSED
@@ -159,13 +161,13 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
     PYTHON RESEARCH SUITE SUB-TOTAL                                             19 Tests         PASSED
 
     scripts/check_build_serving.cjs             Built Express + Nginx            7 Tests         PASSED
-    scripts/browser_smoke.cjs                   Playwright Chromium Headless    20 Tests         PASSED
-    scripts/browser_verify_dark_and_tools.cjs   Playwright Chromium Headless    21 Tests         PASSED
+    scripts/browser_smoke.cjs                   Playwright Chromium Headless    21 Tests         PASSED
+    scripts/browser_verify_dark_and_tools.cjs   Playwright Chromium Headless    33 Tests         PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────
-    END-TO-END QA & BROWSER SUB-TOTAL                                           48 Tests         PASSED
+    END-TO-END QA & BROWSER SUB-TOTAL                                           61 Tests         PASSED
 
     =====================================================================================================
-    MASTER AGGREGATE TOTAL ACROSS ALL SUITES                                   182 Tests        100% PASSED
+    MASTER AGGREGATE TOTAL ACROSS ALL SUITES                                   204 Tests        100% PASSED
 ========================================================================================================================
 ```
 

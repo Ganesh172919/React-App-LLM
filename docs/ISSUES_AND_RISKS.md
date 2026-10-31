@@ -62,7 +62,7 @@ The integrated working tree passed 67 backend, 50 frontend (with a single Vitest
                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ TIER 4: PHARMACOLOGICAL NAME MATCHER & CALCULATOR BOUNDS (backend/services/interactionService.js)              │
-    │ ├── 14 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
+    │ ├── 18 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
     │ ├── Preservation Across Redirects: Retains drug interaction warnings even during emergency deflection           │
     │ └── Calculator Physiological Bounds: Caps input parameters to prevent clinically impossible calculations       │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -126,7 +126,7 @@ The following matrix identifies prioritized technical, operational, and clinical
 | :---: | :---: | :---: | :--- | :--- | :--- | :---: |
 | **RSK-01** | **CRITICAL** | Clinical | **Citation Numbering vs Semantic Entailment** | The model may correctly cite `[1]`, but the cited abstract does not actually support the factual proposition. | Two-phase verification: regex citation bounds checking plus optional secondary LLM consensus review (`GEMINI_VERIFY_ANSWERS`). Fallback to references-only. | **Medium** (Requires human clinical review) |
 | **RSK-02** | **CRITICAL** | Clinical | **Acute Emergency Presentation Delay** | User seeking guidance during an acute emergency (stroke, anaphylaxis) waits for chatbot output instead of calling 911. | Deterministic `safetyService.js` regex matches emergency symptoms before any API or PubMed call, immediately returning emergency deflection text. | **Low** (Heuristic rules cover primary presentations) |
-| **RSK-03** | **HIGH** | Clinical | **Pharmacological Heuristic False Negatives** | Drug interaction checker matches 14 high-risk pairs, but misses unlisted drugs, dosage-dependent interactions, or metabolites. | Explicit non-diagnostic caution banner; disclaimers stating absence of a flag does not imply safety; user prompted to consult a pharmacist. | **Medium** (Not a replacement for pharmacy systems) |
+| **RSK-03** | **HIGH** | Clinical | **Pharmacological Heuristic False Negatives** | Drug interaction checker matches 18 high-risk pairs, but misses unlisted drugs, dosage-dependent interactions, or metabolites. | Explicit non-diagnostic caution banner; disclaimers stating absence of a flag does not imply safety; user prompted to consult a pharmacist. | **Medium** (Not a replacement for pharmacy systems) |
 | **RSK-04** | **HIGH** | Cryptographic | **Master Encryption Key Compromise or Loss** | Loss of `USER_API_KEY_ENCRYPTION_KEY` renders all stored user provider keys permanently unreadable. | Stored in isolated `.env` / enterprise secret store; zero persistence in MongoDB; graceful error code `KEY_UNAVAILABLE` allows re-saving. | **Low** (Controlled via operator runbook) |
 | **RSK-05** | **HIGH** | Security | **Concurrent Session Hijacking & Replay** | Stolen refresh tokens or session reuse across multiple unauthorized devices. | Monotonic `sessionVersion` counter increments on every login, instantly invalidating previous JWTs and closing WebSockets with code `4001`. | **Low** (Single active device invariant) |
 | **RSK-06** | **MEDIUM** | Infrastructure | **PubMed E-Utilities Throttling & 429 Errors** | NCBI Entrez rate limits (3 req/s without key, 10 req/s with key) breached under load, breaking medical answers. | Request rate throttle (110ms / 350ms wait) in `pubmedService.js`; automatic exponential retry backoff on 429/503 HTTP status codes. | **Low** (Graceful fallback to references) |
@@ -173,7 +173,7 @@ A primary vulnerability of Retrieval-Augmented Generation (RAG) systems is **hal
 
 ### 4.2 Drug Interaction Screening Boundaries
 
-The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 14 selected medication pairs. Its coverage is incomplete and has not been clinically validated:
+The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 18 selected medication pairs. Its coverage is incomplete and has not been clinically validated:
 
 1. **Anticoagulants / Antiplatelets + NSAIDs / Aspirin** (Elevated systemic & intracranial hemorrhage risk)
 2. **PDE5 Inhibitors + Nitrates** (Profound refractory systemic hypotension and syncope)
@@ -189,6 +189,10 @@ The medication interaction service (`backend/services/interactionService.js`) em
 12. **MAOIs + SSRIs / SNRIs / Tricyclics** (Hypertensive crisis and lethal Serotonin Syndrome)
 13. **Allopurinol / Febuxostat + Azathioprine / 6-Mercaptopurine** (Xanthine oxidase inhibition, severe 6-TGN accumulation, profound bone marrow suppression)
 14. **Methotrexate + NSAIDs / High-Dose Aspirin** (Renal PG inhibition, competitive OAT1/3 clearance blockade, fatal pancytopenia and acute kidney injury)
+15. **Warfarin + Trimethoprim-Sulfamethoxazole** (CYP2C9 inhibition suppresses active S-warfarin clearance and reduces vitamin K synthesis, precipitating acute supratherapeutic INR surges and hemorrhage)
+16. **Clopidogrel + Omeprazole / Esomeprazole** (CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, elevating risk of stent thrombosis and reinfarction)
+17. **SSRI / SNRI / MAOI + Triptan** (Concurrent use of 5-HT1 receptor agonist triptans with serotonergic antidepressants substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome)
+18. **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing Diuretics** (Trimethoprim blocks distal nephron epithelial sodium channels identically to amiloride. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur)
 
 ```javascript
 // Implementation snippet from backend/services/interactionService.js:

@@ -108,7 +108,7 @@ mindmap
         Gemini Reviewer Consensus
         Supported vs Unsupported Gate
       Pharmacological Screening
-        14 FDA Black-Box Rule Sets
+        19 FDA Black-Box Rule Sets
         Preserved Invariant Context
     (04 State & Persistence)
       Two-Phase Generation Protocol
@@ -129,7 +129,7 @@ mindmap
       Memory Backpressure Drop Code 1013
       Owner-Scoped Event Fanout
     (06 Evidence Clinical Tools)
-      17 Clinical Calculators
+      18 Clinical Calculators
         BMI Metric and Imperial
         CKD-EPI 2021 eGFR
         CHA2DS2-VASc Stroke Risk
@@ -146,6 +146,7 @@ mindmap
         qSOFA Sepsis Screening
         Mosteller Body Surface Area BSA
         APRI Liver Fibrosis and Cirrhosis
+        Child-Pugh Cirrhosis Mortality Score
       Accessibility Invariants
         WAI-ARIA Tabpanel Semantics
         Keyboard Alt-Plus-C Shortcut
@@ -790,7 +791,7 @@ export async function apiRequest(path, options = {}) {
 
 ## 10. Pharmacological Drug Interaction Detection & Preservation (`interactionService.js`)
 
-MedAssist AI implements deterministic regular expression screening for 18 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
+MedAssist AI implements deterministic regular expression screening for 19 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
 
 ```
 ====================================================================================================
@@ -820,7 +821,7 @@ MedAssist AI implements deterministic regular expression screening for 18 major 
 ====================================================================================================
 ```
 
-### 10.1 18 FDA Black-Box Interaction Pairs
+### 10.1 19 FDA Black-Box Interaction Pairs
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Primary Risk & Mechanism |
 |:---|:---|:---|:---:|:---|
@@ -842,6 +843,7 @@ MedAssist AI implements deterministic regular expression screening for 18 major 
 | **Clopidogrel + Omeprazole / Esomeprazole** | Clopidogrel (Plavix) | Omeprazole, Prilosec, Esomeprazole, Nexium | `CRITICAL` | Major contraindication (FDA Boxed Warning): CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing risk of stent thrombosis and myocardial infarction. |
 | **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | `CRITICAL` | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
+| **Theophylline + Fluoroquinolones (Ciprofloxacin)** | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
 
 ---
 
@@ -866,7 +868,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
                  │
                  ▼
    ┌─────────────────────────────────────────────────────────────────┐
-   │ 17 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
+   │ 18 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
    │ ├── 01. Adult BMI (Metric: kg/m², Imperial: lbs/in² * 703)      │
    │ ├── 02. CKD-EPI 2021 Creatinine eGFR (Race-Free ASN-NKF Formula)│
    │ ├── 03. CHA₂DS₂-VASc Score for Atrial Fibrillation Stroke Risk  │
@@ -883,7 +885,8 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
    │ ├── 14. HAS-BLED Bleeding Risk Score (9-point AF stratification)│
    │ ├── 15. qSOFA Bedside Sepsis Mortality Screening                │
    │ ├── 16. Mosteller Body Surface Area (BSA Metric & Imperial)     │
-   │ └── 17. AST to Platelet Ratio Index (APRI Liver Fibrosis/Cirrh) │
+   │ ├── 17. AST to Platelet Ratio Index (APRI Liver Fibrosis/Cirrh) │
+   │ └── 18. Child-Pugh Cirrhosis Mortality Score (CTP Prognosis)    │
    └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -912,6 +915,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **qSOFA Sepsis Screening** | Altered mentation GCS <15 (+1), Tachypnea RR ≥22 (+1), Hypotension SBP ≤100 (+1) | $\text{qSOFA} = \sum \text{Criteria}$ (Range: 0–3) | Binary toggles | 0–1: Not high risk for in-hospital sepsis mortality.<br>2–3: High risk for in-hospital sepsis mortality (prompt evaluation for organ dysfunction, blood cultures, lactate, and sepsis protocols). |
 | **Mosteller Body Surface Area (BSA)** | Height (cm or in), Weight (kg or lbs) | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Reference adult norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
+| **Child-Pugh Score (CTP)** | Total Bilirubin (mg/dL), Serum Albumin (g/dL), INR, Ascites, Hepatic Encephalopathy | $\text{Child-Pugh} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{INR Pts} + \text{Ascites Pts} + \text{Enceph Pts}$ | Bilirubin: 0.1–50 mg/dL<br>Albumin: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated (~45% 1-yr survival; 70–80% perioperative mortality). |
 
 ### 11.2 Production Implementation Snippet (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 
@@ -969,7 +973,10 @@ useEffect(() => {
   closeButtonRef.current?.focus();
   const handleKeyDown = (e) => {
     if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-    const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+    const tabList = [
+      "bmi", "egfr", "chads", "map", "crcl", "calcium",
+      "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"
+    ];
     const activeEl = document.activeElement;
     if (activeEl && activeEl.getAttribute("role") === "tab") {
       const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -992,6 +999,50 @@ useEffect(() => {
   window.addEventListener("keydown", handleKeyDown);
   return () => { window.removeEventListener("keydown", handleKeyDown); previousFocus?.focus(); };
 }, [isOpen]);
+```
+
+### 11.4 Child-Pugh Score Calculation Implementation
+
+```jsx
+// frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+// TAB 18: Child-Pugh Score for Cirrhosis Mortality
+let points = 0;
+// Bilirubin points (<2.0: 1, 2.0-3.0: 2, >3.0: 3)
+if (cpBiliNum < 2.0) points += 1;
+else if (cpBiliNum <= 3.0) points += 2;
+else points += 3;
+
+// Albumin points (>3.5: 1, 2.8-3.5: 2, <2.8: 3)
+if (cpAlbNum > 3.5) points += 1;
+else if (cpAlbNum >= 2.8) points += 2;
+else points += 3;
+
+// INR points (<1.7: 1, 1.7-2.3: 2, >2.3: 3)
+if (cpInrNum < 1.7) points += 1;
+else if (cpInrNum <= 2.3) points += 2;
+else points += 3;
+
+// Ascites points
+if (cpAscites === "none") points += 1;
+else if (cpAscites === "mild") points += 2;
+else points += 3;
+
+// Encephalopathy points
+if (cpEncephalopathy === "none") points += 1;
+else if (cpEncephalopathy === "grade1_2") points += 2;
+else points += 3;
+
+cpScore = points;
+if (cpScore <= 6) {
+  cpClass = "Class A (5–6 points)";
+  cpInterpretation = "Well-compensated cirrhosis (1-year survival ~100%, 2-year survival ~85%, perioperative abdominal mortality ~10%)";
+} else if (cpScore <= 9) {
+  cpClass = "Class B (7–9 points)";
+  cpInterpretation = "Significant functional compromise (1-year survival ~80%, 2-year survival ~60%, perioperative abdominal mortality ~30%)";
+} else {
+  cpClass = "Class C (10–15 points)";
+  cpInterpretation = "Decompensated cirrhosis (1-year survival ~45%, 2-year survival ~35%, perioperative abdominal mortality ~70–80%)";
+}
 ```
 
 

@@ -23,8 +23,8 @@ The `scripts/` directory hosts the continuous verification harness, local develo
     │ BACKEND UNIT TESTS  │   │ FRONTEND TESTS & LINT│   │ PYTHON RESEARCH SUITE│
     │ ├── Node test runner│   │ ├── ESLint 9 sweep  │   │ ├── Dataset profiler│
     │ ├── MongoMemoryServ │   │ ├── Vitest + jsdom  │   │ ├── LoRA parameter  │
-    │ └── 66 passed tests │   │ ├── Vite prod build │   │ │   math (147,456)  │
-    │                     │   │ └── 49 passed tests │   │ └── 19 passed tests │
+    │ └── 70 passed tests │   │ ├── Vite prod build │   │ │   math (147,456)  │
+    │                     │   │ └── 54 passed tests │   │ └── 19 passed tests │
     └─────────────────────┘   └─────────────────────┘   └─────────────────────┘
                  │                         │                         │
                  └─────────────────────────┼─────────────────────────┘
@@ -40,9 +40,9 @@ The `scripts/` directory hosts the continuous verification harness, local develo
                                            ▼
     ┌─────────────────────────────────────────────────────────────────┐
     │ PLAYWRIGHT HEADLESS BROWSER REGRESSION SUITES                   │
-    │ ├── browser_smoke.cjs: 20 E2E flows (Auth, Chat, Save, Export)  │
-    │ └── browser_verify_dark_and_tools.cjs: 21 flows (13 Tools, ARIA)│
-    │ └── 41 passed browser workflows                                 │
+    │ ├── browser_smoke.cjs: 21 E2E flows (Auth, Chat, Save, Export)  │
+    │ └── browser_verify_dark_and_tools.cjs: 33 flows (17 Tools, ARIA)│
+    │ └── 54 passed browser workflows                                 │
     └─────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
 ```
@@ -75,8 +75,8 @@ mindmap
       run_build_qa.cjs on 4173
     (04 Playwright E2E)
       ::icon(fa fa-browser)
-      browser_smoke.cjs (20 flows)
-      browser_verify_dark_and_tools (21 flows)
+      browser_smoke.cjs (21 flows)
+      browser_verify_dark_and_tools (33 flows)
       Screenshot artifacts in output/qa/
 ```
 
@@ -90,8 +90,8 @@ mindmap
 | **`run_local.cjs`** | Node.js | Launches isolated local development environment using in-memory MongoDB (`MongoMemoryServer`) and synthetic mock services. No external API keys or cloud connections required. |
 | **`run_build_qa.cjs`** | Node.js | Serves the compiled production Vite bundle alongside mock API endpoints on port 4173 for pre-deployment validation. |
 | **`check_build_serving.cjs`** | Node.js | Performs 7 automated HTTP header assertions against the serving gateway, verifying CSP, HSTS, X-Frame-Options, and gzip content delivery. |
-| **`browser_smoke.cjs`** | Playwright / Chromium | Executes 20 automated end-to-end browser workflows, verifying user registration, login, chat generation, two-phase commitment (`/api/save`), thread deletion, and conversation export. |
-| **`browser_verify_dark_and_tools.cjs`** | Playwright / Chromium | Executes 21 automated browser workflows verifying WCAG AA contrast in dark mode, OS `prefers-color-scheme` synchronization, 13 clinical calculators, and WAI-ARIA tabpanel keyboard cycling. |
+| **`browser_smoke.cjs`** | Playwright / Chromium | Executes 21 automated end-to-end browser workflows, verifying user registration, login, chat generation, two-phase commitment (`/api/save`), thread deletion, and conversation export. |
+| **`browser_verify_dark_and_tools.cjs`** | Playwright / Chromium | Executes 33 automated browser workflows verifying WCAG AA contrast in dark mode, OS `prefers-color-scheme` synchronization, 18 clinical calculators, DDI alert banners, and WAI-ARIA tabpanel keyboard cycling. |
 | **`generate_project_report.py`** | Python | Compiles architectural documentation, system metrics, and test logs into a unified, formal PDF project review report. |
 
 ---

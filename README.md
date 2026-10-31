@@ -12,8 +12,8 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 ### Core System Capabilities
 1. **Biomedical Evidence Grounding**: Live 3-stage NCBI Entrez E-Utilities harvesting (`esearch`, `esummary`, `efetch`) extracting structured MEDLINE XML abstracts.
 2. **Deterministic Citation Auditing**: Set-partitioning mathematical verifier analyzing `[N]` bracketed assertions against retrieved literature bounds.
-3. **Medication Interaction Screener**: Heuristic name matching for 18 selected high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
-4. **Educational Clinical Calculators**: 17 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
+3. **Medication Interaction Screener**: Heuristic name matching for 19 selected high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
+4. **Educational Clinical Calculators**: 18 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
 5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer followed by an automatic `/api/save` request after an answer is generated.
 6. **Multi-Tab Web Locks Synchronization**: Single-flight token renewal across concurrent browser tabs (`navigator.locks.request`).
 7. **Offline Machine Learning & LoRA Suite**: 1,437 ambiguous question groups quarantined; deterministic SHA-256 modulo 100 hash splits; closed-form LoRA parameter calculations.
@@ -40,7 +40,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      ├── Web Locks API Single-Flight Token Refresh (frontend/src/lib/api.js)
      ├── Resilient Draft & Pending Answer Cache (frontend/src/lib/tabStorage.js)
      ├── IME Composition Safety Guard for East Asian Language Typing
-     └── 17 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
+     └── 18 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
                   │
                   │ HTTP (Port 8080) / Secure WebSocket (/ws)
                   │ (External TLS 1.3 Ingress Required in Production)
@@ -66,7 +66,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 18 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
+     │  - 19 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -111,7 +111,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      16 Heuristic Medication Interaction Patterns
+      19 Heuristic Medication Interaction Patterns
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -122,7 +122,7 @@ mindmap
       AES-256-GCM Authenticated Vault
       Google OAuth 2.0 PKCE Flow
     (04 Clinical Educational Calculators)
-      15 Clinical Tools
+      18 Clinical Tools
         Adult BMI Metric and Imperial
         CKD-EPI 2021 eGFR Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -137,6 +137,9 @@ mindmap
         Glasgow Coma Scale GCS
         HAS-BLED Bleeding Risk
         qSOFA Sepsis Mortality Screening
+        Mosteller Body Surface Area BSA
+        APRI Liver Fibrosis and Cirrhosis
+        Child-Pugh Cirrhosis Mortality Score
       Accessibility Controls
         WAI-ARIA Tabpanel Cycling
         Keyboard Alt-Plus-C Shortcut
@@ -157,7 +160,7 @@ mindmap
 
 ## 4. Evidence-Based Clinical Calculators Suite
 
-The platform includes a comprehensive 17-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
+The platform includes a comprehensive 18-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
 
 | Tool Name | Clinical Formula / Scoring Model | Input Parameters | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -178,12 +181,13 @@ The platform includes a comprehensive 17-calculator clinical suite implemented i
 | **qSOFA Sepsis Screening** | Altered mental status (GCS <15) + Tachypnea (RR ≥22) + Hypotension (SBP ≤100 mmHg) | 3 clinical checkboxes (0–3 points) | Binary toggles | 0–1: Low risk of in-hospital sepsis mortality.<br>2–3: High risk of in-hospital sepsis mortality (prompt evaluation for organ dysfunction & sepsis protocol). |
 | **Body Surface Area (BSA - Mosteller)** | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height (cm/in), Weight (kg/lbs) | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Adult reference norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
+| **Child-Pugh Cirrhosis Score** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant functional compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated cirrhosis (~45% 1-yr survival). |
 
 ---
 
 ## 5. Pharmacological Drug Interaction Screening & Preserved Context
 
-Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 18 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
+Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 19 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
 |:---|:---|:---|:---:|:---|
@@ -205,6 +209,7 @@ Implemented in `backend/services/interactionService.js`, this subsystem scans us
 | **Clopidogrel + Omeprazole / Esomeprazole** | Clopidogrel (Plavix) | Omeprazole (Prilosec), Esomeprazole (Nexium) | `CRITICAL` | Potent CYP2C19 inhibition prevents metabolic bioactivation of prodrug clopidogrel, elevating stent thrombosis and reinfarction risk (FDA Boxed Warning). |
 | **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent 5-HT1 receptor agonist triptans with serotonergic antidepressants elevates central serotonin, precipitating Serotonin Syndrome. |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone | `CRITICAL` | Trimethoprim blocks distal nephron ENaC channels identically to amiloride. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
+| **Theophylline + Fluoroquinolone** | Theophylline, Theo-24, Aminophylline | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more, causing toxic accumulation, refractory seizures, malignant arrhythmias, and death. |
 
 ### Preserved Context Invariant
 ```
@@ -324,7 +329,7 @@ if (gcsScore <= 8) {
 }
 
 // WAI-ARIA Arrow Key Tab Navigation
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
 const handleKeyDown = (e) => {
   const curIndex = tabList.indexOf(activeTab);
   let nextIndex = -1;
@@ -388,8 +393,8 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       70 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       54 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       71 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       55 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
@@ -398,7 +403,7 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       204 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       206 Passed         PASSED
 ========================================================================================================================
 ```
 

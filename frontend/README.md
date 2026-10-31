@@ -92,7 +92,7 @@ mindmap
         History Loading State Lock
         Auto-Expanding Textarea
     (04 Clinical Calculators Modal)
-      17 Clinical Tools
+      18 Clinical Tools
         BMI Metric and Imperial
         eGFR CKD-EPI 2021 Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -110,6 +110,7 @@ mindmap
         qSOFA Sepsis Screening
         Mosteller Body Surface Area BSA
         APRI Liver Fibrosis and Cirrhosis
+        Child-Pugh Cirrhosis Mortality Score
       WAI-ARIA Accessibility
         role="tablist" & role="tabpanel"
         Keyboard Arrow-Key Cycling
@@ -405,7 +406,7 @@ export function parseConversationImport(jsonText) {
 
 ## 5. Educational Clinical Calculators Implementation
 
-The `ClinicalCalculatorsModal.jsx` component implements 13 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
+The `ClinicalCalculatorsModal.jsx` component implements 17 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -455,6 +456,19 @@ The `ClinicalCalculatorsModal.jsx` component implements 13 standardized clinical
 
     Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
                                Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
+
+    HAS-BLED Bleeding Risk     Sum of HTN (+1), Renal (+1), Liver (+1), Stroke (+1),     9 binary flags (0-9)
+                               Bleeding (+1), Labile INR (+1), Age >65 (+1), Drugs (+1), Low: 0-1, Mod: 2,
+                               Alcohol (+1). Range: 0 to 9 points.                       High: >=3 (>=3.7% / yr)
+
+    qSOFA Sepsis Screening     Altered mental status (GCS <15) + Tachypnea (RR >=22) +   3 binary flags (0-3)
+                               Hypotension (SBP <=100 mmHg).                             >=2: High in-hospital risk
+
+    Mosteller BSA              BSA = sqrt(Height_cm * Weight_kg / 3600)                  Height: 30-250 cm
+                               Imperial: sqrt(Height_in * Weight_lbs / 3131)             Weight: 2-350 kg
+
+    APRI Liver Fibrosis        APRI = [(AST / AST_ULN) / Platelets] * 100                AST: 5-2000, ULN: 10-100
+                               <=0.50: Low fibrosis risk; >1.50: High cirrhosis risk    Platelets: 10-1000 x10^9/L
 ========================================================================================================================
 ```
 
@@ -474,8 +488,8 @@ if (gcsScore <= 8) {
   gcsStratification = "Moderate brain injury (9–12)";
 }
 
-// Arrow key navigation across all 13 tabs
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+// Arrow key navigation across all 17 tabs
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
 ```
 
 ---
@@ -492,7 +506,7 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (49 tests across 6 suites)
+# 3. Execute Vitest automated unit and component test suite (55 tests across 6 suites)
 npm test
 
 # 4. Compile optimized production distribution bundle

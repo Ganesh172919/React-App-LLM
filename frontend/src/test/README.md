@@ -29,7 +29,7 @@ The MedAssist AI frontend test harness (`frontend/src/test/`) verifies React 19 
          ▼                   ▼                   ▼                   ▼
     ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
     │ UI LIFECYCLE  │   │ CLINICAL TOOLS│   │ CLIENT APIS & │   │ HEURISTICS &  │
-    │ SUITE (24)    │   │ SUITE (11)    │   │ CONCURRENCY(7)│   │ STORAGE (7)   │
+    │ SUITE (25)    │   │ SUITE (16)    │   │ CONCURRENCY(7)│   │ STORAGE (7)   │
     │ ui.test.jsx   │   │ clinical-     │   │ api.test.js   │   │ medical-      │
     │ (Auth & Chat) │   │ Calculators   │   │ conversation- │   │ Detector      │
     │               │   │               │   │ Import        │   │ tabStorage    │
@@ -39,8 +39,8 @@ The MedAssist AI frontend test harness (`frontend/src/test/`) verifies React 19 
                                                  │
                                                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │                                54 TESTS PASSED ACROSS 6 TEST FILES (100% PASS RATE)                            │
-    │  - Verified Invariants: 17 Calculator physiological bounds, Web Locks single-flight refresh, tab recovery      │
+    │                                55 TESTS PASSED ACROSS 6 TEST FILES (100% PASS RATE)                            │
+    │  - Verified Invariants: 18 Calculator physiological bounds, Web Locks single-flight refresh, tab recovery      │
     │  - Accessibility Verification: WAI-ARIA tabpanel cycling, Escape key dismiss, and focus restoration           │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
@@ -63,11 +63,12 @@ mindmap
         Unsaved Answer Recovery on Remount
         Dark/Light Mode Theme Toggle
     (02 Clinical Calculators)
-      clinicalCalculators.test.jsx (15 tests)
-        17 Evidence-Based Tools Form Math
+      clinicalCalculators.test.jsx (16 tests)
+        18 Evidence-Based Tools Form Math
         Physiological Bounds Clamping
         Mosteller BSA Metric & Imperial
         APRI Liver Fibrosis Risk Bands
+        Child-Pugh Cirrhosis Mortality Score
         WAI-ARIA Tablist & Tab Cycling
         Educational Action Prompt Generation
     (03 Concurrency & Caching)
@@ -91,12 +92,12 @@ mindmap
 | Test Suite File | Test Framework | Test Count | Key Invariants Verified |
 |:---|:---:|:---:|:---|
 | `ui.test.jsx` | Vitest + RTL | **25** | Auth flow, pending feedback, chat lifecycle, two-phase save retry, navigation guard, draft recovery. |
-| `clinicalCalculators.test.jsx` | Vitest + RTL | **15** | 17 calculators math, input clamping (age, creatinine), Mosteller BSA, APRI, WAI-ARIA tabpanel semantics. |
+| `clinicalCalculators.test.jsx` | Vitest + RTL | **16** | 18 calculators math, input clamping (age, creatinine), Mosteller BSA, APRI, Child-Pugh, WAI-ARIA tabpanel semantics. |
 | `api.test.js` | Vitest | **5** | Single-flight token renewal via Web Locks mutex, concurrent 401 resolution, error payload extraction. |
 | `medicalDetector.test.js` | Vitest | **5** | Clinical keyword detection, negation handling, non-medical inquiry passthrough. |
 | `conversationImport.test.js` | Vitest | **2** | JSON export sanitization, anti-spoofing evidence strip, `importPreview: true` composer lock. |
 | `tabStorage.test.js` | Vitest | **2** | Resilient `sessionStorage` wrapper, transparent in-memory Map fallback. |
-| **TOTAL** | — | **54 Tests** | **100% Passing** |
+| **TOTAL** | — | **55 Tests** | **100% Passing** |
 
 ---
 

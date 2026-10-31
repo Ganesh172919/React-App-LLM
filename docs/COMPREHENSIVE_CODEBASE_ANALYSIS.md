@@ -549,7 +549,7 @@ function attachWebSockets(server, app) {
 
 ### 4.10 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 - **File Path**: [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js)
-- **Role**: Performs deterministic name matching for 14 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
+- **Role**: Performs deterministic name matching for 18 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
 
 ```
 ========================================================================================================================
@@ -560,7 +560,7 @@ function attachWebSockets(server, app) {
               │
               ▼
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │ 14 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
+    │ 18 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
     │ ├── 1. Anticoagulants/Antiplatelets + NSAIDs/Aspirin (Major Bleeding Risk)                       │
     │ ├── 2. PDE5 Inhibitors + Nitrates (Profound Refractory Hypotension)                              │
     │ ├── 3. Serotonergic Opioids + SSRIs/SNRIs (Serotonin Syndrome)                                   │
@@ -574,7 +574,11 @@ function attachWebSockets(server, app) {
     │ ├── 11. Digoxin + Amiodarone/Verapamil (Digoxin Toxicity)                                        │
     │ ├── 12. MAOIs + SSRIs/SNRIs/Tricyclics (Hypertensive Crisis / Serotonin Toxicity)                │
     │ ├── 13. Allopurinol/Febuxostat + Azathioprine/6-Mercaptopurine (Severe Pancytopenia)             │
-    │ └── 14. Methotrexate + NSAIDs/High-Dose Aspirin (Fatal Bone Marrow Suppression & AKI)           │
+    │ ├── 14. Methotrexate + NSAIDs/High-Dose Aspirin (Fatal Bone Marrow Suppression & AKI)           │
+    │ ├── 15. Warfarin + Trimethoprim-Sulfamethoxazole (Bactrim INR Surge & Hemorrhage)                │
+    │ ├── 16. Clopidogrel + Omeprazole/Esomeprazole (CYP2C19 Inhibition & Stent Thrombosis)            │
+    │ ├── 17. SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity & Acute Serotonin Syndrome)          │
+    │ └── 18. Bactrim + ACE Inhibitors/ARBs/K-Sparing Diuretics (Refractory Hyperkalemia & Arrhythmia)  │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
               │
               ├── Matches Found ──► Emit structured `drugInteractions` array with clinical descriptions
@@ -760,7 +764,7 @@ const handleKeyDown = (e) => {
 
 ### 5.4 Clinical Educational Calculators Suite (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 - **File Path**: [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx)
-- **Role**: Implements 13 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
+- **Role**: Implements 17 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -775,7 +779,7 @@ const handleKeyDown = (e) => {
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ WAI-ARIA Tab Navigation: role="tablist"                                                          │
     │ [BMI] [eGFR] [CHA₂DS₂-VASc] [MAP] [CrCl] [Payne Ca] [Anion Gap] [FeNa] [FeUrea] [Fluids] [Wells]│
-    │ [CURB-65] [Glasgow Coma Scale (GCS)]                                                             │
+    │ [CURB-65] [Glasgow Coma Scale (GCS)] [HAS-BLED] [qSOFA] [Mosteller BSA] [APRI]                   │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -791,7 +795,7 @@ const handleKeyDown = (e) => {
 
 ```javascript
 // Implementation Snippet: Keyboard Arrow Tab Cycling in ClinicalCalculatorsModal.jsx
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
 if (activeEl && activeEl.getAttribute("role") === "tab") {
   const curTabId = activeEl.id.replace(/^tab-/, "");
   const curIndex = tabList.indexOf(curTabId);
@@ -955,7 +959,7 @@ async function runBrowserSmoke() {
 
 ### 7.3 High-Risk Drug Interaction Unit Tests (`backend/test/interactionService.test.js`)
 - **File Path**: [`backend/test/interactionService.test.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/test/interactionService.test.js)
-- **Role**: Validates name matching for the 12 configured medication-pair cautions and negative non-interference on clean queries (13 passing tests). This is not clinical validation.
+- **Role**: Validates name matching for all 18 configured medication-pair cautions and negative non-interference on clean queries (17 passing tests). This is not clinical validation.
 
 ```javascript
 // Implementation Snippet: backend/test/interactionService.test.js
@@ -969,7 +973,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 
 ### 7.4 Clinical Calculators Vitest Component Tests (`frontend/src/test/clinicalCalculators.test.jsx`)
 - **File Path**: [`frontend/src/test/clinicalCalculators.test.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/test/clinicalCalculators.test.jsx)
-- **Role**: Tests form math, input min/max boundary clamping, Payne calcium formula, Wells criteria scoring, and prompt insertion across all 11 calculators (12 passing tests).
+- **Role**: Tests form math, input min/max boundary clamping, Payne calcium formula, Wells criteria scoring, HAS-BLED, qSOFA, Mosteller BSA, APRI, and Child-Pugh cirrhosis score prompt insertion across all 18 calculators (16 passing tests).
 
 ### 7.5 Medical Query Detector Vitest Suite (`frontend/src/test/medicalDetector.test.js`)
 - **File Path**: [`frontend/src/test/medicalDetector.test.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/test/medicalDetector.test.js)

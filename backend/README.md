@@ -50,7 +50,7 @@ The MedAssist AI backend is engineered as a high-throughput, security-hardened s
 |  ├── providerSelection.js: Resolves deployment defaults vs AES-256-GCM user-vault personal keys                     |
 |  ├── pubmedService.js: NCBI Entrez REST client (esearch, esummary, efetch) & fast-xml-parser flattener               |
 |  ├── citationService.js: Deterministic [N] numerical citation extraction & set partitioning auditor                  |
-|  ├── interactionService.js: Deterministic 18-pair FDA black-box drug interaction scanner                             |
+|  ├── interactionService.js: Deterministic 19-pair FDA black-box drug interaction scanner                             |
 |  ├── answerVerifier.js: Secondary LLM consensus reviewer (SUPPORTED vs UNSUPPORTED)                                 |
 |  ├── safetyService.js: Deterministic prompt & output screening for crisis, emergency, and harmful synthesis         |
 |  └── websocketService.js: 30s heartbeat watchdog ping-pong & 1MB backpressure drop protection                        |
@@ -104,7 +104,7 @@ mindmap
         Acute Emergency Interception
         Harmful Synthesis Rejection
         Prompt Injection Token Stripping
-      18 FDA Black-Box Drug Interaction Pairs
+      19 FDA Black-Box Drug Interaction Pairs
         Preserved in Emergency Redirects
     (05 Real-Time & Persistence)
       Two-Phase Ephemeral Generation
@@ -425,7 +425,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 };
 ```
 
-### 4.7 Complete 18 FDA Black-Box Medication Interaction Inventory
+### 4.7 Complete 19 FDA Black-Box Medication Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Clinical Risk & Pharmacology |
 |:---|:---|:---|:---|:---:|:---|
@@ -447,6 +447,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 | **16** | Clopidogrel + Omeprazole / Esomeprazole | Clopidogrel (Plavix) | Omeprazole (Prilosec), Esomeprazole (Nexium) | **CRITICAL** | Major contraindication (FDA Boxed Warning): Potent CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, increasing stent thrombosis and reinfarction risk. |
 | **17** | SSRI / SNRI / MAOI + Triptan | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | **CRITICAL** | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **18** | TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Enalapril, Losartan, Spironolactone | **CRITICAL** | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
+| **19** | Theophylline + Fluoroquinolone | Theophylline (Theo-24, Elixophyllin, Aminophylline) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication (FDA Warning): Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more. This precipitous accumulation drives serum theophylline into toxic ranges, causing refractory seizures, malignant cardiac arrhythmias, and sudden death. |
 
 ---
 
@@ -487,9 +488,9 @@ cd backend
 npm test
 ```
 
-### Complete Test Suite Breakdown (70 Tests across 9 Suites):
+### Complete Test Suite Breakdown (71 Tests across 9 Suites):
 1. `application.test.js` (24 Tests): Comprehensive HTTP and WebSocket integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, single-device `sessionVersion` invalidation, two-phase generation commitment (`/api/save`), cursor pagination, rate limiters, and WebSocket notifications.
-2. `interactionService.test.js` (19 Tests): Validates deterministic name matching across all 18 FDA black-box drug interaction rules and ensures benign/unrelated medications pass without warnings.
+2. `interactionService.test.js` (18 Tests): Validates deterministic name matching across all 19 FDA black-box drug interaction rules and ensures benign/unrelated medications pass without warnings.
 3. `safetyService.test.js` (7 Tests): Verifies crisis deflection, acute emergency symptom interception, prompt injection defense, and educational/negated exemptions.
 4. `providers.test.js` (6 Tests): Unit tests for AES-256-GCM vault seal/open, PubMed numeric UID sorting, structured XML abstract parsing, and Gemini candidate normalization.
 5. `citationService.test.js` (4 Tests): Validates numerical bracket parsing `[N]`, valid vs invalid set partitioning, and reference coverage math.
@@ -533,7 +534,7 @@ The MedAssist AI backend is engineered as a decoupled, modular service runtime. 
     ┌─────────────────────────────────────────────────────────────────┐
     │ TIER 3: SERVICES & DETERMINISTIC GUARDS (services/*.js)         │
     │ ├── Deterministic Safety Screening (safetyService.js)           │
-    │ ├── 18 FDA High-Risk Drug Interaction Rules (interactionService)│
+    │ ├── 19 FDA High-Risk Drug Interaction Rules (interactionService)│
     │ ├── Multi-Provider AI Gateway (modelProvider.js)                │
     │ └── AES-256-GCM Authenticated Cryptographic Vault               │
     └─────────────────────────────────────────────────────────────────┘
