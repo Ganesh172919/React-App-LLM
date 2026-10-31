@@ -425,3 +425,181 @@ python "Model and Dataset/lora/train_lora.py"
 python -m unittest discover -s "Model and Dataset" -p "test_*.py"
 python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
 ```
+
+---
+
+## 13. Developer Extensibility: QLoRA 4-Bit Quantization Math & Contemporary 8B/9B Adapters
+
+For researchers and machine learning engineers transitioning from the educational GPT-2 baseline to modern open-weights clinical foundations (e.g., Meta Llama-3-8B-Instruct, Mistral-7B-v0.3, Google Gemma-2-9B, or Qwen-2.5-7B), this section provides the mathematical foundations of QLoRA (Dettmers et al., 2023), analytical parameter derivations, ASCII quantization topologies, colorful mindmaps, and copy-paste ready training code.
+
+```
+========================================================================================================================
+                          QLORA 4-BIT QUANTIZED ADAPTATION TOPOLOGY
+========================================================================================================================
+
+    [ INPUT ACTIVATION TENSOR x (BF16, dim = d) ]
+                     │
+                     ├──────────────────────────────────────────┐
+                     │                                          │
+                     ▼                                          ▼
+    ┌────────────────────────────────────────┐ ┌────────────────────────────────────────────────────────┐
+    │     FROZEN BASE WEIGHT MATRIX W_0      │ │         TRAINABLE LOW-RANK ADAPTER MATRICES            │
+    │  - Quantized to 4-bit NormalFloat(NF4) │ │  - Down-Projection A: (r x d) [Initialized N(0, 1/r)] │
+    │  - Dequantized on-the-fly to BF16      │ │  - Up-Projection B:   (k x r) [Initialized to Zero]   │
+    │  - Double Quantization (DQ) of scales  │ │  - Scaled by factor:  (alpha / r)                      │
+    │  - Block size B = 64                   │ │  - Fully differentiable backprop in FP32 / BF16       │
+    └────────────────────────────────────────┘ └────────────────────────────────────────────────────────┘
+                     │                                          │
+                     ▼                                          ▼
+            [ dequant(W_0) · x ]                     [ (alpha / r) · B · A · x ]
+                     │                                          │
+                     └─────────────────────┬────────────────────┘
+                                           │
+                                           ▼ (Tensor Addition)
+                       [ OUTPUT ACTIVATION TENSOR h (BF16, dim = k) ]
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((QLoRA Foundations))
+    ::icon(fa fa-brain)
+    (01 NormalFloat 4 NF4)
+      Information-Theoretically Optimal
+      Quantile Quantization for Normal Dist
+      Preserves High-Kurtosis Weight Tails
+    (02 Double Quantization DQ)
+      Quantizes Quantization Constants
+      Reduces Footprint by 0.37 Bits/Param
+      Savings: 3 GB on 65B Parameter Model
+    (03 Paged Optimizers)
+      CUDA Unified Memory Paging
+      Pages AdamW States to CPU RAM on Spikes
+      Eliminates Out-Of-Memory (OOM) Errors
+    (04 Modern 8B Architectures)
+      Llama-3-8B Target Modules
+        q_proj, k_proj, v_proj, o_proj
+        gate_proj, up_proj, down_proj
+      Rank 16 Alpha 32
+        16.78 Million Trainable Params
+        33.55 MB Adapter Artifact (BF16)
+        Fits on Single 16GB GPU (RTX 4080 / T4)
+```
+
+### 13.1 Mathematical Principles of 4-bit NormalFloat (NF4)
+
+Foundation model weights follow a zero-mean normal distribution with variance $\sigma^2$:
+$$W \sim \mathcal{N}(0, \sigma^2)$$
+
+The NF4 data type constructs $2^k = 16$ discrete quantization bins $q_i$ such that each bin holds an equal probability mass under the standard normal distribution $\Phi(x)$:
+$$q_i = \frac{1}{2} \left( Q_X\left(\frac{i}{2^k}\right) + Q_X\left(\frac{i+1}{2^k}\right) \right)$$
+
+Weights within a block of size $B = 64$ are normalized by their absolute maximum $c = \max(|W|)$, mapped to indices $i \in [0, 15]$, and dynamically dequantized during the forward pass:
+$$\tilde{W} = c \cdot \text{dequant}(i)$$
+
+### 13.2 Contemporary 8B Model Parameter Derivation
+
+Targeting all linear layers across $L = 32$ transformer layers in Llama-3-8B ($d = 4,096$, intermediate hidden size $d_{\text{ffn}} = 14,336$):
+
+1. **Attention Heads ($q, k, v, o$)**:
+   $$P_{\text{attn}} = 32 \times 4 \times (2 \times 4096 \times 16) = 32 \times 4 \times 131,072 = 16,777,216 \text{ parameters}$$
+2. **MLP Projections ($\text{gate}, \text{up}, \text{down}$)**:
+   $$P_{\text{mlp}} = 32 \times \left[ 2 \times (4096 \times 16 + 16 \times 14336) + (14336 \times 16 + 16 \times 4096) \right]$$
+
+Total trainable parameters for $r = 16$ across all projection heads equals approximately $16,777,216$ parameters ($0.20\%$ of base model), with a disk footprint of $33.55\text{ MB}$ in BF16.
+
+### 13.3 Production QLoRA Fine-Tuning Script (`Model and Dataset/lora/train_modern_qlora.py`)
+
+```python
+# Model and Dataset/lora/train_modern_qlora.py
+"""Production QLoRA fine-tuning script for modern 8B LLMs (Llama-3, Mistral, Gemma)."""
+import torch
+from datasets import load_dataset
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    TrainingArguments,
+    Trainer,
+    DataCollatorForSeq2Seq
+)
+
+def train_qlora_adapter(
+    model_id: str = "meta-llama/Meta-Llama-3-8B-Instruct",
+    dataset_path: str = "Model and Dataset/lora/train.jsonl",
+    output_dir: str = "Model and Dataset/lora/modern_adapter"
+):
+    # 1. 4-bit NormalFloat Quantization Configuration
+    bnb_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16
+    )
+
+    tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        quantization_config=bnb_config,
+        device_map="auto"
+    )
+    model = prepare_model_for_kbit_training(model)
+
+    # 2. LoRA Adapter Configuration targeting all linear projections
+    lora_config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM"
+    )
+    model = get_peft_model(model, lora_config)
+    model.print_trainable_parameters()
+
+    # 3. Instruction Prompt Formatting with Label Masking (-100)
+    def formatting_prompts_func(example):
+        instruction = f"<|start_header_id|>user<|end_header_id|>\n\n{example['question']}<|eot_id|>"
+        response = f"<|start_header_id|>assistant<|end_header_id|>\n\n{example['answer']}<|eot_id|>"
+        full_text = instruction + response
+
+        tokenized = tokenizer(full_text, truncation=True, max_length=1024)
+        prompt_len = len(tokenizer(instruction, add_special_tokens=False)["input_ids"])
+        tokenized["labels"] = [-100] * min(prompt_len, len(tokenized["input_ids"])) + tokenized["input_ids"][prompt_len:]
+        return tokenized
+
+    raw_dataset = load_dataset("json", data_files=dataset_path, split="train")
+    processed_dataset = raw_dataset.map(formatting_prompts_func, remove_columns=raw_dataset.column_names)
+
+    # 4. Training Arguments with Paged AdamW Optimizer
+    training_args = TrainingArguments(
+        output_dir=output_dir,
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,
+        learning_rate=2e-4,
+        lr_scheduler_type="cosine",
+        warmup_ratio=0.03,
+        logging_steps=10,
+        bf16=True,
+        optim="paged_adamw_8bit",
+        save_strategy="epoch",
+        report_to="none"
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=processed_dataset,
+        data_collator=DataCollatorForSeq2Seq(tokenizer, pad_to_multiple_of=8, return_tensors="pt")
+    )
+
+    trainer.train()
+    model.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    print(f"Modern QLoRA Adapter successfully saved to {output_dir}")
+```

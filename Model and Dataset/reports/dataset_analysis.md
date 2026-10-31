@@ -264,3 +264,112 @@ def classify_question(question: str) -> str:
 2. **Ambiguity Quarantine**: Questions mapping to divergent answers must be quarantined to prevent supervised fine-tuning from learning contradictory loss gradients (see [`dataset_audit.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/Model%20and%20Dataset/reports/dataset_audit.md)).
 3. **Deterministic Partitioning**: Evaluation splits must be keyed strictly on normalized question strings via SHA-256 modulo 100 hashing to guarantee zero train-to-test data leakage.
 4. **License & Provenance Tracking**: Capture source attribution and licensing metadata as structured columns rather than bare text pairs.
+
+---
+
+## 9. Developer Extension Blueprint: Adding Custom Analyzers & Quality Profilers
+
+Developers adapting the profiling suite to other clinical datasets (MIMIC-IV, PubMedQA, MedQuAD, BioASQ) can extend the pipeline with specialized lexical metrics, clinical entity recognizers (Named Entity Recognition), and readability scoring.
+
+```
+========================================================================================================================
+                          DATASET PROFILING EXTENSION ARCHITECTURE
+========================================================================================================================
+
+    [ RAW CLINICAL CORPUS CSV / JSONL ]
+                    │
+                    ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 1: STREAM INGESTION & STRUCTURAL VALIDATION                                │
+    │  - utf-8-sig decoder + DictReader                                                                              │
+    │  - Normalizes dynamic headers: ("Prompt", "Query", "Question") -> question                                    │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 2: CUSTOM METRIC & CLINICAL ENTITY EXTRACTORS                              │
+    │  - Readability Profiler: Flesch-Kincaid Grade Level & Coleman-Liau Readability Index                           │
+    │  - Biomedical NER: Extracts anatomical terms, disease conditions, and pharmacological entities                  │
+    │  - Lexical Diversity: Type-Token Ratio (TTR) and Hapax Legomena frequency analysis                             │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 3: SERIALIZATION & SUMMARY REPORTING                                       │
+    │  - Generates JSON benchmark: `reports/<dataset_name>_analysis.json`                                           │
+    │  - Outputs GitHub-Flavored Markdown summary for peer and IRB review                                            │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Dataset Profiler))
+    ::icon(fa fa-chart-pie)
+    (01 Readability Indices)
+      Flesch Reading Ease
+        Formula 206.835 - 1.015 ASL - 84.6 ASW
+        Target 60.0 to 70.0 for Patient Comprehension
+      Coleman-Liau Index
+        Formula 0.0588 L - 0.296 S - 15.8
+        Grade Level Approximation
+    (02 Lexical Density)
+      Type-Token Ratio TTR
+        Vocabulary Richness Assessment
+        Identifies Repetitive Text Patterns
+      Clinical Term Ratio
+        UMLS / MeSH Vocabulary Density
+        Specialty vs Layman Phrasing
+    (03 Quality Anomaly Flags)
+      Excessive Character Duplication
+      Truncated Sentences without Terminal Period
+      Unescaped HTML and URL Redirects
+```
+
+### 9.1 Custom Readability & Clinical Complexity Profiler (`Model and Dataset/custom_profiler.py`)
+
+```python
+# Model and Dataset/custom_profiler.py
+"""Developer script: Computes Flesch-Kincaid Readability and Lexical Richness."""
+import re
+from typing import Dict, Any
+
+VOWEL_RUN_PATTERN = re.compile(r"[aeiouy]+", re.IGNORECASE)
+SENTENCE_SPLIT_PATTERN = re.compile(r"[.!?]+", re.IGNORECASE)
+
+def count_syllables(word: str) -> int:
+    """Estimates syllable count using heuristic vowel runs."""
+    word = word.lower().strip()
+    if len(word) <= 3:
+        return 1
+    if word.endswith("e") and not word.endswith("le"):
+        word = word[:-1]
+    matches = VOWEL_RUN_PATTERN.findall(word)
+    return max(1, len(matches))
+
+def compute_flesch_reading_ease(text: str) -> float:
+    """Computes Flesch Reading Ease: 206.835 - 1.015*(words/sentences) - 84.6*(syllables/words)."""
+    words = re.findall(r"[A-Za-z]+", text)
+    sentences = [s.strip() for s in SENTENCE_SPLIT_PATTERN.split(text) if s.strip()]
+
+    if not words or not sentences:
+        return 0.0
+
+    total_words = len(words)
+    total_sentences = len(sentences)
+    total_syllables = sum(count_syllables(w) for w in words)
+
+    asl = total_words / total_sentences
+    asw = total_syllables / total_words
+
+    score = 206.835 - (1.015 * asl) - (84.6 * asw)
+    return round(score, 2)
+
+def profile_text_corpus(records: list[dict[str, str]]) -> dict[str, Any]:
+    scores = [compute_flesch_reading_ease(r["answer"]) for r in records if r.get("answer")]
+    return {
+        "mean_flesch_reading_ease": round(sum(scores) / len(scores), 2) if scores else 0.0,
+        "sample_size": len(scores)
+    }
+```

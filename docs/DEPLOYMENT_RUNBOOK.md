@@ -770,3 +770,201 @@ curl -f http://127.0.0.1:8080/api/ready || { echo "CRITICAL: Backend readiness f
 sudo nginx -t && sudo systemctl reload nginx
 echo "[$(date)] ROLLBACK SUCCESSFUL: Production restored to ${PREVIOUS_TAG}"
 ```
+
+---
+
+## 11. Developer Operations & Infrastructure Extensibility
+
+For DevOps engineers and infrastructure contributors extending MedAssist AI to enterprise Kubernetes clusters, automated blue-green cutover fabrics, or custom Prometheus/Grafana observability pipelines, this section provides production-grade architectural patterns, ASCII orchestration flows, colorful mindmaps, and implementation configurations.
+
+```
+========================================================================================================================
+                          MEDASSIST AI — ENTERPRISE BLUE-GREEN & KUBERNETES TOPOLOGY
+========================================================================================================================
+
+    [ CLOUD TRAFFIC / DNS / ANYCAST IP ]
+                    │
+                    ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                INGRESS CONTROLLER (Nginx Ingress / AWS ALB)                                    │
+    │  - Annotations: cert-manager.io/cluster-issuer: letsencrypt-prod                                               │
+    │  - Weighted Traffic Routing: 90% Blue (Stable) / 10% Green (Canary)                                            │
+    │  - Strict Path Routing: /api -> backend-svc, /ws -> backend-svc, / -> frontend-svc                            │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                    │                                                                │
+     (90% Traffic)  │                                                                │  (10% Canary Probe)
+                    ▼                                                                ▼
+    ┌────────────────────────────────────────────────┐              ┌────────────────────────────────────────────────┐
+    │          BLUE FLEET (Current Stable)           │              │             GREEN FLEET (Candidate)            │
+    │  - Deployment: medassist-backend-blue:v2.4.0   │              │  - Deployment: medassist-backend-green:v2.5.0  │
+    │  - Replicas: 4 Pods across 3 Availability Zones│              │  - Replicas: 2 Pods (Isolated Canary Node)     │
+    │  - Readiness: httpGet /api/ready port 5000     │              │  - Readiness: httpGet /api/ready port 5000     │
+    │  - Liveness: httpGet /api/health port 5000     │              │  - Liveness: httpGet /api/health port 5000     │
+    └────────────────────────────────────────────────┘              └────────────────────────────────────────────────┘
+                    │                                                                │
+                    └───────────────────────────────┬────────────────────────────────┘
+                                                    │
+                                                    ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                           TIER 3: MONGODB REPLICA SET (StatefulSet / Atlas VPC)                                │
+    │  - Cluster Topology: 3-Member Primary-Secondary-Secondary Replica Set with Automatic Election                 │
+    │  - Storage: PersistentVolumeClaim with gp3 SSD / io2 Block Storage (Encrypted at Rest)                         │
+    │  - Backup Engine: Automated Volume Snapshots + Hourly Oplog Archiving to S3 Glacier                             │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((DevOps Extensibility))
+    ::icon(fa fa-server)
+    (01 Kubernetes Deployment)
+      StatefulSet MongoDB
+        3-Node Replica Set
+        Encrypted PVC gp3 Volumes
+        mongo-init Least-Privilege
+      Deployment Backend
+        HPA 2 to 10 Replicas
+        Resource Limits 1 CPU 1Gi RAM
+        Readiness Probe /api/ready
+        Liveness Probe /api/health
+      Deployment Frontend Nginx
+        Static Assets Dist
+        Reverse Proxy Ingress
+        Security Headers Policy
+    (02 Blue-Green Pipeline)
+      Canary Release Stage
+        10% Traffic Weight
+        Error Rate Metric Gate (<0.01%)
+        Latency p99 Gate (<800ms)
+      Instant Cutover
+        Zero-Downtime Service Switch
+        Graceful SIGTERM Pod Draining
+        Fast Rollback on Health Alert
+    (03 Observability Mesh)
+      Prometheus Metrics
+        HTTP Request Duration Histograms
+        Active WebSocket Connections
+        PubMed API Outbound Latency
+        AES Vault Decryption Counters
+      Grafana Dashboards
+        Real-Time Request Rates
+        Error Heatmaps by Endpoint
+        MongoDB WiredTiger Cache Utilization
+```
+
+### 11.1 Production Kubernetes Manifest (`deploy/k8s/backend-deployment.yaml`)
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medassist-backend
+  namespace: medassist-prod
+  labels:
+    app.kubernetes.io/name: medassist-backend
+    app.kubernetes.io/part-of: medassist-ai
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: medassist-backend
+  template:
+    metadata:
+      labels:
+        app: medassist-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/ganesh172919/medassist-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          envFrom:
+            - secretRef:
+                name: medassist-secrets
+            - configMapRef:
+                name: medassist-config
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            httpGet:
+              path: /api/ready
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+```
+
+### 11.2 Automated Blue-Green Promotion Script (`scripts/promote_green_release.sh`)
+
+```bash
+#!/usr/bin/env bash
+# scripts/promote_green_release.sh - Automated zero-downtime canary evaluation and cutover
+set -euo pipefail
+
+NAMESPACE="medassist-prod"
+CANARY_WEIGHT=10
+PROMOTION_TARGET="medassist-backend-green"
+
+echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Starting automated Canary verification for ${PROMOTION_TARGET}..."
+
+# 1. Verify that Green deployment pods are 100% ready
+READY_REPLICAS=$(kubectl get deployment "${PROMOTION_TARGET}" -n "${NAMESPACE}" -o jsonpath='{.status.readyReplicas}')
+DESIRED_REPLICAS=$(kubectl get deployment "${PROMOTION_TARGET}" -n "${NAMESPACE}" -o jsonpath='{.spec.replicas}')
+
+if [ "${READY_REPLICAS}" -ne "${DESIRED_REPLICAS}" ]; then
+  echo "ERROR: Canary pods not fully ready (${READY_REPLICAS}/${DESIRED_REPLICAS}). Aborting promotion."
+  exit 1
+fi
+
+# 2. Run automated HTTP readiness probe against Green pod IP
+CANARY_POD_IP=$(kubectl get pods -n "${NAMESPACE}" -l app=medassist-backend-green -o jsonpath='{.items[0].status.podIP}')
+echo "Probing Green Canary Pod at http://${CANARY_POD_IP}:5000/api/ready..."
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://${CANARY_POD_IP}:5000/api/ready" || echo "000")
+
+if [ "${STATUS_CODE}" != "200" ]; then
+  echo "ERROR: Green Canary returned non-200 status (${STATUS_CODE}). Triggering teardown."
+  kubectl scale deployment "${PROMOTION_TARGET}" -n "${NAMESPACE}" --replicas=0
+  exit 1
+fi
+
+# 3. Cutover active Service selector to Green
+echo "Promoting Green fleet to active traffic..."
+kubectl patch service medassist-backend-svc -n "${NAMESPACE}" -p '{"spec":{"selector":{"app":"medassist-backend-green"}}}'
+
+# 4. Scale down old Blue deployment after 30-second connection drain
+echo "Draining old Blue deployment connections..."
+sleep 30
+kubectl scale deployment medassist-backend-blue -n "${NAMESPACE}" --replicas=0
+echo "[$(date -u +'%Y-%m-%dT%H:%M:%SZ')] Promotion completed successfully with zero downtime!"
+```

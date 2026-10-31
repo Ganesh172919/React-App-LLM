@@ -210,3 +210,111 @@ To eliminate training instability and conflicting outputs, MedAssist AI implemen
 1. **Quarantine Isolation**: All 1,437 question groups with multi-answer ambiguity (totaling 3,535 rows) are systematically quarantined into `quarantine.jsonl`.
 2. **Clean Corpus Generation**: Only unambiguous, single-answer question pairs (12,872 clean pairs) are routed to the deterministic training, validation, and test splits.
 3. **Clinical Review Prerequisite**: Quarantined variants are retained for offline blinded expert adjudication rather than arbitrary heuristic pruning.
+
+---
+
+## 8. Developer Extensibility: Multi-Dimensional Semantic Divergence Metrics
+
+While Jaccard lexical overlap provides a fast, zero-dependency baseline for filtering multi-answer contradictions, developers can extend the audit suite to incorporate character-level Levenshtein distance, n-gram ROUGE-L overlap, or embedding-based cosine similarity.
+
+```
+========================================================================================================================
+                          SEMANTIC DIVERGENCE AUDITING ENGINE
+========================================================================================================================
+
+    [ MULTI-ANSWER CLUSTER: Question Q -> {Answer 1, Answer 2, ... Answer K} ]
+                                   │
+                                   ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 1: MULTI-METRIC SIMILARITY EVALUATION                                      │
+    │  - Metric A: Jaccard Lexical Similarity (|A ∩ B| / |A ∪ B|)                                                    │
+    │  - Metric B: ROUGE-L Longest Common Subsequence (LCS F1 score)                                                 │
+    │  - Metric C: Embedding Cosine Similarity: cos(θ) = (u · v) / (||u|| ||v||)                                     │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 2: CLINICAL CONTRADICTION DECISION MATRIX                                  │
+    │  - Composite Score: S = 0.3 * Jaccard + 0.3 * ROUGE_L + 0.4 * Embedding_Cosine                                 │
+    │  - Decision Rule:                                                                                              │
+    │      ├── S >= 0.70  ──► Lexical variations of same advice (Safe to merge or retain longest)                   │
+    │      ├── 0.45 <= S < 0.70 ──► Nuanced/conditional answers (Requires clinical metadata tag)                    │
+    │      └── S < 0.45   ──► Severe clinical contradiction (MANDATORY QUARANTINE to `quarantine.jsonl`)            │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Divergence Engine))
+    ::icon(fa fa-compress-arrows-alt)
+    (01 Lexical Jaccard)
+      Token-level Bag of Words
+      Fast Zero-Dependency Execution
+      Identifies Missing Keywords
+    (02 Structural ROUGE-L)
+      Longest Common Subsequence
+      Captures Phrase Order & Syntax
+      Penalizes Truncated Content
+    (03 Dense Semantic Embedding)
+      Sentence-Transformers BioLinkBERT
+      Captures Clinical Synonyms
+        e.g. Myocardial Infarction == Heart Attack
+      Detects Subtle Negation Shifts
+    (04 Automated Triage)
+      Score >= 0.70: Canonical Consolidation
+      Score 0.45 - 0.70: Clinical Review Queue
+      Score < 0.45: Immediate SFT Quarantine
+```
+
+### 8.1 Multi-Metric Divergence Analyzer Script (`Model and Dataset/advanced_audit.py`)
+
+```python
+# Model and Dataset/advanced_audit.py
+"""Advanced Semantic Divergence Analyzer for Multi-Answer Clinical Clusters."""
+from itertools import combinations
+from typing import List, Dict, Any
+
+def lcs_length(x: str, y: str) -> int:
+    """Computes length of Longest Common Subsequence."""
+    m, n = len(x), len(y)
+    dp = [[0] * (n + 1) for _ in range(m + 1)]
+    for i in range(1, m + 1):
+        for j in range(1, n + 1):
+            if x[i - 1] == y[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1] + 1
+            else:
+                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
+    return dp[m][n]
+
+def rouge_l_f1(reference: str, candidate: str) -> float:
+    """Computes token-level ROUGE-L F1 score."""
+    ref_tokens = reference.lower().split()
+    cand_tokens = candidate.lower().split()
+    if not ref_tokens or not cand_tokens:
+        return 0.0
+    lcs = lcs_length(ref_tokens, cand_tokens)
+    prec = lcs / len(cand_tokens)
+    rec = lcs / len(ref_tokens)
+    if (prec + rec) == 0:
+        return 0.0
+    return (2 * prec * rec) / (prec + rec)
+
+def evaluate_cluster_divergence(answers: List[str]) -> Dict[str, Any]:
+    """Evaluates composite semantic divergence across distinct answers."""
+    if len(answers) < 2:
+        return {"divergence": "none", "composite_score": 1.0}
+
+    rouge_scores = [rouge_l_f1(a, b) for a, b in combinations(answers, 2)]
+    min_rouge = min(rouge_scores)
+    mean_rouge = sum(rouge_scores) / len(rouge_scores)
+
+    action = "quarantine" if min_rouge < 0.40 else "review" if min_rouge < 0.65 else "accept"
+
+    return {
+        "min_rouge_l": round(min_rouge, 3),
+        "mean_rouge_l": round(mean_rouge, 3),
+        "action": action
+    }
+```

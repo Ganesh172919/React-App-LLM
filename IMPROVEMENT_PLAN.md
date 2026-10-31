@@ -430,3 +430,100 @@ curl -f http://127.0.0.1:8080/api/health || exit 1
 sudo nginx -t && sudo systemctl reload nginx
 echo "SUCCESS: Host cutover completed with zero downtime."
 ```
+
+---
+
+## 9. Developer Contribution Backlog & Feature Extension Guide
+
+To facilitate collaborative engineering and enable external contributors to build on MedAssist AI, this section details the developer enhancement lifecycle, upcoming backlog epics, architectural mindmaps, and implementation protocols.
+
+```
+========================================================================================================================
+                          MEDASSIST AI — DEVELOPER CONTRIBUTION LIFECYCLE
+========================================================================================================================
+
+    [ FEATURE / FIX IDEA / ISSUE ASSIGNMENT ]
+                       │
+                       │ 1. Local Workspace Branch (`git checkout -b feature/my-new-enhancement`)
+                       ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 1: DOMAIN LOGIC & INVARIANT IMPLEMENTATION                                 │
+    │  - Backend: Pure functional service in `backend/services/<name>Service.js`                                     │
+    │  - Frontend: WAI-ARIA accessible component in `frontend/src/components/`                                      │
+    │  - Strict Zero-Trust: Never trust client parameters; validate all bounds server-side                           │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                       │
+                       │ 2. Automated Test Coverage Mandate
+                       ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 2: LOCAL REGRESSION & COMPONENT TESTS                                      │
+    │  - Backend Tests: `node --test backend/tests/<name>.test.js`                                                   │
+    │  - Frontend Vitest: `npm test --prefix frontend -- <name>.test.jsx`                                            │
+    │  - Master Verification: `node scripts/verify_project.cjs` (All 182 software checks must pass)                  │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                       │
+                       │ 3. Automated Browser Smoke & Accessibility Run
+                       ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 3: PLAYWRIGHT BROWSER AUTOMATION                                           │
+    │  - Fixture Server: `node scripts/run_build_qa.cjs --fixtures`                                                  │
+    │  - Smoke Workflows: `node scripts/browser_smoke.cjs` (20 workflows)                                            │
+    │  - Dark Theme & Tools: `node scripts/browser_verify_dark_and_tools.cjs` (21 workflows)                          │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                       │
+                       │ 4. Pull Request & Continuous Integration
+                       ▼
+    [ PULL REQUEST MERGE & ARTIFACT SYNCHRONIZATION ] ──► GitHub Actions / Production Tagging
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Roadmap Backlog))
+    ::icon(fa fa-tasks)
+    (01 Clinical Epics)
+      OpenFDA API Connector
+        Automated Adverse Event Queries
+        Real-time Boxed Warning Extraction
+      Pediatric Dosing Engine
+        Weight-based mg/kg calculators
+        Body Surface Area (BSA) Mosteller
+      Expanded Drug-Drug Interactions
+        Dynamic RxNorm Graph Traversal
+        Severity Level Stratification (Mild/Mod/Severe)
+    (02 AI & Grounding Epics)
+      Semantic Vector Hybrid Search
+        BioBERT / PubMedBERT Embeddings
+        Reciprocal Rank Fusion (RRF) with BM25
+      Streaming Citations [N]
+        Token-by-Token Citation Parsing
+        Progressive Web UI Source Highlighting
+      Local Quantized Inference
+        WebGPU In-Browser Small Models
+        vLLM Server Orchestration
+    (03 Enterprise Ops Epics)
+      Kubernetes Helm Chart
+        Production Cluster Templates
+        Horizontal Pod Autoscaler (HPA)
+      HIPAA / SOC2 Compliance Logs
+        Immutable Audit Events
+        Cryptographic Signature Chains
+```
+
+### 9.1 Pull Request Verification Checklist for Developers
+
+When contributing a new feature or calculator, ensure the following steps are executed and documented:
+
+1. **Deterministic Logic**: Place all medical, algebraic, or algorithmic logic in pure utility functions without DOM or database side effects.
+2. **Physiological Clamping**: Any input accepted from users must have explicit lower and upper bounds checked server-side (e.g., Creatinine $0.1 - 25.0\text{ mg/dL}$, Age $1 - 120\text{ years}$).
+3. **WAI-ARIA Accessibility**: Any new modal or interactive UI control must support keyboard navigation (`Escape` dismissal, focus trapping, `aria-expanded`, `aria-label`).
+4. **Verification Gate**:
+   ```powershell
+   # Run all automated tests locally before opening PR
+   npm test --prefix backend
+   npm test --prefix frontend
+   npm run lint --prefix frontend
+   python -m unittest discover -s "Model and Dataset" -p "test_*.py"
+   node scripts/verify_project.cjs
+   ```

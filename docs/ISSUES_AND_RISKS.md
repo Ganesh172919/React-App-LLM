@@ -559,3 +559,162 @@ export function parseConversationImportJson(rawJson) {
   };
 }
 ```
+
+---
+
+## 10. Developer Extensibility: Custom Safety Invariants & Guardrail Pipelines
+
+When extending MedAssist AI to handle specific clinical specialties (e.g., oncology, pediatrics, renal dosing) or enterprise regulatory regimes, developers must implement layered, deterministic safety guardrails. This section specifies the guardrail pipeline topology, an engineering risk mindmap, and copy-paste ready implementations for adding custom clinical invariants.
+
+```
+========================================================================================================================
+                          MEDASSIST AI — CUSTOM SAFETY GUARDRAIL PIPELINE
+========================================================================================================================
+
+    [ INCOMING UNTRUSTED USER PROMPT ]
+                     │
+                     ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 1: DETERMINISTIC PRE-GENERATION SCREENER                                   │
+    │  - Regex / AST Tokenizer for Emergency Deflections & Self-Harm Flags                                           │
+    │  - Input Length & Injection Boundary Stripper (<|im_start|>, prompt override tokens)                          │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                     │
+                     │ Allowed Prompt
+                     ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 2: SPECIALIZED CLINICAL INVARIANT AUDIT                                    │
+    │  - Pediatric Dosing Screener (rejects absolute weight-unadjusted dosing recommendations)                        │
+    │  - Narrow Therapeutic Index (NTI) Drug Monitor (Lithium, Digoxin, Theophylline)                                │
+    │  - Black Box Warning Tagging Engine                                                                            │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                     │
+                     │ Verified Grounding Context
+                     ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TIER 3: DETERMINISTIC POST-GENERATION AUDITOR                                   │
+    │  - Numerical Citation Auditor: [N] references must map to valid returned PubMed indices                       │
+    │  - Synthetic Diagnostic Claim Detector: Flags diagnostic assertions ("You have condition X")                   │
+    │  - Enforces mandatory educational deflection banner if confidence score falls below threshold                  │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Safety Guardrails))
+    ::icon(fa fa-shield-alt)
+    (01 Pre-Generation Filters)
+      Self-Harm Interceptor
+        988 Crisis Lifeline Trigger
+        Local Emergency Guidance
+      Acute Symptom Deflection
+        Chest Pain / Anaphylaxis
+        Stroke FAST Signs
+      Prompt Injection Strip
+        Template Boundary Escapes
+        System Role Re-definition
+    (02 Domain Invariant Engines)
+      Pediatric Safety Checks
+        Age-Specific Contraindications
+        Weight-Based Dosing Requirements
+      Narrow Therapeutic Index
+        Lithium / Digoxin Monitoring
+        Serum Concentration Cautions
+      Pregnancy & Teratogenicity
+        FDA Pregnancy Category Warnings
+        Lactation Safety Flags
+    (03 Post-Generation Audits)
+      Citation Entailment [N]
+        Zero Ghost Citation Rule
+        Out-of-Bounds Index Purge
+      Definitive Diagnosis Intercept
+        Substitutes "You have" with "Symptoms may align with"
+        Appends Professional Consultation Directive
+```
+
+### 10.1 Implementing a Custom Pediatric Safety Guardrail (`backend/services/pediatricGuardrail.js`)
+
+```javascript
+// backend/services/pediatricGuardrail.js
+// Custom clinical safety validator for pediatric and infant queries
+
+const PEDIATRIC_TERMS = [
+  /\b(?:infant|newborn|neonate|baby|toddler|pediatric|child|children)\b/i,
+  /\b(?:months?\s+old|\d+\s*(?:mo|month|year)s?\s*old)\b/i
+];
+
+const CONTRAINDICATED_PEDIATRIC_DRUGS = [
+  {
+    pattern: /\b(?:aspirin|acetylsalicylic\s+acid)\b/i,
+    risk: "Reye's syndrome risk in children with viral illness.",
+    advice: "Aspirin is generally contraindicated in pediatric patients with fever or viral infections due to Reye's syndrome."
+  },
+  {
+    pattern: /\b(?:ciprofloxacin|levofloxacin|fluoroquinolone)\b/i,
+    risk: "Cartilage and musculoskeletal toxicity concern in growing children.",
+    advice: "Fluoroquinolones are typically restricted in pediatric populations due to potential arthropathy and tendon injury."
+  },
+  {
+    pattern: /\b(?:doxycycline|tetracycline)\b/i,
+    risk: "Tooth enamel hypoplasia and permanent discoloration in children < 8 years.",
+    advice: "Tetracyclines are generally avoided in children under 8 years due to permanent dental staining and enamel defects."
+  }
+];
+
+export function auditPediatricSafety(promptText, generatedAnswer = "") {
+  const combinedText = `${promptText} ${generatedAnswer}`;
+  const isPediatricQuery = PEDIATRIC_TERMS.some(pattern => pattern.test(promptText));
+
+  if (!isPediatricQuery) {
+    return { flagged: false, warnings: [] };
+  }
+
+  const warnings = [];
+
+  for (const drug of CONTRAINDICATED_PEDIATRIC_DRUGS) {
+    if (drug.pattern.test(combinedText)) {
+      warnings.push({
+        severity: "HIGH",
+        risk: drug.risk,
+        clinicalGuidance: drug.advice
+      });
+    }
+  }
+
+  return {
+    flagged: warnings.length > 0,
+    warnings,
+    pediatricContext: true
+  };
+}
+```
+
+### 10.2 Unit Test Suite for Custom Guardrails (`backend/tests/pediatricGuardrail.test.js`)
+
+```javascript
+// backend/tests/pediatricGuardrail.test.js
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { auditPediatricSafety } from "../services/pediatricGuardrail.js";
+
+test("Pediatric Guardrail: Flags aspirin inquiry for fever in toddlers", () => {
+  const prompt = "Can I give aspirin to my 2 year old child for a fever?";
+  const result = auditPediatricSafety(prompt);
+
+  assert.equal(result.flagged, true);
+  assert.equal(result.pediatricContext, true);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0].risk, /Reye's syndrome/i);
+});
+
+test("Pediatric Guardrail: Passes adult aspirin inquiries without flagging", () => {
+  const prompt = "What is the recommended low-dose aspirin regimen for a 55-year-old male?";
+  const result = auditPediatricSafety(prompt);
+
+  assert.equal(result.flagged, false);
+  assert.equal(result.pediatricContext, false);
+  assert.equal(result.warnings.length, 0);
+});
+```

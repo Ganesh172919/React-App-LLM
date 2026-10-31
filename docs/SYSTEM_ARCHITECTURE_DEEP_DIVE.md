@@ -1133,3 +1133,193 @@ export function parseConversationImportJson(rawJson) {
 1. **Client-Side RAM Isolation**: Imported conversations are never dispatched to `/api/chat`, `/api/generate`, or `/api/save`. Deserialized objects reside strictly within React component state and are wiped upon navigating to another conversation or reloading the browser.
 2. **Anti-Spoofing Strip**: A malicious user or external agent cannot craft a JSON file containing fraudulent `verification` tags (e.g. claiming a dangerous assertion was verified by NCBI PubMed or secondary Gemini review). All evidence and verification metadata are unconditionally dropped during parsing.
 3. **Prompt Injection Prevention**: Because `importPreview` locks the input composer, untrusted text inside an imported transcript can never be forwarded to downstream LLM generation passes as conversational history context.
+
+---
+
+## 13. Developer Extensibility: Event Buses, Microservices & Asynchronous Workers
+
+For engineering teams looking to scale MedAssist AI beyond a single monolith or integrate enterprise event streams (Kafka, RabbitMQ, Redis Streams, or AWS SQS), this section outlines the asynchronous worker decoupling architecture, transactional outbox pattern, ASCII message topology, colorful mindmap, and copy-paste ready implementation snippets.
+
+```
+========================================================================================================================
+                      MEDASSIST AI — ASYNCHRONOUS EVENT BUS & WORKER TOPOLOGY
+========================================================================================================================
+
+    [ EXPRESS APPLICATION MONOLITH / API GATEWAY ]
+                          │
+                          │ 1. Synchronous Prompt Ingress & Rapid Validation
+                          ▼
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                TRANSACTIONAL OUTBOX DISPATCHER (Node.js)                                       │
+    │  - Writes Generation Request to MongoDB `outbox` Collection in same ACID transaction                           │
+    │  - Debezium / Change Streams Watcher emits message to Distributed Message Bus                                  │
+    │  - Client Receives Immediate 202 Accepted with polling/ws ticket: { jobId, status: "queued" }                  │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                        │
+                                                        ▼ Apache Kafka / Redis Streams
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                DISTRIBUTED ASYNCHRONOUS WORKER FLEET                                           │
+    │                                                                                                                │
+    │     ┌───────────────────────────────────┐               ┌───────────────────────────────────────────────┐      │
+    │     │   WORKER 1: PUBMED RAG WORKER     │               │   WORKER 2: SECONDARY CONSENSUS VERIFIER      │      │
+    │     │  - Rate-limited Entrez E-Utilities│               │  - Independent secondary LLM verification     │      │
+    │     │  - Caches XML abstracts in Redis  │               │  - Evaluates semantic entailment [N]          │      │
+    │     └───────────────────────────────────┘               └───────────────────────────────────────────────┘      │
+    │                           │                                                     │                              │
+    │                           └───────────────────────┬─────────────────────────────┘                              │
+    │                                                   ▼                                                            │
+    │                                 ┌───────────────────────────────────┐                                          │
+    │                                 │   WORKER 3: DDI & SAFETY CHECKER  │                                          │
+    │                                 │  - Pharmacological name-pair scan │                                          │
+    │                                 │  - Physiological calculation audit│                                          │
+    │                                 └───────────────────────────────────┘                                          │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                                        │
+                                                        ▼ Redis Pub/Sub / WebSocket Mesh
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │                                WEBSOCKET PUSH GATEWAY (Real-time Broadcast)                                    │
+    │  - Delivers assembled response chunks, PubMed citations, and DDI warnings to user browser                      │
+    │  - Enforces 1MB backpressure drop and owner-scoped verification                                                │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Worker Extensibility))
+    ::icon(fa fa-network-wired)
+    (01 Asynchronous Job Queue)
+      Transactional Outbox
+        Zero Message Loss Guarantee
+        MongoDB Change Streams Ingestion
+        Idempotent Job Message IDs
+      Redis Stream Engine
+        Consumer Groups for Parallel Workers
+        Dead Letter Queue (DLQ) for Failures
+        Exponential Backoff Retries
+    (02 Worker Decomposition)
+      PubMed Harvest Worker
+        Concurrent E-Utilities Fetching
+        Distributed Cache (Redis 24h TTL)
+        XML Parsing via fast-xml-parser
+      Model Generation Worker
+        Dynamic Provider Dispatch (Gemini/Groq)
+        Streaming SSE/WebSocket Push
+        Token Count Accounting
+      Consensus Review Worker
+        Secondary Verification Pass
+        Citation Audit Numerical Matching
+        Safety Gate Filter
+    (03 Enterprise Connectors)
+      HL7 / FHIR Ingress Adapter
+        FHIR DiagnosticReport Parser
+        Observation Extraction Pipeline
+      HIPAA Audit Logging Stream
+        WORM Storage Delivery (S3 Object Lock)
+        Structured JSON Event Schema
+```
+
+### 13.1 Production Outbox Pattern Implementation (`backend/services/outboxService.js`)
+
+```javascript
+// backend/services/outboxService.js
+// Production Transactional Outbox Pattern for Asynchronous AI Tasks
+import mongoose from "mongoose";
+import crypto from "crypto";
+
+const OutboxSchema = new mongoose.Schema({
+  jobId: { type: String, required: true, unique: true, index: true },
+  topic: { type: String, required: true, index: true },
+  payload: { type: mongoose.Schema.Types.Mixed, required: true },
+  status: { type: String, enum: ["pending", "processing", "completed", "failed"], default: "pending", index: true },
+  retries: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now, expires: 86400 } // 24-hour automatic purge
+});
+
+export const OutboxJob = mongoose.model("OutboxJob", OutboxSchema);
+
+export async function dispatchTransactionalJob(topic, payload, session = null) {
+  const jobId = `job_${crypto.randomBytes(16).toString("hex")}`;
+  const job = new OutboxJob({
+    jobId,
+    topic,
+    payload,
+    status: "pending"
+  });
+
+  await job.save({ session });
+  return { jobId, status: "queued" };
+}
+
+// Background Worker Processor loop (can run as standalone microservice)
+export async function startWorkerProcessor(topic, handler, pollIntervalMs = 1000) {
+  setInterval(async () => {
+    // Atomically find and mark one pending job
+    const job = await OutboxJob.findOneAndUpdate(
+      { topic, status: "pending" },
+      { $set: { status: "processing", updatedAt: new Date() } },
+      { sort: { createdAt: 1 }, new: true }
+    );
+
+    if (!job) return;
+
+    try {
+      await handler(job.payload);
+      await OutboxJob.updateOne({ jobId: job.jobId }, { $set: { status: "completed" } });
+    } catch (err) {
+      console.error(`[Worker ${topic}] Job ${job.jobId} failed:`, err);
+      const retries = job.retries + 1;
+      const status = retries >= 3 ? "failed" : "pending";
+      await OutboxJob.updateOne({ jobId: job.jobId }, { $set: { status, retries } });
+    }
+  }, pollIntervalMs);
+}
+```
+
+### 13.2 Distributed Redis Stream Worker Client (`backend/services/redisWorker.js`)
+
+```javascript
+// backend/services/redisWorker.js
+// Distributed Consumer Group Worker using Redis Streams
+export class RedisWorkerClient {
+  constructor(redisClient, streamKey, groupName, consumerName) {
+    this.redis = redisClient;
+    this.streamKey = streamKey;
+    this.groupName = groupName;
+    this.consumerName = consumerName;
+  }
+
+  async initialize() {
+    try {
+      await this.redis.xgroup("CREATE", this.streamKey, this.groupName, "$", "MKSTREAM");
+    } catch (err) {
+      if (!err.message.includes("BUSYGROUP")) throw err;
+    }
+  }
+
+  async listen(messageHandler) {
+    while (true) {
+      try {
+        const response = await this.redis.xreadgroup(
+          "GROUP", this.groupName, this.consumerName,
+          "BLOCK", 2000, "COUNT", 1,
+          "STREAMS", this.streamKey, ">"
+        );
+
+        if (!response || response.length === 0) continue;
+
+        const [stream, messages] = response[0];
+        for (const [messageId, fields] of messages) {
+          const payload = JSON.parse(fields[1]);
+          await messageHandler(payload);
+          await this.redis.xack(this.streamKey, this.groupName, messageId);
+        }
+      } catch (err) {
+        console.error("[RedisWorker] Read loop error:", err);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+  }
+}
+```
