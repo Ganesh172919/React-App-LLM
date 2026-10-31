@@ -982,3 +982,410 @@ export function parseConversationImport(jsonText) {
 }
 ```
 
+
+
+---
+
+## 10. Developer Extension & Contribution Guide: Building Upon MedAssist AI
+
+MedAssist AI is designed as a modular, decoupled research and operational platform. This guide provides developers, researchers, and engineers with concrete architectural blueprints, contracts, and code templates for extending the system.
+
+### 10.1 System Extension Topology & Data Flow Blueprint
+
+```
+========================================================================================================================
+                                     MEDASSIST AI — EXTENSION & SUBSYSTEM TOPOLOGY
+========================================================================================================================
+
+    [ CLIENT EXTENSIONS (React 19) ]
+    ├── New Clinical Calculator       ──► Implement formula in ClinicalCalculatorsModal.jsx
+    │                                     (Add physiological bounds, WAI-ARIA tab, and prompt template)
+    ├── New Provider Management UI    ──► Add key fields & selection cards in AISettings.jsx
+    └── New Chat Renderers / Widgets  ──► Extend markdown component overrides in ChatWorkspace.jsx
+                  │
+                  ▼ Same-Origin HTTPS / WSS
+    [ BACKEND EXTENSIONS (Express 4 / Node 24) ]
+    ├── New AI Model Provider         ──► 1. Register in services/providerSelection.js
+    │                                     2. Implement client in services/modelProvider.js
+    │                                     3. Enforce SSRF checks & temperature=0.25 constraints
+    ├── New Medication Safety Rule    ──► Add regex rule in services/interactionService.js
+    │                                     (Preserved across emergency deflections in answerService.js)
+    ├── New Literature Harvester      ──► Extend services/pubmedService.js or add external clients
+    │                                     (Must return complete title, abstract, and PMID/URI)
+    └── New REST API Endpoint         ──► Add route in routes/*.js & handler in controllers/*.js
+                  │                       (Attach authToken middleware for session-verified access)
+                  ▼
+    [ DATABASE EXTENSIONS (MongoDB 7) ]
+    ├── Model Schemas                 ──► Define Mongoose schema in models/*.js
+    └── Encrypted Vault Integration   ──► Seal sensitive fields with services/providerCredentials.js
+                  │
+                  ▼
+    [ MACHINE LEARNING EXTENSIONS (Python 3.10+) ]
+    ├── Dataset Curation              ──► Filter and profile with analyze_dataset.py & audit_dataset.py
+    ├── Zero-Leakage Splitting        ──► Generate deterministic partitions via prepare_dataset.py
+    └── LoRA Adapter Fine-Tuning      ──► Train lightweight PEFT adapters with lora/train_lora.py
+========================================================================================================================
+```
+
+### 10.2 Developer Extension Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Extending MedAssist))
+    ::icon(fa fa-puzzle-piece)
+    (01 Adding AI Providers)
+      Register in providerSelection.js
+        choices array entry
+        deployment vs personal key logic
+      Implement in modelProvider.js
+        URL structure & SSRF validation
+        Temperature 0.25 & max_tokens 900
+        Finish reason stop check
+      Add UI in AISettings.jsx
+        Key input with masking
+        Provider description badge
+      Add Unit Tests
+        backend/test/modelProvider.test.js
+    (02 Adding Clinical Calculators)
+      Formula & Logic
+        Strict physiological input bounds
+        Non-diagnostic educational framing
+      Modal Registration
+        Add tab button with role=tab
+        Add calc-pane with role=tabpanel
+        Update tabList for Arrow cycling
+      Chat Prompt Generation
+        insertAndClose educational text
+      Vitest Tests
+        Validate boundaries & ARIA focus
+    (03 Adding Drug Interaction Rules)
+      Regex Rule Construction
+        Drug A regex array with trade names
+        Drug B regex array with trade names
+        Severity CRITICAL vs HIGH
+        Pharmacology description
+      Emergency Invariant
+        Preserved during 911 deflections
+      Unit Testing
+        backend/test/interactionService.test.js
+    (04 LoRA & Dataset Pipelines)
+      Format Clinical Pairs
+        Instruction, input context, output
+      Ambiguity Quarantine
+        Audit duplicate question variants
+      Deterministic Hash Split
+        SHA-256 modulo 100 partitions
+      PEFT LoRA Training
+        r=8, alpha=16, rank verification
+```
+
+### 10.3 Guide A: How to Add a New AI Model Provider
+
+To integrate a new cloud LLM (e.g., Anthropic Claude, DeepSeek, or an institutional private vLLM host):
+
+#### Step 1: Register Provider Identifier in `backend/services/providerSelection.js`
+
+```javascript
+// Excerpt showing provider registration:
+const personalProviders = ["gemini", "groq", "together", "custom_provider"];
+const deploymentProviders = ["gemini", "groq", "together", "local", "custom_provider"];
+
+const configured = (provider) => ({
+  gemini: Boolean(process.env.GEMINI_API_KEY),
+  groq: Boolean(process.env.GROQ_API_KEY),
+  together: Boolean(process.env.TOGETHER_API_KEY && process.env.TOGETHER_MODEL),
+  local: Boolean(process.env.LOCAL_AI_BASE_URL && process.env.LOCAL_AI_MODEL),
+  custom_provider: Boolean(process.env.CUSTOM_PROVIDER_API_KEY && process.env.CUSTOM_PROVIDER_MODEL),
+})[provider] || false;
+
+const modelFor = (provider) => ({
+  gemini: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  groq: process.env.GROQ_MODEL || "openai/gpt-oss-20b",
+  together: process.env.TOGETHER_MODEL,
+  local: process.env.LOCAL_AI_MODEL,
+  custom_provider: process.env.CUSTOM_PROVIDER_MODEL || "custom-clinical-model-v1",
+})[provider];
+```
+
+#### Step 2: Implement Inference Dispatcher in `backend/services/modelProvider.js`
+
+All providers must adhere to MedAssist AI's security invariants:
+1. **SSRF Guard**: Disallow remote non-HTTPS endpoints and strip user/password authentication from URLs.
+2. **Determinism**: Constrain temperature to $0.25$ and maximum tokens to $900$.
+3. **Completion Validation**: Verify `finish_reason === "stop"` and reject empty or truncated outputs.
+
+```javascript
+// Excerpt from backend/services/modelProvider.js:
+const generateWithCustomProvider = async ({ prompt, systemInstruction, history = [], signal, providerConfig }) => {
+  const apiKey = providerConfig?.apiKey || process.env.CUSTOM_PROVIDER_API_KEY;
+  const model = providerConfig?.model || process.env.CUSTOM_PROVIDER_MODEL;
+  const endpoint = providerConfig?.baseUrl || "https://api.custom-ai-provider.com/v1";
+
+  if (!apiKey || !model) {
+    const error = new Error("Custom provider credentials are not configured.");
+    error.code = "AI_NOT_CONFIGURED";
+    throw error;
+  }
+
+  // Enforce SSRF validation
+  const url = new URL(endpoint);
+  if (!["http:", "https:"].includes(url.protocol)) throw new Error("Invalid endpoint protocol.");
+  if (url.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+    throw new Error("Remote AI endpoints must use HTTPS.");
+  }
+
+  const payload = {
+    model,
+    messages: [
+      { role: "system", content: systemInstruction },
+      ...history.slice(-8).map((h) => ({ role: h.role === "assistant" ? "assistant" : "user", content: h.text.slice(0, 2000) })),
+      { role: "user", content: prompt },
+    ],
+    temperature: 0.25,
+    max_tokens: 900,
+  };
+
+  const response = await axios.post(url.toString().replace(/\/$/, "") + "/chat/completions", payload, {
+    timeout: 30000,
+    signal,
+    maxRedirects: 0,
+    maxContentLength: 1024 * 1024,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+  });
+
+  const choice = response.data?.choices?.[0];
+  const text = typeof choice?.message?.content === "string" ? choice.message.content.trim() : "";
+  if (choice?.finish_reason !== "stop" || !text) {
+    const error = new Error("The AI provider did not complete the answer.");
+    error.code = "AI_INCOMPLETE_RESPONSE";
+    throw error;
+  }
+  return { text, model, provider: "Custom Provider" };
+};
+
+// Dispatch in generateAnswer:
+const generateAnswer = (args) => {
+  const provider = args.providerConfig?.provider || defaultProvider();
+  if (provider === "gemini") return generateWithGemini(args);
+  if (provider === "custom_provider") return generateWithCustomProvider(args);
+  if (["groq", "together", "local"].includes(provider)) return generateWithOpenAICompatible(args);
+  const error = new Error("Unsupported AI_PROVIDER.");
+  error.code = "AI_NOT_CONFIGURED";
+  throw error;
+};
+```
+
+#### Step 3: Add Unit Tests in `backend/test/modelProvider.test.js`
+
+```javascript
+test("dispatches generation request to custom provider with temperature 0.25", async () => {
+  const fakeResponse = {
+    data: {
+      choices: [{ finish_reason: "stop", message: { content: "Verified medical synthesis." } }],
+    },
+  };
+  // Mock axios and assert returned payload structure:
+  // assert.equal(result.provider, "Custom Provider");
+  // assert.match(result.text, /Verified medical synthesis/);
+});
+```
+
+---
+
+### 10.4 Guide B: How to Add a New Evidence-Based Clinical Calculator
+
+MedAssist AI calculators are educational tools implementing validated peer-reviewed algorithms. To introduce a new clinical calculator:
+
+#### Step 1: Define Mathematical Formulation & Physiological Bounds
+
+Create scoring and classification logic in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`:
+
+```jsx
+// Example: New Pediatric Glasgow Coma Scale or CHA2DS2-VASc extension:
+export function calculateCustomScore({ paramA, paramB, age }) {
+  const a = parseFloat(paramA);
+  const b = parseFloat(paramB);
+  if (Number.isNaN(a) || Number.isNaN(b) || a < 0 || b < 0) return null;
+
+  // Strict physiological bounding
+  if (a > 300 || b > 250) return { error: "Inputs exceed physiological limits." };
+
+  const rawScore = (a * 2) + (b / 1.5);
+  let stratification = "Low Risk";
+  if (rawScore >= 10) stratification = "High Risk (requires clinical evaluation)";
+  else if (rawScore >= 5) stratification = "Moderate Risk";
+
+  return { score: rawScore.toFixed(1), stratification };
+}
+```
+
+#### Step 2: Implement WAI-ARIA Accessible Tab & Panel
+
+Add the calculator tab and pane inside `ClinicalCalculatorsModal.jsx`:
+
+```jsx
+// Register tab in arrow-navigation tabList:
+const tabList = [
+  "bmi", "egfr", "chads", "map", "crcl", "calcium",
+  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "custom_tool"
+];
+
+// In JSX tablist:
+<button
+  type="button"
+  role="tab"
+  id="tab-custom_tool"
+  aria-selected={activeTab === "custom_tool"}
+  aria-controls="tabpanel-custom_tool"
+  className={`calc-tab ${activeTab === "custom_tool" ? "active" : ""}`}
+  onClick={() => setActiveTab("custom_tool")}
+>
+  Custom Score Tool
+</button>
+
+// In JSX tabpanel:
+{activeTab === "custom_tool" && (
+  <div id="tabpanel-custom_tool" role="tabpanel" aria-labelledby="tab-custom_tool" className="calc-pane">
+    <p className="small-text muted">Educational score estimate only. Does not replace professional clinical assessment.</p>
+    {/* Inputs with labels and aria-describedby bounds */}
+    <div className="calc-result">
+      <strong>{scoreResult.score} points</strong> — {scoreResult.stratification}
+      <button
+        type="button"
+        className="button small"
+        onClick={() => insertAndClose(`For educational purposes, explain how a Custom Score of ${scoreResult.score} (${scoreResult.stratification}) is interpreted.`)}
+      >
+        Ask MedAssist about this score
+      </button>
+    </div>
+  </div>
+)}
+```
+
+#### Step 3: Add Component Verification Tests in `frontend/src/test/clinicalCalculators.test.jsx`
+
+```javascript
+it("calculates custom score and formats prompt without diagnostic assertions", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: /Custom Score Tool/i }));
+  expect(screen.getByText(/Educational score estimate only/)).toBeTruthy();
+
+  // Test calculation and prompt insertion:
+  fireEvent.click(screen.getByRole("button", { name: /Ask MedAssist about this score/i }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  expect(onInsertPrompt.mock.calls[0][0]).toContain("Custom Score");
+});
+```
+
+---
+
+### 10.5 Guide C: How to Add a New Pharmacological Interaction Rule
+
+To add an evidence-based FDA black-box drug interaction check to `backend/services/interactionService.js`:
+
+#### Step 1: Define Rule in `HIGH_RISK_INTERACTION_RULES`
+
+```javascript
+// In backend/services/interactionService.js:
+{
+  pair: "Drug A Class + Drug B Class",
+  drugA: "Class A Representative (e.g., TradeName1, TradeName2)",
+  drugB: "Class B Representative (e.g., TradeName3, TradeName4)",
+  severity: "CRITICAL", // or "HIGH"
+  drugsA: [
+    /\bgenericA\b/i, /\btradenameA1\b/i, /\btradenameA2\b/i,
+  ],
+  drugsB: [
+    /\bgenericB\b/i, /\btradenameB1\b/i, /\btradenameB2\b/i,
+  ],
+  description: "Concurrent administration triggers [specific pathophysiological mechanism], significantly elevating risk of [clinical endpoint] (FDA Black Box Warning).",
+}
+```
+
+#### Step 2: Verify Emergency Redirection Invariant
+
+In `backend/services/answerService.js`, verify that the detected interaction is retained in the return object even if `screenPrompt()` triggers an emergency deflection:
+
+```javascript
+// Excerpt from backend/services/answerService.js:
+const promptInteractions = detectDrugInteractions(prompt);
+if (!safety.allowed || safety.category === "possible_emergency") {
+  return {
+    text: safety.category === "possible_emergency" ? emergencyText : safety.message,
+    isMedical: true,
+    references: [],
+    safety,
+    verification: {
+      status: "safety_redirect",
+      safetyCategory: safety.category,
+      grounded: false,
+      ...(promptInteractions.length ? { drugInteractions: promptInteractions } : {}),
+    },
+  };
+}
+```
+
+#### Step 3: Add Unit Tests in `backend/test/interactionService.test.js`
+
+```javascript
+test("detects Drug A and Drug B critical interaction", () => {
+  const result = detectDrugInteractions("Patient is taking TradeNameA1 and was prescribed genericB.");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Drug A Class + Drug B Class");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /FDA Black Box Warning/i);
+});
+```
+
+---
+
+### 10.6 Guide D: How to Extend Dataset Curation & LoRA Fine-Tuning
+
+MedAssist AI maintains an isolated, reproducible PEFT/LoRA fine-tuning research suite under `Model and Dataset/`:
+
+```
+========================================================================================================================
+                                     LORA FINE-TUNING REPRODUCIBILITY WORKFLOW
+========================================================================================================================
+
+    [ Raw Clinical Q&A CSV (16,412 rows) ]
+                      │
+                      ├── 1. analyze_dataset.py: Computes token percentiles, intent taxonomy, and length bounds
+                      ├── 2. audit_dataset.py: Isolates 1,437 ambiguous questions into quarantine.jsonl
+                      │
+                      ▼
+    [ Clean Data Candidates ]
+                      │
+                      ├── 3. prepare_dataset.py: Deterministic SHA-256 modulo 100 hash split
+                      │      ├── train.jsonl (80% / 10,296 examples)
+                      │      ├── validation.jsonl (10% / 1,290 examples)
+                      │      └── test.jsonl (10% / 1,291 examples)
+                      │
+                      ▼
+    [ PEFT / LoRA Training Preparation ]
+                      │
+                      ├── 4. validate_lora_setup.py: Verifies closed-form parameter math
+                      │      └── Confirms exactly 147,456 trainable adapter weights (0.281 MB FP16)
+                      ├── 5. train_lora.py: Supervised fine-tuning with prompt token loss masking (-100)
+                      └── 6. evaluate_benchmark.py: Paired case-level ablation analysis against gold standards
+========================================================================================================================
+```
+
+#### Parameter Proof Formulation:
+For low-rank adaptation applied to the query ($W_q$) and value ($W_v$) projection layers of a Transformer architecture:
+$$\Delta W = B \cdot A, \quad B \in \mathbb{R}^{d_{\text{in}} \times r}, \quad A \in \mathbb{R}^{r \times d_{\text{out}}}$$
+$$\text{Parameters per layer} = 2 \times (d_{\text{in}} \cdot r + r \cdot d_{\text{out}})$$
+For embedding dimension $d = 384$, rank $r = 8$, across 24 attention blocks:
+$$\text{Total Adapter Weights} = 24 \times [2 \times (384 \times 8 + 8 \times 384)] = 24 \times 6,144 = 147,456$$
+
+---
+
+### 10.7 Guide E: Database Schema Versioning & REST API Expansion
+
+To add a new database model or REST endpoint:
+1. **Define Schema**: Create `backend/models/<entity>Model.js` with strict field typing and indexes.
+2. **Add Controller**: Implement controller in `backend/controllers/<entity>Controller.js`, always wrapping asynchronous handlers with `try/catch` and passing errors to `next(error)`.
+3. **Attach Middleware**: In `backend/routes/<entity>Route.js`, protect routes with `authToken` middleware to ensure `req.user` is verified against monotonic `sessionVersion`.
+4. **Rate Limiting**: Apply tiered rate limiters (`authLimiter`, `aiLimiter`, `settingsLimiter`) in `backend/app.js` to guard against denial-of-service floods.

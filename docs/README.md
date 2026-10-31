@@ -16,7 +16,7 @@ This comprehensive technical documentation suite provides deep engineering speci
                                      MEDASSIST AI — PRODUCTION DOCUMENTATION SUITE
 ========================================================================================================================
   [01] SYSTEM_ARCHITECTURE_DEEP_DIVE.md       ──► Multi-Tier Infrastructure, Ingress, & Network Flow
-  [02] CURRENT_IMPLEMENTATION.md              ──► Complete Runtime State, API Specs, & Database Schemas
+  [02] CURRENT_IMPLEMENTATION.md              ──► Complete Runtime State, API Specs, & Developer Extension Guide
   [03] DEEP_DIVE_AI_WORKING_PRINCIPLES.md     ──► Biomedical RAG Math, PubMed E-Utilities, & Verifiers
   [04] DEEP_DIVE_LORA_AND_FINE_TUNING.md      ──► Parameter-Efficient LoRA Math & SFT Backprop Derivation
   [05] SECURITY_AND_MESSAGE_POLICY.md         ──► AES-256-GCM Vault, OWASP Defenses, & Safety Policies
@@ -24,10 +24,11 @@ This comprehensive technical documentation suite provides deep engineering speci
   [07] DEPLOYMENT_RUNBOOK.md                  ──► Docker Compose, external TLS, & Ops Playbooks
   [08] EVALUATION_AND_INTEGRATION.md          ──► Paired Ablation Scoring & Local Document Retrieval
   [09] IMPLEMENTATION_STATUS.md               ──► Engineering Verification Matrix & Local Test Evidence
-  [10] ISSUES_AND_RISKS.md                    ──► Prioritized Risk Register & Engineering Mitigations
+  [10] ISSUES_AND_RISKS.md                    ──► Prioritized Risk Register, STRIDE Model, & SSRF Defense
   [11] AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md ─► Concise Grounding Summary & Algorithmic Rules
-  [12] AI_FINE_TUNING_AND_LORA_GUIDE.md       ──► Concise LoRA Setup Guide & Parameter Benchmarks
-  [13] COMPREHENSIVE_CODEBASE_ANALYSIS.md     ──► Line-by-Line Subsystem & File Implementation Deep Dive
+  [12] AI_FINE_TUNING_AND_LORA_GUIDE.md       ──► Concise LoRA Setup Guide, Parameter Benchmarks & Custom Datasets
+  [13] COMPREHENSIVE_CODEBASE_ANALYSIS.md     ──► Codebase Analysis, Line-by-Line Breakdown & Developer Blueprint
+  [14] README.md                              ──► Master Documentation Suite Guide, Reading Paths & Mindmap
 ========================================================================================================================
 ```
 
@@ -175,18 +176,19 @@ The comprehensive system documentation is organized into focused architectural v
 | Volume | File | Core Engineering Focus |
 | :--- | :--- | :--- |
 | **01** | **[`SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](SYSTEM_ARCHITECTURE_DEEP_DIVE.md)** | Multi-tier network topology, Nginx ingress routing, Express middleware execution order, Web Locks token renewal, single-device session versioning state machine, two-phase generation commitment handshake, and `/ws` WebSocket architecture. |
-| **02** | **[`CURRENT_IMPLEMENTATION.md`](CURRENT_IMPLEMENTATION.md)** | Comprehensive runtime specification, complete REST API endpoint schemas, request/response JSON contracts, Mongoose database models, index specifications, TTL rules, and deployment bounds. |
+| **02** | **[`CURRENT_IMPLEMENTATION.md`](CURRENT_IMPLEMENTATION.md)** | Comprehensive runtime specification, complete REST API endpoint schemas, request/response JSON contracts, Mongoose database models, index specifications, TTL rules, and Developer Extension Guide for custom providers, calculators, and safety rules. |
 | **03** | **[`DEEP_DIVE_AI_WORKING_PRINCIPLES.md`](DEEP_DIVE_AI_WORKING_PRINCIPLES.md)** | Mathematical foundations of biomedical RAG, NCBI Entrez E-utilities three-stage protocol (`esearch`, `esummary`, `efetch`), XML parsing algorithms, prompt injection containment, multi-provider execution, citation audit mathematics, and consensus verifier logic. |
 | **04** | **[`DEEP_DIVE_LORA_AND_FINE_TUNING.md`](DEEP_DIVE_LORA_AND_FINE_TUNING.md)** | Complete mathematical derivations of Low-Rank Adaptation (LoRA: $W = W_0 + \frac{\alpha}{r}BA$), gradient backpropagation through rank-$r$ bottlenecks, parameter estimation formulas ($147,456$ parameters), memory footprint proofs, label masking math, and multi-answer data quarantine algorithms. |
 | **05** | **[`SECURITY_AND_MESSAGE_POLICY.md`](SECURITY_AND_MESSAGE_POLICY.md)** | Server trust boundaries, cryptographic AES-256-GCM user API key vault, single-device session invalidation, OWASP Top 10 mitigation matrix, CSRF/CORS origin verification, rate-limiting tiers, and input/output deterministic safety filters. |
 | **06** | **[`COMPLETE_FILE_DIRECTORY_REFERENCE.md`](COMPLETE_FILE_DIRECTORY_REFERENCE.md)** | Exhaustive, line-by-line engineering inventory of every file in the repository across `backend/`, `frontend/`, `Model and Dataset/`, `scripts/`, and root configurations, including exported symbols, dependencies, and architectural roles. |
 | **07** | **[`DEPLOYMENT_RUNBOOK.md`](DEPLOYMENT_RUNBOOK.md)** | Production operations manual, multi-container Docker Compose orchestration, bare-metal deployment, automated secrets generation (`deploy/create_env.cjs`), SSL/TLS Nginx configuration, database backup/restore (`mongodump`/`mongorestore`), health/readiness monitoring, and disaster recovery. |
 | **08** | **[`EVALUATION_AND_INTEGRATION.md`](EVALUATION_AND_INTEGRATION.md)** | Empirical evaluation framework, paired case-level ablation scoring (`evaluate_benchmark.py`), offline document retrieval with OCR (`document_retrieval.py`), privacy boundaries, and clinical evidence caveats. |
-| **09** | **[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (64), frontend (46), Python (19), built HTTP (7), and separately run browser workflows (41). Production dependency audits reported zero vulnerabilities at the time of the run. |
-| **10** | **[`ISSUES_AND_RISKS.md`](ISSUES_AND_RISKS.md)** | Prioritized risk register and engineering mitigations, multi-tier defense-in-depth model, clinical boundaries, pharmacological heuristic limitations, cryptographic key dependencies, and regulatory compliance. |
+| **09** | **[`IMPLEMENTATION_STATUS.md`](IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (66), frontend (49), Python (19), built HTTP (7), and separately run browser workflows (41). Production dependency audits reported zero critical vulnerabilities. |
+| **10** | **[`ISSUES_AND_RISKS.md`](ISSUES_AND_RISKS.md)** | Prioritized risk register and engineering mitigations, multi-tier defense-in-depth model, clinical boundaries, pharmacological heuristic limitations, cryptographic key dependencies, STRIDE threat model, and SSRF defense. |
 | **11** | **[`AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md)** | Condensed architectural handbook summarizing the clinical query routing pipeline, PubMed grounding steps, Gemini system instructions, and citation validation rules. |
-| **12** | **[`AI_FINE_TUNING_AND_LORA_GUIDE.md`](AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, and review-gated training commands. |
-| **13** | **[`COMPREHENSIVE_CODEBASE_ANALYSIS.md`](COMPREHENSIVE_CODEBASE_ANALYSIS.md)** | Exhaustive, file-by-file implementation deep dive with line-by-line subsystem analysis, real code snippets, ASCII topologies, and colorful architectural mindmaps. |
+| **12** | **[`AI_FINE_TUNING_AND_LORA_GUIDE.md`](AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, modern transformer configurations (Llama-3/Mistral/Gemma), and review-gated training commands. |
+| **13** | **[`COMPREHENSIVE_CODEBASE_ANALYSIS.md`](COMPREHENSIVE_CODEBASE_ANALYSIS.md)** | Exhaustive, file-by-file implementation deep dive with line-by-line subsystem analysis, real code snippets, ASCII topologies, colorful architectural mindmaps, and Section 10 Developer Extensibility Blueprint. |
+| **14** | **[`README.md`](README.md)** | Documentation suite master index, reading path curriculum, system-wide mindmap, and developer reference topology. |
 
 ---
 

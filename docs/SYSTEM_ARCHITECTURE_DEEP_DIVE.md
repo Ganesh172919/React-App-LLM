@@ -142,6 +142,8 @@ mindmap
         Wells PE Pre-Test Score
         CURB-65 Pneumonia Score
         Glasgow Coma Scale GCS
+      Extension Blueprint
+        HAS-BLED Bleeding Risk Guide
       Accessibility Invariants
         WAI-ARIA Tabpanel Semantics
         Keyboard Alt-Plus-C Shortcut
@@ -858,7 +860,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
                  │
                  ▼
    ┌─────────────────────────────────────────────────────────────────┐
-   │ 13 Evidence-Based Clinical Scoring Tools:                       │
+   │ 13 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
    │ ├── 01. Adult BMI (Metric: kg/m², Imperial: lbs/in² * 703)      │
    │ ├── 02. CKD-EPI 2021 Creatinine eGFR (Race-Free ASN-NKF Formula)│
    │ ├── 03. CHA₂DS₂-VASc Score for Atrial Fibrillation Stroke Risk  │
@@ -871,7 +873,8 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
    │ ├── 10. Holliday-Segar 4-2-1 Maintenance Fluid Infusion         │
    │ ├── 11. Wells' Criteria for Pulmonary Embolism (Pre-Test Prob)  │
    │ ├── 12. CURB-65 Pneumonia Severity Score (30-Day Mortality)     │
-   │ └── 13. Glasgow Coma Scale (GCS Consciousness Assessment)       │
+   │ ├── 13. Glasgow Coma Scale (GCS Consciousness Assessment)       │
+   │ └── [*] HAS-BLED Bleeding Risk Score (Documented Extension Guide)│
    └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -896,6 +899,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **Wells' Criteria for PE** | DVT signs (3), Alternative less likely (3), HR >100 (1.5), Immobilization/Surgery (1.5), Prior DVT/PE (1.5), Hemoptysis (1), Malignancy (1) | Point summation (Range: 0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Proceed to D-dimer).<br>>4.0: PE Likely (Proceed directly to CT Pulmonary Angiography). |
 | **CURB-65 Pneumonia Score** | Confusion (+1), Urea >19 mg/dL (+1), RR ≥30 (+1), Low BP SBP <90 or DBP ≤60 (+1), Age ≥65 (+1) | Point summation (Range: 0–5) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient management).<br>2: Intermediate risk (~9% mortality, short inpatient admission).<br>3–5: High / severe risk (15–40% mortality, urgent admission/ICU). |
 | **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
+| **HAS-BLED Bleeding Risk** | Hypertension (1), Abnormal renal/liver (1-2), Stroke (1), Bleeding (1), Labile INR (1), Elderly >65 (1), Drugs/Alcohol (1-2) | $\text{HAS-BLED} = \sum \text{Risk Factors}$ (Range: 0–9) | Binary toggles | 0–1: Low bleeding risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; evaluate modifiable bleeding risks). |
 
 ### 11.2 Production Implementation Snippet (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 

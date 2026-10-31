@@ -1038,9 +1038,513 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 3. **Multi-Byte IME Safety**: Composer input prevents premature message submission while character composition (`compositionstart` to `compositionend`) is active.
 4. **Zero Partition Leakage**: Training, validation, and test splits are partitioned strictly on SHA-256 hashes of normalized question keys, ensuring identical questions never appear across different evaluation partitions.
 5. **Full Suite Verification Status**: 100% of tests are passing in local and CI environments:
-   - **Backend**: 64 passed in-memory MongoDB tests
-   - **Frontend**: 47 passed Vitest component tests across 6 suites
+   - **Backend**: 66 passed in-memory MongoDB tests (`node --test`)
+   - **Frontend**: 49 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
    - **Python Suites**: 19 passed unit tests (13 dataset + 6 LoRA)
    - **Built-Output Gateway**: 7 passed HTTP serving checks
    - **Headless Browser Workflows**: 41 passed Playwright workflows (20 smoke + 21 dark mode/tools)
-   - **Production Dependencies**: 0 reported vulnerabilities across backend and frontend
+   - **Production Dependencies**: 0 reported critical runtime vulnerabilities
+
+---
+
+## 10. Developer Extensibility & Architecture Blueprint for Building on MedAssist AI
+
+MedAssist AI was designed from inception as a modular, extensible, and decoupled biomedical software system. If you are a developer, researcher, or clinical informaticist looking to fork or build upon this project, this section provides the architectural blueprints, contracts, design patterns, and concrete code templates required to extend each layer without violating existing safety or security invariants.
+
+### 10.1 Master Extensibility Architecture & Integration Topology
+
+```
+========================================================================================================================
+                                     MEDASSIST AI — MASTER EXTENSIBILITY BLUEPRINT
+========================================================================================================================
+
+    [ EXTENSION VECTOR 1: FRONTEND REACT 19 / VITE 6 ]
+    ├── Clinical Calculators Modal (`ClinicalCalculatorsModal.jsx`)
+    │   └── Contract: Must enforce physiological input bounds, WAI-ARIA tabpanel semantics, & educational disclaimer.
+    ├── UI Settings & Provider Credentials (`AISettings.jsx`)
+    │   └── Contract: Client never stores or echoes raw API keys; transmits over HTTPS to encrypted backend vault.
+    └── Chat Workspace & Resilient Tabs (`ChatWorkspace.jsx`, `tabStorage.js`)
+        └── Contract: Single-flight Web Locks token refresh; sessionStorage draft isolation with fallback.
+
+                                        │
+                                        ▼ HTTPS (Port 443) / WSS (/ws)
+    [ EXTENSION VECTOR 2: BACKEND EXPRESS 4 / NODE 24 RUNTIME ]
+    ├── Multi-Provider AI Gateway (`modelProvider.js`, `providerSelection.js`)
+    │   └── Contract: Validate remote URLs via SSRF parser, enforce temperature=0.25, max_tokens=900, stop finish-reason.
+    ├── Deterministic Drug Interaction Engine (`interactionService.js`)
+    │   └── Contract: Bidirectional regex pattern matching; preserved inside emergency deflection answers.
+    ├── Biomedical Grounding & Evidence Harvester (`answerService.js`, `pubmedService.js`)
+    │   └── Contract: Multi-stage PubMed Entrez fetch with structured XML parsing; strictly audits [N] citations.
+    └── Authenticated Session & Vault Gateway (`authToken.js`, `sessionService.js`, `providerCredentials.js`)
+        └── Contract: Monotonic sessionVersion validation, rotating refresh tokens, AES-256-GCM encrypted personal keys.
+
+                                        │
+                                        ▼
+    [ EXTENSION VECTOR 3: PERSISTENCE & DATA STORAGE (MongoDB 7) ]
+    ├── Mongoose Data Schemas (`models/*.js`)
+    │   └── Contract: All operational records strictly scoped to owner `userId`; 24-hour TTL on ephemeral generations.
+    └── Schema Versioning & Indexes
+        └── Contract: Compound indexes on `{ userId: 1, createdAt: -1 }` for high-throughput sub-5ms query resolution.
+
+                                        │
+                                        ▼
+    [ EXTENSION VECTOR 4: OFFLINE RESEARCH & MACHINE LEARNING (Python 3.10+) ]
+    ├── Dataset Profiling, Curation & Deduplication (`analyze_dataset.py`, `audit_dataset.py`)
+    │   └── Contract: Pairwise Jaccard similarity audit; quarantine ambiguous groups (e.g. 1,437 questions).
+    ├── Zero-Leakage Deterministic Splitting (`prepare_dataset.py`, `verify_splits.py`)
+    │   └── Contract: Partitioning strictly on SHA-256 modulo 100; zero patient/question overlap across partitions.
+    └── PEFT LoRA Fine-Tuning Pipeline (`train_lora.py`, `validate_lora_setup.py`)
+        └── Contract: Target low-rank adapter weights (r=8, alpha=16); mask prompt tokens with -100 cross-entropy loss.
+========================================================================================================================
+```
+
+### 10.2 Developer Extensibility Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Extending MedAssist))
+    ::icon(fa fa-cubes)
+    (01 Model Providers)
+      ::icon(fa fa-microchip)
+      Register in providerSelection.js
+        Append to choices array
+        Personal key vs Deployment key hierarchy
+      Implement in modelProvider.js
+        SSRF Protocol Validation HTTPS only
+        Strict parameters temp 0.25 max 900
+        Finish reason stop validation
+      Add UI in AISettings.jsx
+        Encrypted input with password mask
+        Provider capability badge
+      Test Coverage
+        backend test modelProvider.test.js
+    (02 Clinical Calculators)
+      ::icon(fa fa-calculator)
+      Define Schema in ClinicalCalculatorsModal
+        Formula math and boundary clamping
+        WAI-ARIA tab and tabpanel attributes
+        Prompt insertion format for educational inquiry
+      Implement Accessibility
+        Keyboard cycling ArrowRight ArrowLeft Home End
+        Focus trap inside active dialog
+      Test Coverage
+        Vitest clinicalCalculators.test.jsx
+    (03 Drug Interaction Rules)
+      ::icon(fa fa-prescription-bottle-medical)
+      Rule Definition in interactionService.js
+        Bidirectional drug regex patterns
+        Severity classification CRITICAL vs HIGH
+        Pharmacological description and rationale
+      Preservation Contract
+        Retain interactions during emergency 911 deflections
+      Test Coverage
+        Node test runner interaction tests
+    (04 Offline ML & Datasets)
+      ::icon(fa fa-database)
+      Data Hygiene
+        Jaccard similarity threshold 0.85
+        Quarantine ambiguous multi-intent prompts
+      Zero-Leakage Splitting
+        SHA-256 modulo 100 hashing
+        80-10-10 deterministic partitions
+      PEFT LoRA Architecture
+        Rank 8, Alpha 16, Dropout 0.05
+        Prompt token loss masking with minus 100
+    (05 MongoDB & REST APIs)
+      ::icon(fa fa-server)
+      Schema Creation
+        Owner-scoped Mongoose models
+        Compound indexes for query performance
+      Security Middleware
+        authToken monotonic sessionVersion check
+        Rate limiting and 32KB JSON body ceiling
+    (06 Frontend State & UI)
+      ::icon(fa fa-desktop)
+      Concurrency Management
+        Web Locks API single-flight refresh
+      Resilient Caching
+        Scoped sessionStorage tab draft isolation
+      Theme Contrast
+        WCAG AA compliant color tokens
+```
+
+### 10.3 Guide A: Integrating a Custom AI Model Provider / Gateway
+
+MedAssist AI decouples the reasoning engine from specific cloud vendors. All providers are orchestrated through a unified asynchronous completion interface in `backend/services/modelProvider.js`.
+
+#### Invariants Required for Every AI Provider:
+1. **SSRF Defense**: Reject non-HTTPS protocols, internal IP ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `127.0.0.0/8`, `169.254.0.0/16`), and embedded credentials in URLs (`user:pass@host`).
+2. **Deterministic Sampling Constraints**: Set `temperature: 0.25` and `max_tokens: 900` to prevent hallucination and runaway generation costs.
+3. **Finish Reason Enforcement**: Reject responses where `finish_reason !== "stop"` (e.g. truncated responses due to `length` or filtered by `content_filter`).
+4. **Credential Isolation**: Support personal user keys sealed via AES-256-GCM in `backend/models/providerCredentialModel.js` falling back to deployment environment variables.
+
+#### Step 1: Register the Provider in `backend/services/providerSelection.js`
+
+```javascript
+// File: backend/services/providerSelection.js
+const PROVIDER_CHOICES = [
+  "gemini",
+  "groq",
+  "together",
+  "local",
+  "custom-provider", // <-- 1. Add unique provider identifier
+];
+
+function resolveProviderSelection(userPreference, personalCredentials, envConfig) {
+  const chosen = PROVIDER_CHOICES.includes(userPreference) ? userPreference : "gemini";
+  
+  // 2. Resolve personal API key or deployment environment fallback
+  if (chosen === "custom-provider") {
+    const personalKey = personalCredentials?.["custom-provider"];
+    const deploymentKey = envConfig.CUSTOM_PROVIDER_API_KEY;
+    const apiKey = personalKey || deploymentKey;
+    
+    return {
+      provider: "custom-provider",
+      apiKey: apiKey || null,
+      isPersonal: Boolean(personalKey),
+      endpoint: envConfig.CUSTOM_PROVIDER_ENDPOINT || "https://api.customprovider.ai/v1/chat/completions",
+      model: envConfig.CUSTOM_PROVIDER_MODEL || "custom-med-7b-instruct",
+    };
+  }
+  // ... existing provider resolution logic
+}
+```
+
+#### Step 2: Implement the Provider Client in `backend/services/modelProvider.js`
+
+```javascript
+// File: backend/services/modelProvider.js
+const { assertSafeRemoteUrl } = require("../lib/securityUtils");
+
+async function generateCustomProviderCompletion({ prompt, systemPrompt, config }) {
+  const { apiKey, endpoint, model } = config;
+  
+  if (!apiKey) {
+    throw new Error("CUSTOM_PROVIDER_ERROR: Missing required API authentication key.");
+  }
+
+  // Enforce SSRF safety invariant on target endpoint
+  assertSafeRemoteUrl(endpoint);
+
+  const payload = {
+    model: model || "custom-med-7b-instruct",
+    temperature: 0.25,      // Standardized biomedical temperature
+    max_tokens: 900,        // Standardized completion length ceiling
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt }
+    ]
+  };
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+      "User-Agent": "MedAssistAI-Core/1.0",
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(30000), // 30s timeout
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(`CUSTOM_PROVIDER_HTTP_${response.status}: ${errorText.slice(0, 200)}`);
+  }
+
+  const data = await response.json();
+  const choice = data.choices?.[0];
+
+  if (!choice || !choice.message?.content) {
+    throw new Error("CUSTOM_PROVIDER_EMPTY: Completed with empty response body.");
+  }
+
+  // Reject truncated responses
+  if (choice.finish_reason && choice.finish_reason !== "stop") {
+    throw new Error(`CUSTOM_PROVIDER_TRUNCATED: Response halted due to finish_reason="${choice.finish_reason}".`);
+  }
+
+  return {
+    content: choice.message.content.trim(),
+    provider: "custom-provider",
+    model: data.model || model,
+    finishReason: choice.finish_reason || "stop",
+  };
+}
+```
+
+---
+
+### 10.4 Guide B: Adding an Evidence-Based Clinical Calculator
+
+MedAssist AI includes 13 built-in clinical calculators in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`. Every calculator must adhere to strict software accessibility, physiological input clamping, and non-prescriptive educational framing.
+
+#### Invariants Required for Every Calculator:
+1. **Physiological Range Clamping**: Numeric inputs must enforce clinically realistic `min` and `max` limits (e.g. serum creatinine between $0.1$ and $30.0\text{ mg/dL}$).
+2. **WAI-ARIA Accessibility**: Tabs must implement `role="tab"`, `role="tabpanel"`, `aria-selected`, `aria-controls`, and respond to `ArrowRight`, `ArrowLeft`, `Home`, and `End` keyboard navigation.
+3. **Educational Prompt Insertion**: The "Insert into Chat" handler must produce an educational query rather than requesting a definitive diagnostic decree.
+
+#### Step 1: Add Calculator Identifier to Tab List
+
+```javascript
+// File: frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+const tabList = [
+  "bmi", "egfr", "chads", "map", "crcl", "calcium", 
+  "aniongap", "fena", "feurea", "fluids", "wells", 
+  "curb65", "gcs", 
+  "hasbled" // <-- 1. Add new calculator identifier
+];
+```
+
+#### Step 2: Implement Calculation State & Educational Math Logic
+
+```javascript
+// File: frontend/src/components/tools/ClinicalCalculatorsModal.jsx (inside component)
+
+// HAS-BLED State
+const [hasbledHypertension, setHasbledHypertension] = useState(false);
+const [hasbledRenal, setHasbledRenal] = useState(false);
+const [hasbledLiver, setHasbledLiver] = useState(false);
+const [hasbledStroke, setHasbledStroke] = useState(false);
+const [hasbledBleeding, setHasbledBleeding] = useState(false);
+const [hasbledLabileInr, setHasbledLabileInr] = useState(false);
+const [hasbledElderly, setHasbledElderly] = useState(false);
+const [hasbledDrugs, setHasbledDrugs] = useState(false);
+const [hasbledAlcohol, setHasbledAlcohol] = useState(false);
+
+const calculateHasBled = () => {
+  let score = 0;
+  if (hasbledHypertension) score += 1;
+  if (hasbledRenal) score += 1;
+  if (hasbledLiver) score += 1;
+  if (hasbledStroke) score += 1;
+  if (hasbledBleeding) score += 1;
+  if (hasbledLabileInr) score += 1;
+  if (hasbledElderly) score += 1;
+  if (hasbledDrugs) score += 1;
+  if (hasbledAlcohol) score += 1;
+
+  let riskCategory = "Low Risk";
+  let bleedRate = "~1.02 bleeds per 100 patient-years";
+  if (score === 2) {
+    riskCategory = "Moderate Risk";
+    bleedRate = "~1.88 bleeds per 100 patient-years";
+  } else if (score >= 3) {
+    riskCategory = "High Risk";
+    bleedRate = "≥3.74 bleeds per 100 patient-years (Requires close clinical monitoring and addressing modifiable risk factors)";
+  }
+
+  return { score, riskCategory, bleedRate };
+};
+```
+
+#### Step 3: Add Accessible Tab & Tabpanel Markup
+
+```jsx
+{/* Tab Button */}
+<button
+  type="button"
+  role="tab"
+  id="tab-hasbled"
+  aria-selected={activeTab === "hasbled"}
+  aria-controls="panel-hasbled"
+  className={`calc-tab-btn ${activeTab === "hasbled" ? "active" : ""}`}
+  onClick={() => setActiveTab("hasbled")}
+>
+  HAS-BLED Score
+</button>
+
+{/* Tab Panel */}
+{activeTab === "hasbled" && (
+  <div
+    role="tabpanel"
+    id="panel-hasbled"
+    aria-labelledby="tab-hasbled"
+    className="calc-panel"
+  >
+    <h3 className="calc-panel-title">HAS-BLED Bleeding Risk Score</h3>
+    <p className="calc-disclaimer">
+      Educational assessment of 1-year major bleeding risk for patients on anticoagulation for atrial fibrillation.
+    </p>
+
+    <div className="calc-checkbox-grid">
+      <label className="calc-checkbox-label">
+        <input
+          type="checkbox"
+          checked={hasbledHypertension}
+          onChange={(e) => setHasbledHypertension(e.target.checked)}
+        />
+        <span>Hypertension (Uncontrolled SBP &gt;160 mmHg) (+1)</span>
+      </label>
+      {/* ... additional risk checkboxes ... */}
+    </div>
+
+    {(() => {
+      const res = calculateHasBled();
+      return (
+        <div className="calc-result-box">
+          <div className="calc-result-value">Score: {res.score} / 9</div>
+          <div className="calc-result-interpretation">
+            <strong>{res.riskCategory}</strong>: {res.bleedRate}
+          </div>
+          <button
+            type="button"
+            className="calc-insert-btn"
+            onClick={() => {
+              const prompt = `Educational inquiry regarding anticoagulation risk: A patient assessment reflects a HAS-BLED score of ${res.score} (${res.riskCategory}, estimated major bleeding rate ${res.bleedRate}). What evidence-based strategies exist for managing modifiable bleeding risks while balancing thrombotic stroke protection?`;
+              onInsertPrompt?.(prompt);
+              onClose?.();
+            }}
+          >
+            Insert Educational Summary into Chat
+          </button>
+        </div>
+      );
+    })()}
+  </div>
+)}
+```
+
+---
+
+### 10.5 Guide C: Adding a High-Risk Drug Interaction Rule
+
+MedAssist AI enforces deterministic screening for critical drug combinations in `backend/services/interactionService.js`. These rules evaluate both the user prompt and the generated response, preserving warnings even if the response is deflected by an emergency safety trigger.
+
+#### Step 1: Define the Interaction Rule in `backend/services/interactionService.js`
+
+```javascript
+// File: backend/services/interactionService.js
+// Example: Adding Warfarin + Trimethoprim-Sulfamethoxazole (Bactrim)
+{
+  pair: "Warfarin + Trimethoprim-Sulfamethoxazole (Bactrim / Septra)",
+  drugA: "Warfarin (Coumadin, Jantoven)",
+  drugB: "Trimethoprim-Sulfamethoxazole (Bactrim, Septra, Cotrimoxazole)",
+  severity: "CRITICAL",
+  drugsA: [
+    /\bwarfarin\b/i, /\bcoumadin\b/i, /\bjantoven\b/i
+  ],
+  drugsB: [
+    /\btrimethoprim\b/i, /\bsulfamethoxazole\b/i, /\bbactrim\b/i, 
+    /\bseptra\b/i, /\bcotrimoxazole\b/i, /\btmp[- ]smx\b/i
+  ],
+  description: "Potent stereoselective inhibition of CYP2C9 metabolic clearance of S-warfarin by sulfamethoxazole, combined with intestinal flora disruption, produces dramatic supratherapeutic INR elevations (often >5-10) and severe, life-threatening hemorrhagic complications.",
+}
+```
+
+#### Step 2: Verification Contract in `backend/services/answerService.js`
+
+In `answerService.js`, verify that detected drug interactions are never wiped during emergency redirects:
+
+```javascript
+// Invariant check in backend/services/answerService.js
+if (emergencyDetected) {
+  return {
+    content: EMERGENCY_DEFLECTION_MESSAGE,
+    verification: {
+      status: "unverified",
+      emergencyFlag: true,
+      drugInteractions: detectedInteractions, // <-- INVARIANT: Must preserve drug warnings!
+    },
+    sources: [],
+    references: [],
+  };
+}
+```
+
+---
+
+### 10.6 Guide D: Extending Dataset Curation and LoRA Fine-Tuning
+
+MedAssist AI provides an air-gapped machine learning pipeline in the `Model and Dataset/` directory.
+
+#### Pipeline Architecture:
+
+```
+[ Raw Medical Q&A Records ]
+             │
+             ▼
+[ `analyze_dataset.py` & `audit_dataset.py` ]
+  - Regex intent profiling (symptoms, drugs, procedures)
+  - Pairwise Jaccard similarity thresholding ($\ge 0.85$)
+  - Isolation of ambiguous multi-intent question groups
+             │
+             ▼
+[ `prepare_dataset.py` & `build_lora_package.py` ]
+  - Deterministic SHA-256 modulo 100 hashing
+  - Partitioning: 80% Train, 10% Validation, 10% Test
+  - Zero partition leakage assertion
+             │
+             ▼
+[ `train_lora.py` & `validate_lora_setup.py` ]
+  - Target linear layers ($W_0 \in \mathbb{R}^{d \times k}$)
+  - Low-rank decomposition: $\Delta W = \frac{\alpha}{r} B A$
+  - Loss calculation with prompt masking ($\text{labels} = -100$)
+```
+
+#### Parameter Proof Formulation:
+For low-rank adaptation on a transformer layer with hidden dimension $d_{\text{model}} = 768$, target linear projection $k = 3 \times 768 = 2,304$ (combined Q, K, V attention), rank $r = 8$, across $L = 12$ layers:
+
+$$\text{Params}_{\text{LoRA}} = L \times [ (d_{\text{model}} \times r) + (r \times k) ] = 12 \times [ (768 \times 8) + (8 \times 2,304) ] = 12 \times [ 6,144 + 18,432 ] = 12 \times 24,576 = 147,456$$
+
+In FP16 storage ($2\text{ bytes per parameter}$):
+$$\text{Memory}_{\text{Adapter}} = 147,456 \times 2\text{ bytes} = 294,912\text{ bytes} \approx 0.281\text{ MB}$$
+
+---
+
+### 10.7 Guide E: Expanding Backend Persistence & MongoDB Collections
+
+When adding new data entities (such as patient notes, clinical summaries, or custom audit logs), follow MedAssist AI's security architecture:
+
+1. **Owner-Scoped Indexes**: Always index `{ userId: 1, createdAt: -1 }` on collections to guarantee strict tenancy isolation and prevent cross-user data leakage.
+2. **Ephemeral TTL Collections**: For high-volume transient data, define MongoDB Time-To-Live indexes (`{ expireAfterSeconds: 86400 }`).
+3. **Sensitive Field Encryption**: Pass personal credentials or clinical identifiers through `backend/services/providerCredentials.js` using AES-256-GCM authenticated encryption before saving to MongoDB:
+
+```javascript
+// File: backend/services/providerCredentials.js
+const crypto = require("crypto");
+const ALGORITHM = "aes-256-gcm";
+
+function seal(text, secretKey) {
+  const iv = crypto.randomBytes(12); // 96-bit nonce for GCM
+  const cipher = crypto.createCipheriv(ALGORITHM, secretKey, iv);
+  let encrypted = cipher.update(text, "utf8", "hex");
+  encrypted += cipher.final("hex");
+  const authTag = cipher.getAuthTag().toString("hex");
+  return {
+    data: encrypted,
+    iv: iv.toString("hex"),
+    tag: authTag,
+  };
+}
+```
+
+---
+
+### 10.8 Production Verification Checklist for New Contributors
+
+Before opening a pull request or cutting a production release, run the unified verification matrix to ensure all system invariants hold:
+
+```powershell
+# 1. Run backend MongoDB and session lifecycle tests (66 tests)
+npm test --prefix backend
+
+# 2. Run frontend React component and accessibility tests (49 tests)
+npm test --prefix frontend
+
+# 3. Run ESLint across frontend components
+npm run lint --prefix frontend
+
+# 4. Compile production frontend bundle
+npm run build --prefix frontend
+
+# 5. Run Python dataset hygiene and LoRA validation suites (19 tests)
+python -m unittest discover -s "Model and Dataset" -p "test_*.py"
+python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
+
+# 6. Execute master verification gate
+node scripts/verify_project.cjs
+```
+

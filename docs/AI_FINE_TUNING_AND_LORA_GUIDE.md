@@ -279,3 +279,176 @@ python -m unittest discover -s "Model and Dataset/lora" -p "test_*.py"
 2. **Deterministic Manifest Verification**: Training scripts calculate SHA-256 digests of all split CSV and JSONL files and match them strictly against `manifest.json`.
 3. **Loss Gradient Masking**: Prompts are masked with $-100$ so cross-entropy loss is computed strictly on response tokens, preventing memorization of user phrasing.
 4. **Clinical Gate Invariant**: Untrusted or unreviewed dataset records cannot trigger model backpropagation without programmatic clinical approval flags.
+
+---
+
+## 8. Developer Extensibility: Training Custom Adapters on New Biomedical Datasets
+
+Researchers and ML engineers can extend MedAssist AI's fine-tuning pipeline to adapt new domain-specific datasets (e.g., oncology trials, pediatric dosing guidelines, pharmacogenomics) or target contemporary open-weights models (such as Llama-3-8B, Mistral-7B, or Gemma-2-9B).
+
+### 8.1 Custom Dataset Ingestion & LoRA Pipeline Topology
+
+```
+========================================================================================================================
+                          MEDASSIST AI — CUSTOM BIOMEDICAL ADAPTER TRAINING PIPELINE
+========================================================================================================================
+
+  [ RAW CLINICAL RECORDS ] (CSV / JSON / Parquet)
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │ STAGE 1: HYGIENE & AUDITING (audit_dataset.py)                         │
+  │ ├── Tokenization & Medical Lexicon Regex Extraction                    │
+  │ ├── Pairwise Jaccard Similarity Matrix Computation (Threshold >= 0.85)  │
+  │ └── Ambiguous Question Group Detection & Quarantine Extraction         │
+  └────────────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │ STAGE 2: DETERMINISTIC PARTITIONING (prepare_dataset.py)               │
+  │ ├── Canonical SHA-256 Hash of Normalized Question String               │
+  │ ├── Modulo 100 Integer Mapping: [0..79] -> Train, [80..89] -> Val,    │
+  │ │                               [90..99] -> Test                       │
+  │ └── Zero-Leakage Assertion: Set intersection of question hashes is {}  │
+  └────────────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │ STAGE 3: SFT INSTRUCTION FORMATTING (build_lora_package.py)            │
+  │ ├── Schema: {"prompt": "<bos>System: ...\nUser: ...", "response": ...}│
+  │ ├── Tokenizer Padding & Dynamic Sequence Truncation (Max Seq: 1024)    │
+  │ └── Loss Masking: Set prompt labels to -100 (Backprop on response only)│
+  └────────────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │ STAGE 4: PEFT LORA ADAPTER INJECTION (train_lora.py)                   │
+  │ ├── Target Attention Weights: W = W0 + (alpha / r) * (B @ A)           │
+  │ ├── Freeze Base Backbone (Requires Grad = False)                       │
+  │ └── Optimization: AdamW (LR=2e-4, Cosine Decay, Warmup Ratio=0.03)     │
+  └────────────────────────────────────────────────────────────────────────┘
+             │
+             ▼
+  ┌────────────────────────────────────────────────────────────────────────┐
+  │ STAGE 5: ADAPTER EXPORT & SERVING INFERENCE (vLLM / Ollama)            │
+  │ ├── Save adapter_model.safetensors & adapter_config.json               │
+  │ └── Deploy OpenAI-compatible endpoint for MedAssist AI backend         │
+  └────────────────────────────────────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 8.2 Custom Dataset Extensibility Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Custom LoRA Training))
+    ::icon(fa fa-graduation-cap)
+    (01 Dataset Ingestion)
+      ::icon(fa fa-file-import)
+      Standard JSONL Prompt Response Pairs
+      Deduplication via Jaccard Index
+      Quarantine Ambiguous Clinical Terms
+    (02 Zero-Leakage Splitting)
+      ::icon(fa fa-shuffle)
+      SHA-256 Modulo 100 Splitting
+      80 Percent Training Partition
+      10 Percent Validation Partition
+      10 Percent Test Evaluation Partition
+    (03 Transformer Target Modules)
+      ::icon(fa fa-brain)
+      GPT-2 Backbone: c_attn projection
+      Llama-3 / Mistral: q_proj, k_proj, v_proj, o_proj
+      Rank r=8, Alpha=16, Dropout=0.05
+    (04 Training & Loss Masking)
+      ::icon(fa fa-sliders)
+      Cross-Entropy Loss on Response Only
+      Mask Prompt Tokens with -100
+      FP16 / BF16 Mixed Precision
+    (05 Deployment to MedAssist AI)
+      ::icon(fa fa-rocket)
+      Export PEFT safetensors adapter
+      Serve via vLLM or Ollama OpenAI API
+      Configure LOCAL_AI_ENDPOINT in .env
+```
+
+### 8.3 Step-by-Step Implementation Guide for Custom Biomedical LoRA
+
+#### Step 1: Format Records to Standard SFT Schema
+
+Place your domain records in `Model and Dataset/raw/` in JSONL format:
+
+```json
+{"prompt": "What are the first-line therapeutic options for severe hyperkalemia with ECG changes?", "response": "In severe hyperkalemia with electrocardiographic changes (such as peaked T waves or widened QRS), immediate intravenous calcium gluconate (10%) or calcium chloride is indicated for myocardial membrane stabilization. This is followed by intracellular potassium shifting agents including intravenous regular insulin with 50% dextrose, and nebulized albuterol. Definitive potassium elimination requires potassium binders, loop diuretics, or emergent hemodialysis."}
+```
+
+#### Step 2: Adapt LoRA Configuration for Contemporary Models (e.g. Llama-3-8B)
+
+If adapting modern Llama or Mistral architectures instead of the reference GPT-2 configuration, update target modules in your PEFT configuration:
+
+```python
+# Model and Dataset/lora/custom_peft_config.py
+from peft import LoraConfig, TaskType
+
+def get_biomedical_lora_config(model_family="llama3"):
+    if model_family == "llama3":
+        # Target all linear attention projections
+        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
+    elif model_family == "gpt2":
+        target_modules = ["c_attn"]
+    else:
+        target_modules = ["q_proj", "v_proj"]
+
+    return LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        r=8,                     # Rank dimension
+        lora_alpha=16,           # Scaling coefficient (alpha / r = 2.0)
+        lora_dropout=0.05,       # Dropout regularization
+        bias="none",
+        target_modules=target_modules,
+    )
+```
+
+#### Step 3: Analytical Parameter & Memory Formulation
+
+For a modern 8B parameter model with $L = 32$ layers, hidden dimension $d_{\text{model}} = 4,096$, intermediate dimension $d_{\text{ffn}} = 14,336$, and rank $r = 8$:
+- **Attention Projections** ($q, k, v, o$):
+  - $q\_proj$: $2 \times (4096 \times 8) = 65,536$
+  - $k\_proj$: $2 \times (1024 \times 8) = 16,384$ (Grouped Query Attention)
+  - $v\_proj$: $2 \times (1024 \times 8) = 16,384$
+  - $o\_proj$: $2 \times (4096 \times 8) = 65,536$
+  - Attention Subtotal: $163,840\text{ parameters per layer}$
+- **MLP Projections** ($gate, up, down$):
+  - $gate\_proj$: $2 \times (4096 \times 8) = 65,536$
+  - $up\_proj$: $2 \times (4096 \times 8) = 65,536$
+  - $down\_proj$: $2 \times (14336 \times 8) = 229,376$
+  - MLP Subtotal: $360,448\text{ parameters per layer}$
+- **Total Trainable Parameters across 32 layers**:
+  $$\text{Params}_{\text{Total}} = 32 \times (163,840 + 360,448) = 32 \times 524,288 = 16,777,216\text{ parameters} \approx 16.78\text{M}$$
+- **Adapter Weight Footprint in BF16** ($2\text{ bytes per weight}$):
+  $$\text{Memory}_{\text{Adapter}} = 16,777,216 \times 2\text{ bytes} \approx 33.55\text{ MB}$$
+
+This represents merely $0.21\%$ of the base 8B model's footprint, making it deployable on low-cost consumer hardware or embedded edge systems.
+
+#### Step 4: Connecting the Custom Fine-Tuned Model to MedAssist AI
+
+Once fine-tuned, serve the model with an OpenAI-compatible runtime such as **vLLM**:
+
+```bash
+# Launch vLLM with base model and PEFT adapter
+vllm serve meta-llama/Meta-Llama-3-8B-Instruct \
+  --enable-lora \
+  --lora-modules medassist-adapter=/path/to/exported/adapter \
+  --port 8000 \
+  --host 127.0.0.1
+```
+
+Then configure MedAssist AI's `backend/.env` to point to the local instance:
+
+```env
+LOCAL_AI_ENDPOINT="http://127.0.0.1:8000/v1/chat/completions"
+LOCAL_AI_MODEL="medassist-adapter"
+```
+
+The Express backend will automatically route queries to your custom fine-tuned model via `backend/services/modelProvider.js` while maintaining PubMed evidence retrieval and deterministic drug interaction safety gating.
+

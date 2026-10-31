@@ -63,7 +63,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 14 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
+     │  - 15 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -108,7 +108,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      14 Heuristic Medication Interaction Patterns
+      15 Heuristic Medication Interaction Patterns
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -119,7 +119,7 @@ mindmap
       AES-256-GCM Authenticated Vault
       Google OAuth 2.0 PKCE Flow
     (04 Clinical Educational Calculators)
-      13 Clinical Tools
+      14 Clinical Tools
         Adult BMI Metric and Imperial
         CKD-EPI 2021 eGFR Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -132,6 +132,7 @@ mindmap
         Wells PE Pre-Test Probability
         CURB-65 Pneumonia Severity
         Glasgow Coma Scale GCS
+        HAS-BLED Bleeding Risk
       Accessibility Controls
         WAI-ARIA Tabpanel Cycling
         Keyboard Alt-Plus-C Shortcut
@@ -152,7 +153,7 @@ mindmap
 
 ## 4. Evidence-Based Clinical Calculators Suite
 
-The platform includes a comprehensive 13-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
+The platform includes a comprehensive 14-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
 
 | Tool Name | Clinical Formula / Scoring Model | Input Parameters | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -169,12 +170,13 @@ The platform includes a comprehensive 13-calculator clinical suite implemented i
 | **Wells' Criteria for PE** | Point summation across 7 clinical criteria (DVT signs, alternative less likely, HR >100, etc.) | Clinical criteria checkboxes (0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Check D-dimer).<br>>4.0: PE Likely (Proceed to CT Pulmonary Angiography). |
 | **CURB-65 Pneumonia Score** | $\text{CURB-65} = C + U + R + B + 65$ (Confusion, Urea >19, RR ≥30, SBP <90 or DBP ≤60, Age ≥65) | 5 clinical checkboxes (0–5 points) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient).<br>2: Intermediate risk (~9% mortality, short stay).<br>3–5: High risk (15–40% mortality, urgent admission/ICU). |
 | **Glasgow Coma Scale (GCS)** | $\text{GCS} = E (1–4) + V (1–5) + M (1–6)$ (Eye, Verbal, Motor responses) | 3 ordinal dropdown selectors (3–15 points) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway reflexes). |
+| **HAS-BLED Bleeding Risk** | Sum of risk factors: HTN, Abnormal renal/liver (1-2), Stroke, Bleeding, Labile INR, Elderly >65, Drugs/Alcohol (1-2) | 9 clinical checkboxes (0–9 points) | Binary toggles | 0–1: Low risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; review modifiable risks). |
 
 ---
 
 ## 5. Pharmacological Drug Interaction Screening & Preserved Context
 
-Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 14 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
+Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 15 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
 |:---|:---|:---|:---:|:---|
@@ -192,6 +194,7 @@ Implemented in `backend/services/interactionService.js`, this subsystem scans us
 | **MAOI + SSRI / Sympathomimetic** | Phenelzine, Tranylcypromine, Selegiline | Sertraline, Fluoxetine, Pseudoephedrine | `CRITICAL` | Malignant hypertensive crisis and hyperthermic Serotonin Syndrome. |
 | **Allopurinol + Azathioprine / 6-MP** | Allopurinol, Febuxostat | Azathioprine, 6-Mercaptopurine | `CRITICAL` | Xanthine oxidase inhibition blocks thiopurine degradation, precipitating lethal bone marrow suppression and pancytopenia. |
 | **Methotrexate + NSAIDs / High-Dose Aspirin** | Methotrexate (Rheumatrex, Trexall) | Ibuprofen, Naproxen, Ketorolac, Aspirin | `CRITICAL` | Renal prostaglandin synthesis inhibition and competitive tubular secretion blockage by NSAIDs reduces methotrexate clearance, causing fatal pancytopenia and AKI. |
+| **Warfarin + TMP-SMX (Bactrim / Septra)** | Warfarin (Coumadin, Jantoven) | Trimethoprim, Sulfamethoxazole (Bactrim, Septra) | `CRITICAL` | Potent CYP2C9 inhibition suppresses active S-warfarin clearance and reduces gut flora vitamin K synthesis, causing precipitous INR surges and life-threatening bleeding. |
 
 ### Preserved Context Invariant
 ```
@@ -375,17 +378,17 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       64 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       47 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       66 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       48 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
-    Headless Browser Smoke Test Suite           Playwright Chromium Headless      20 Passed          PASSED
-    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      21 Passed          PASSED
+    Headless Browser Smoke Test Suite           Playwright Chromium Headless      21 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      26 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       178 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       187 Passed         PASSED
 ========================================================================================================================
 ```
 
@@ -457,7 +460,127 @@ docker compose ps
 
 ---
 
-## 10. License & Attribution
+## 10. Developer Extensibility & Architecture Blueprint: Building on MedAssist AI
+
+MedAssist AI is designed to be easily extended by clinical researchers, machine learning engineers, and full-stack software developers. The codebase is decoupled into modular layers to enable extensions without side effects:
+
+```
+========================================================================================================================
+                                     DEVELOPER EXTENSION & DATA FLOW BLUEPRINT
+========================================================================================================================
+
+    [ EXTENSION POINT ]                   [ TARGET IMPLEMENTATION FILE ]             [ VERIFICATION GATE ]
+    ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+    Add New AI Provider (Claude/DeepSeek) backend/services/providerSelection.js      backend/test/modelProvider.test.js
+                                          backend/services/modelProvider.js          (Assert temp=0.25, max_tokens=900)
+
+    Add Clinical Scoring Calculator       frontend/src/components/tools/             frontend/src/test/
+                                          ClinicalCalculatorsModal.jsx               clinicalCalculators.test.jsx
+                                          (WAI-ARIA tabpanel & bounds)               (Assert boundary clamping & ARIA)
+
+    Add Medication Interaction Warning    backend/services/interactionService.js     backend/test/
+                                          (Regex rules, CRITICAL/HIGH severity)      interactionService.test.js
+                                          Preserved across emergency redirects       (Assert context retention in 911)
+
+    Extend Fine-Tuning Dataset & LoRA     Model and Dataset/prepare_dataset.py       Model and Dataset/
+                                          Model and Dataset/lora/train_lora.py       test_dataset_tools.py (SHA splits)
+                                          (Closed-form 147k parameter math)          test_lora_tools.py (Rank r=8)
+========================================================================================================================
+```
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Extending MedAssist))
+    ::icon(fa fa-code-fork)
+    (01 Adding AI Providers)
+      Register in providerSelection.js
+      Implement in modelProvider.js
+      Enforce SSRF & Temp 0.25 Constraints
+      Unit Test in modelProvider.test.js
+    (02 Adding Clinical Calculators)
+      Formulate Bounded Formula
+      WAI-ARIA Tabs in ClinicalCalculatorsModal
+      Insert Educational Chat Prompt
+      Vitest in clinicalCalculators.test.jsx
+    (03 Adding Drug Contraindications)
+      Formulate FDA Rule in interactionService.js
+      Regex Patterns for Brand & Generic Names
+      Verify Context Retention Across 911 Routes
+      Unit Test in interactionService.test.js
+    (04 Custom LoRA Fine-Tuning)
+      Quarantine Ambiguous Q&A Pairs
+      Deterministic Hash Split (80/10/10)
+      Train PEFT Adapter (r=8, alpha=16)
+      Paired Benchmark Evaluation
+```
+
+### 10.1 Quick Code Extension Examples
+
+#### A. Registering a New AI Provider (`backend/services/modelProvider.js`)
+
+```javascript
+// Excerpt from backend/services/modelProvider.js:
+const generateWithCustomProvider = async ({ prompt, systemInstruction, history = [], signal, providerConfig }) => {
+  const apiKey = providerConfig?.apiKey || process.env.CUSTOM_AI_API_KEY;
+  const model = providerConfig?.model || process.env.CUSTOM_AI_MODEL;
+  const endpoint = providerConfig?.baseUrl || "https://api.custom-ai-host.com/v1";
+
+  // Security Invariant: Remote endpoints must use HTTPS to prevent SSRF
+  const url = new URL(endpoint);
+  if (!isTogether && !isGroq && url.protocol !== "https:" && !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) {
+    throw new Error("Remote AI endpoints must use HTTPS.");
+  }
+
+  const response = await axios.post(url.toString().replace(/\/$/, "") + "/chat/completions", {
+    model,
+    messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
+    temperature: 0.25,
+    max_tokens: 900,
+  }, { timeout: 30000, signal, maxRedirects: 0, maxContentLength: 1024 * 1024, headers: { Authorization: `Bearer ${apiKey}` } });
+
+  return { text: response.data.choices[0].message.content.trim(), model, provider: "Custom AI" };
+};
+```
+
+#### B. Registering a New Evidence-Based Calculator (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
+
+```jsx
+// Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx:
+// 1. Register tab identifier in keyboard cycling array:
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "customTool"];
+
+// 2. Render tab button and pane with WAI-ARIA semantics:
+<button type="button" role="tab" id="tab-customTool" aria-selected={activeTab === "customTool"} aria-controls="tabpanel-customTool" className={`calc-tab ${activeTab === "customTool" ? "active" : ""}`} onClick={() => setActiveTab("customTool")}>
+  Custom Clinical Score
+</button>
+
+// 3. Format educational prompt insertion (never diagnostic):
+<button type="button" className="button small" onClick={() => insertAndClose(`For educational purposes, explain how a Custom Score of ${score} (${stratification}) is interpreted.`)}>
+  Ask MedAssist about this score
+</button>
+```
+
+#### C. Registering a New FDA Black-Box Interaction Rule (`backend/services/interactionService.js`)
+
+```javascript
+// Excerpt from backend/services/interactionService.js:
+{
+  pair: "New Drug Class A + New Drug Class B",
+  drugA: "Class A (e.g., Generic A, TradeNameA)",
+  drugB: "Class B (e.g., Generic B, TradeNameB)",
+  severity: "CRITICAL",
+  drugsA: [/\bgenericA\b/i, /\btradenameA\b/i],
+  drugsB: [/\bgenericB\b/i, /\btradenameB\b/i],
+  description: "Concurrent use triggers [specific pharmacology], significantly elevating risk of [clinical outcome] (FDA Black Box Warning).",
+}
+```
+
+*For complete implementation contracts, API specifications, and database schemas, see [Volume 03: Current Implementation & Developer Guide](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md#10-developer-extension--contribution-guide-building-upon-medassist-ai).*
+
+---
+
+## 11. License & Attribution
 
 - **Developed by**: **J Ganesh kumar reddy**
 - **Original Team Contributors**: 23bds011 — B varshith, 23bds024 — J Ganesh kumar reddy, 23bds015 — B Harsha, 23bds033 — M Jagadeeswar, 23bds053 — Izhaar ahmed.
