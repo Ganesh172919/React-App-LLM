@@ -167,6 +167,9 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ## 5. Step-by-Step Developer Implementation Walkthroughs
 
+> [!TIP]
+> For an exhaustive, end-to-end production blueprint with step-by-step code walkthroughs for adding high-risk DDI rules (19+ rules), clinical calculators (18+ tools), multi-provider adapters, and running the 206 automated tests, consult the dedicated **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)**.
+
 ### 5.1 Guide A: Adding a Custom AI Model Provider / Gateway
 
 MedAssist AI supports multi-provider LLM dispatch. To contribute a new provider (e.g. Anthropic Claude, Mistral API, or a local vLLM gateway):

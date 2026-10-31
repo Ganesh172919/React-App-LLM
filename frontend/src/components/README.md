@@ -97,7 +97,7 @@ mindmap
 - **Accessibility**: Includes WAI-ARIA live regions (`aria-live="polite"`) for incoming streaming tokens.
 
 ### 3.2 `ClinicalCalculatorsModal.jsx` — Evidence-Based Clinical Tools
-- **Calculators Implemented (17 Tools)**:
+- **Calculators Implemented (18 Tools)**:
   1. **Body Mass Index (BMI)**: Metric ($kg/m^2$) and Imperial ($lbs \times 703 / in^2$).
   2. **eGFR (CKD-EPI 2021)**: Race-free glomerular filtration rate estimation.
   3. **CHA2DS2-VASc**: Stroke risk stratification in non-valvular atrial fibrillation (0-9).
@@ -115,6 +115,7 @@ mindmap
   15. **qSOFA Sepsis Screening**: Bedside evaluation for sepsis mortality risk (0-3).
   16. **Mosteller Body Surface Area (BSA)**: $\text{BSA} = \sqrt{\frac{\text{Ht (cm)} \times \text{Wt (kg)}}{3600}}$ (or $\sqrt{\frac{\text{Ht (in)} \times \text{Wt (lbs)}}{3131}}$).
   17. **APRI Liver Fibrosis**: $\text{APRI} = \frac{(\text{AST} / \text{AST}_{\text{ULN}}) \times 100}{\text{Platelets } (10^9/\text{L})}$.
+  18. **Child-Pugh Score for Cirrhosis Mortality**: Points sum ($5-15$) across Bilirubin, Albumin, INR, Ascites, and Encephalopathy; stratifies into Class A (5-6, well-compensated), Class B (7-9, moderate), and Class C (10-15, decompensated liver disease).
 - **WAI-ARIA Accessibility**:
   - `role="tablist"` with `aria-orientation="horizontal"`.
   - Individual calculator tabs utilize `role="tab"`, `aria-selected`, and `aria-controls`.

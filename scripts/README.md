@@ -23,8 +23,8 @@ The `scripts/` directory hosts the continuous verification harness, local develo
     │ BACKEND UNIT TESTS  │   │ FRONTEND TESTS & LINT│   │ PYTHON RESEARCH SUITE│
     │ ├── Node test runner│   │ ├── ESLint 9 sweep  │   │ ├── Dataset profiler│
     │ ├── MongoMemoryServ │   │ ├── Vitest + jsdom  │   │ ├── LoRA parameter  │
-    │ └── 70 passed tests │   │ ├── Vite prod build │   │ │   math (147,456)  │
-    │                     │   │ └── 54 passed tests │   │ └── 19 passed tests │
+    │ └── 71 passed tests │   │ ├── Vite prod build │   │ │   math (147,456)  │
+    │                     │   │ └── 55 passed tests │   │ └── 19 passed tests │
     └─────────────────────┘   └─────────────────────┘   └─────────────────────┘
                  │                         │                         │
                  └─────────────────────────┼─────────────────────────┘
@@ -41,7 +41,7 @@ The `scripts/` directory hosts the continuous verification harness, local develo
     ┌─────────────────────────────────────────────────────────────────┐
     │ PLAYWRIGHT HEADLESS BROWSER REGRESSION SUITES                   │
     │ ├── browser_smoke.cjs: 21 E2E flows (Auth, Chat, Save, Export)  │
-    │ └── browser_verify_dark_and_tools.cjs: 33 flows (17 Tools, ARIA)│
+    │ └── browser_verify_dark_and_tools.cjs: 33 flows (18 Tools, ARIA)│
     │ └── 54 passed browser workflows                                 │
     └─────────────────────────────────────────────────────────────────┘
 ========================================================================================================================

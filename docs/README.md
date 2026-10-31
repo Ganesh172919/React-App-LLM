@@ -29,6 +29,7 @@ This comprehensive technical documentation suite provides deep engineering speci
   [12] AI_FINE_TUNING_AND_LORA_GUIDE.md       ──► Concise LoRA Setup Guide, Parameter Benchmarks & Custom Datasets
   [13] COMPREHENSIVE_CODEBASE_ANALYSIS.md     ──► Codebase Analysis, Line-by-Line Breakdown & Developer Blueprint
   [14] README.md                              ──► Master Documentation Suite Guide, Reading Paths & Mindmap
+  [15] DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md ──► Complete Developer Guide: Adding Rules, Calculators, Providers & Tests
 ========================================================================================================================
 ```
 
@@ -165,6 +166,12 @@ mindmap
         147,456 Trainable Params
         PyTorch Label Masking -100
         Review-Gated Training Gate
+    (08 Developer Onboarding & Extension)
+      Extensibility Taxonomy
+      Adding DDI Rules 19+ Pairs
+      Adding Calculators 18+ Tools
+      Multi-Provider Gateway
+      206-Check Master QA Suite
 ```
 
 ---
@@ -189,6 +196,7 @@ The comprehensive system documentation is organized into focused architectural v
 | **12** | **[`AI_FINE_TUNING_AND_LORA_GUIDE.md`](AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, modern transformer configurations (Llama-3/Mistral/Gemma), review-gated training commands, and Section 8 Custom Adapters. |
 | **13** | **[`COMPREHENSIVE_CODEBASE_ANALYSIS.md`](COMPREHENSIVE_CODEBASE_ANALYSIS.md)** | Exhaustive, file-by-file implementation deep dive with line-by-line subsystem analysis, real code snippets, ASCII topologies, colorful architectural mindmaps, and Section 10 Developer Extensibility Blueprint. |
 | **14** | **[`README.md`](README.md)** | Documentation suite master index, reading path curriculum, system-wide mindmap, and developer reference topology. |
+| **15** | **[`DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)** | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, and running the 206 automated tests. |
 
 ---
 

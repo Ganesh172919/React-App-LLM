@@ -849,7 +849,7 @@ Performs deterministic regular-expression scanning across user queries for 18 ma
 
 ## 8. Clinical Educational Calculators Specification
 
-The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 17 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
+The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 18 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
 
 ```
 ========================================================================================================================
@@ -912,6 +912,10 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
 
     APRI Liver Fibrosis        APRI = [(AST / AST_ULN) / Platelets] * 100                AST: 5-2000, ULN: 10-100
                                <=0.50: Low fibrosis risk; >1.50: High cirrhosis risk    Platelets: 10-1000 x10^9/L
+
+    Child-Pugh Score (Liver)   Score = Bilirubin (1-3) + Albumin (1-3) + INR (1-3)       Score: 5-15 points
+                               + Ascites (1-3) + Encephalopathy (1-3)                   Class A: 5-6 (Compensated)
+                               Class B: 7-9 (Moderate); Class C: 10-15 (Decompensated)  Mortality: 10% / 30% / 70-80%
 ========================================================================================================================
 ```
 

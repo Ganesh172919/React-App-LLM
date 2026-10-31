@@ -22,7 +22,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 > **Clinical Disclaimer**: MedAssist AI provides health and medical information strictly for educational and research purposes. It does not provide clinical diagnoses, medical advice, or treatment plans. Acute emergency symptoms require immediate contact with local emergency medical services.
 
 > [!TIP]
-> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators, medication interaction rules, backend REST models, and custom LoRA datasets.
+> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult the dedicated [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators (18+ tools), medication interaction rules (19+ rules), backend REST models, and custom LoRA datasets.
 
 **Conversation JSON preview:** The chat sidebar can open a previously exported JSON conversation locally. The file is limited to 512 KB and 100 complete question-and-answer pairs. Imported answer text is marked unverified; citation, verification, provider, and identity metadata are discarded. The preview is not saved to the account or sent as model context. Its Markdown and JSON exports are labeled unverified. Conversation text in Markdown exports is fenced as literal text so imported links and images cannot load when the report is viewed. Start a new conversation to ask another question.
 
@@ -562,8 +562,8 @@ const generateWithCustomProvider = async ({ prompt, systemInstruction, history =
 
 ```jsx
 // Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx:
-// 1. Register tab identifier in keyboard cycling array:
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "customTool"];
+// 1. Register tab identifier in keyboard cycling array (18 tools + custom):
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "customTool"];
 
 // 2. Render tab button and pane with WAI-ARIA semantics:
 <button type="button" role="tab" id="tab-customTool" aria-selected={activeTab === "customTool"} aria-controls="tabpanel-customTool" className={`calc-tab ${activeTab === "customTool" ? "active" : ""}`} onClick={() => setActiveTab("customTool")}>
@@ -591,7 +591,7 @@ const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "
 }
 ```
 
-*For complete implementation contracts, API specifications, and database schemas, see [Volume 03: Current Implementation & Developer Guide](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md#10-developer-extension--contribution-guide-building-upon-medassist-ai).*
+*For comprehensive step-by-step developer onboarding, code tutorials, and testing walk-throughs, see the dedicated [Developer Extension & Onboarding Guide](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) and [Volume 02: Current Implementation & Developer Guide](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md#10-developer-extension--contribution-guide-building-upon-medassist-ai).*
 
 ---
 

@@ -99,7 +99,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   ├── mongo-init.js                        # Mongo container bootstrap script (creates app user)
 │   └── README.md                            # Comprehensive deployment & infrastructure operations manual
 │
-├── docs/                                    # Technical Documentation Suite (Volumes 01–14)
+├── docs/                                    # Technical Documentation Suite (Volumes 01–15)
 │   ├── AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md # Concise AI grounding & multi-provider summary
 │   ├── AI_FINE_TUNING_AND_LORA_GUIDE.md     # Concise LoRA fine-tuning guide & hyperparameters
 │   ├── COMPLETE_FILE_DIRECTORY_REFERENCE.md # Complete repository inventory & symbol reference
@@ -108,6 +108,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   ├── DEEP_DIVE_AI_WORKING_PRINCIPLES.md   # Mathematical RAG treatise & E-Utilities deep dive
 │   ├── DEEP_DIVE_LORA_AND_FINE_TUNING.md    # LoRA mathematical derivations & SFT backprop
 │   ├── DEPLOYMENT_RUNBOOK.md                # Enterprise Docker Compose & operations runbook
+│   ├── DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md # Comprehensive developer extension & onboarding blueprint
 │   ├── EVALUATION_AND_INTEGRATION.md        # Ablation benchmark scoring & document retrieval
 │   ├── IMPLEMENTATION_STATUS.md             # Verification test evidence & audit matrix
 │   ├── ISSUES_AND_RISKS.md                  # STRIDE threat model, risk register & mitigations
@@ -279,7 +280,7 @@ mindmap
       Docker Compose & Deployment (docker-compose.yml, create_env.cjs, mongo-init.js)
       Test Automation (verify_project.cjs, browser_smoke.cjs, browser_verify_dark_and_tools.cjs)
       PDF Report Generator (generate_project_report.py)
-      Master Quality Verification (204 Passed Checks)
+      Master Quality Verification (206 Passed Checks)
 ```
 
 ---
@@ -328,7 +329,7 @@ mindmap
 | `frontend/src/context/SidebarContext.jsx` | Drawer State | `SidebarContext`, `SidebarProvider`, `useSidebar` | React |
 | `frontend/src/components/chat/ChatWorkspace.jsx` | Chat UI | `<ChatWorkspace />` | `react-markdown`, `tabStorage.js`, `api.js` |
 | `frontend/src/components/dashboard/AnalyticsDashboard.jsx` | Metrics Dashboard | `<AnalyticsDashboard />` | `lib/api.js`, Lucide icons |
-| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Tools | `<ClinicalCalculatorsModal />` | 17 evidence-based calculators with WAI-ARIA tab semantics |
+| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Tools | `<ClinicalCalculatorsModal />` | 18 evidence-based calculators with WAI-ARIA tab semantics |
 | `frontend/src/components/auth/AccountPage.jsx` | Account Manager | `<AccountPage />` | `AuthContext.jsx`, `tabStorage.js` |
 | `frontend/src/components/auth/AISettings.jsx` | Provider Settings | `<AISettings />` | `lib/api.js` |
 | `frontend/src/components/auth/AuthPage.jsx` | Auth Modal | `<AuthPage />` | React |
@@ -372,4 +373,5 @@ mindmap
 | **Event Bus & Workers** | `backend/services/outboxService.js` | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](SYSTEM_ARCHITECTURE_DEEP_DIVE.md#13-developer-extensibility-event-buses-microservices--asynchronous-workers) | Transactional outbox, MongoDB change streams, Redis Streams consumer groups, DLQ retry loops |
 | **Clinical Safety Invariants** | `backend/services/safetyService.js` | [`docs/ISSUES_AND_RISKS.md`](ISSUES_AND_RISKS.md#10-developer-extensibility-custom-safety-invariants--guardrail-pipelines) | Pediatric contraindications, Narrow Therapeutic Index monitoring, pre/post generation filtering |
 | **Corpus Profilers & Auditing** | `Model and Dataset/reports/` | [`Model and Dataset/reports/dataset_analysis.md`](../Model%20and%20Dataset/reports/dataset_analysis.md#9-developer-extension-blueprint-adding-custom-analyzers--quality-profilers) | Flesch Reading Ease, Type-Token Ratio, ROUGE-L longest common subsequence, semantic triage |
-| **Roadmap & Feature Epics** | `IMPROVEMENT_PLAN.md` | [`IMPROVEMENT_PLAN.md`](../IMPROVEMENT_PLAN.md#9-developer-contribution-backlog--feature-extension-guide) | OpenFDA integration, semantic hybrid RAG, local WebGPU inference, 204-check verification gate |
+| **Developer Onboarding** | Entire Repository | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete end-to-end developer guide for adding rules, calculators, providers, and running 206 tests |
+| **Roadmap & Feature Epics** | `IMPROVEMENT_PLAN.md` | [`IMPROVEMENT_PLAN.md`](../IMPROVEMENT_PLAN.md#9-developer-contribution-backlog--feature-extension-guide) | OpenFDA integration, semantic hybrid RAG, local WebGPU inference, 206-check verification gate |

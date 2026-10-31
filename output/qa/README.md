@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive QA Overview & Artifact Topology
 
-The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 204 automated checks.
+The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 206 automated checks.
 
 ```
 ========================================================================================================================
@@ -47,7 +47,7 @@ mindmap
     ::icon(fa fa-clipboard-check)
     (01 Structured Metrics)
       automated-results.json
-        204 Master Checks
+        206 Master Checks
         Duration & Timestamp
       browser-results.json
         21 Smoke Workflows
@@ -78,10 +78,10 @@ mindmap
 
 | Artifact File | Category | Source Script | Description |
 |:---|:---:|:---:|:---|
-| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 204 automated software checks across all suites. |
+| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 206 automated software checks across all suites. |
 | `browser-results.json` | Report | `browser_smoke.cjs` | Verification logs for 21 browser end-to-end user workflows. |
 | `build-serving-results.json` | Report | `check_build_serving.cjs` | HTTP response header assertions (immutable cache, CSP, SPA fallbacks). |
-| `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (17 tools). |
+| `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (18 tools). |
 | `bsa-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Mosteller BSA calculator. |
 | `apri-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of APRI liver fibrosis calculator. |
 | `wells-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Wells PE score calculator. |
