@@ -40,6 +40,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── chatController.js                # Authoritative message persistence (/api/save), history
 │   │   ├── medicalController.js             # Forced medical literature grounding handler
 │   │   ├── oauthController.js               # Google OAuth 2.0 PKCE flow & OpenID token exchange
+│   │   ├── README.md                        # Backend controllers architecture & API reference manual
 │   │   └── settingsController.js            # User preferences and AES-256-GCM key management
 │   │
 │   ├── middleware/                          # Express Middleware
@@ -58,6 +59,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── authRoute.js                     # /api/auth/* (register, login, google, refresh, reset)
 │   │   ├── chatRoute.js                     # /api/save, /api/history, /api/chats/:id
 │   │   ├── medicalRoute.js                  # POST /api/medical
+│   │   ├── README.md                        # Express routing architecture & endpoint manual
 │   │   └── settingsRoute.js                 # /api/settings/* (GET/PATCH settings, PUT/DELETE keys)
 │   │
 │   ├── services/                            # Core Business Logic & External Integrations
@@ -161,6 +163,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       ├── lib/                             # Client Utilities
 │       │   ├── api.js                       # Fetch client with Web Locks token renewal
 │       │   ├── conversationImport.js        # Bounded local JSON parser with forged-metadata stripping
+│       │   ├── README.md                    # Frontend utilities architecture & client state reference
 │       │   └── tabStorage.js                # Resilient draft and pending job recovery
 │       │
 │       ├── test/                            # Frontend Automated Test Suites
