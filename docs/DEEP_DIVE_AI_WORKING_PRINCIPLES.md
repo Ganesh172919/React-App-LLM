@@ -910,3 +910,108 @@ export function ClinicalCalculatorsModal({ isOpen, onClose }) {
   }, [isOpen]);
 }
 ```
+
+---
+
+## 12. Developer Extensibility: Multi-Model Consensus Architecture & Secondary Verifiers
+
+MedAssist AI supports multi-model consensus verification (`backend/services/answerVerifier.js`) where a draft answer synthesized by a primary generator is independently scrutinized against retrieved literature abstracts by a distinct verifier model.
+
+### 12.1 Multi-Model Consensus Verification Topology
+
+```
+========================================================================================================================
+                                     MULTI-MODEL CONSENSUS VERIFICATION TOPOLOGY
+========================================================================================================================
+
+    [ USER INQUIRY & RETRIEVED ABSTRACTS ]
+                      │
+                      ▼
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ PRIMARY SYNTHESIS ENGINE (Gemini 2.5 / Groq / Together)         │
+    │ ├── Generates educational narrative based on retrieved passages │
+    │ └── Embeds numerical citation markers [1], [2], [3]             │
+    └─────────────────────────────────────────────────────────────────┘
+                      │
+                      ▼ Draft Answer + Retrieved Evidence
+    ┌─────────────────────────────────────────────────────────────────┐
+    │ INDEPENDENT VERIFIER MODEL (GEMINI_VERIFY_ANSWERS=true)         │
+    │ ├── Prompt Contract: Blindly evaluate draft against abstracts   │
+    │ ├── Evaluates each claim: Supported vs Contradicted / Fabricated│
+    │ └── Output Schema: { verdict: "SUPPORTED" | "UNSUPPORTED" }     │
+    └─────────────────────────────────────────────────────────────────┘
+                      │
+           ┌──────────┴──────────┐
+           │                     │
+           ▼ (SUPPORTED)         ▼ (UNSUPPORTED or Timeout)
+    ┌─────────────────────┐┌─────────────────────────────────────────┐
+    │ DELIVER TO USER     ││ FALLBACK DEGRADATION: REFERENCES-ONLY   │
+    │ ├── Full Narrative  ││ ├── Omit ungrounded draft text          │
+    │ └── Validated Pills ││ └── Present retrieved abstracts directly│
+    └─────────────────────┘└─────────────────────────────────────────┘
+========================================================================================================================
+```
+
+### 12.2 Consensus Verification Mindmap
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
+mindmap
+  root((Consensus Verification))
+    ::icon(fa fa-scale-balanced)
+    (01 Verification Prompt)
+      ::icon(fa fa-terminal)
+      Binary Supported vs Unsupported
+      Zero Tolerance for Extrapolations
+      Check Every [N] Marker Alignment
+    (02 Failure Modes)
+      ::icon(fa fa-triangle-exclamation)
+      Model Hallucination
+      Unsupported Extrapolation
+      API Timeout or Format Error
+    (03 Fallback Gating)
+      ::icon(fa fa-shield-halved)
+      Drop Draft Text
+      Activate References-Only Mode
+      Log Verification Telemetry
+    (04 Provider Independence)
+      ::icon(fa fa-network-wired)
+      Primary: Groq / Together AI
+      Verifier: Gemini 2.5 Flash / Local
+```
+
+### 12.3 Implementation Snippet (`backend/services/answerVerifier.js`)
+
+```javascript
+// Implementation snippet from backend/services/answerVerifier.js
+async function verifyAnswerWithConsensus({ question, answerText, sources, apiKey }) {
+  if (!apiKey || !sources?.length) return { verified: true, status: "unreviewed" };
+
+  const prompt = `You are a clinical verification auditor.
+Evaluate whether the following synthesized medical answer is strictly supported by the provided scientific abstracts.
+If the answer makes claims not present in or contradicted by the abstracts, answer UNSUPPORTED.
+If all claims are directly supported, answer SUPPORTED.
+
+Question: ${question}
+
+Retrieved Abstracts:
+${sources.map((s, idx) => `[${idx + 1}] ${s.title}: ${s.abstract}`).join("\n\n")}
+
+Draft Answer:
+${answerText}
+
+Verdict (SUPPORTED or UNSUPPORTED):`;
+
+  try {
+    const verdict = await queryVerificationModel(prompt, apiKey);
+    return {
+      verified: verdict.trim().toUpperCase() === "SUPPORTED",
+      verdict: verdict.trim().toUpperCase(),
+    };
+  } catch (err) {
+    // Fail-safe: In case of verifier network drop, trigger safe references-only mode
+    return { verified: false, error: err.message };
+  }
+}
+```
+
