@@ -22,7 +22,7 @@ The MedAssist AI client utility library (`frontend/src/lib/`) encapsulates low-l
     │  - apiRequest(endpoint, options): Unified fetch wrapper with credentials: "include"                            │
     │  - Automatic 401 Interception & Single-Flight Token Renewal:                                                   │
     │      ├── Multiple concurrent API calls fail with 401 (access token expired)                                     │
-    │      ├── Browser acquires Web Locks mutex: `navigator.locks.request("medassist_auth_refresh")`                 │
+    │      ├── Browser acquires Web Locks mutex: `navigator.locks.request("medassist-session-refresh", refresh)`     │
     │      ├── First flight dispatches single `POST /api/auth/refresh-token` to rotate credentials                   │
     │      ├── Subsequent queued requests await lock release, then replay original calls with fresh cookies           │
     │      └── If refresh fails, triggers global auth sign-out event                                                 │
@@ -31,19 +31,19 @@ The MedAssist AI client utility library (`frontend/src/lib/`) encapsulates low-l
                                    ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                  TIER 2: RESILIENT STORAGE CACHE (frontend/src/lib/tabStorage.js)              │
-    │  - readTab(key), writeTab(key, value): Tab-isolated session state persistence                                  │
-    │  - Recovers active conversation drafts and pending answer generations across page reloads                      │
+    │  - readTab(key, fallback), writeTab(key, value): Tab-isolated session state persistence                         │
+    │  - readPending(key): Recovers active conversation drafts and pending generations across page reloads           │
     │  - Fault-Tolerant Fallback: Automatically detects if browser `sessionStorage` is disabled or blocked           │
-    │    (e.g., private browsing mode, storage quota exceeded) and switches to an in-memory Map                     │
+    │    (e.g., private browsing mode, storage quota exceeded) and transparently handles errors                      │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                  TIER 3: UNTRUSTED JSON PARSER (frontend/src/lib/conversationImport.js)        │
-    │  - parseConversationImportJson(rawJson): Sanitizes uploaded conversation exports                               │
+    │  - parseConversationImport(jsonText): Sanitizes uploaded conversation exports                                  │
     │  - Anti-Spoofing Strip: Strips all verification metadata, PubMed PMID references, and review badges            │
-    │  - Strict Limits: 512 KB payload max, 200 messages max, strictly alternating user/assistant structure         │
-    │  - Prompt Injection Defense: Flags imported chat with `importPreview: true` (disables sending & model context) │
+    │  - Strict Limits: 512 KB payload max, 200 messages max (100 Q&A pairs), 20,000 characters per turn            │
+    │  - Prompt Injection Defense: Strips forged credentials; imported chat is for display preview only              │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
 ```
@@ -83,24 +83,90 @@ mindmap
 
 ---
 
-## 3. Utility Specifications & Contracts
+## 3. Utility Specifications, Implementation Snippets & Contracts
 
 ### 3.1 `api.js` — Single-Flight Token Renewal & Fetch Wrapper
-- **`apiRequest(url, options = {})`**:
-  - Automatically merges `credentials: "include"` and `Content-Type: application/json`.
-  - On receiving `401 Unauthorized`, coordinates token renewal through the browser's Web Locks API (`navigator.locks.request("medassist_auth_refresh")`).
-  - Ensures that when 5 concurrent requests encounter expired tokens, **exactly one refresh call** is dispatched to the backend, and all 5 original calls replay cleanly without user interruption.
+Coordinates concurrent HTTP requests across browser tabs when encountering expired access tokens, using `navigator.locks.request("medassist-session-refresh")` to execute exactly one refresh call:
+
+```javascript
+// Excerpt from frontend/src/lib/api.js:
+export async function refreshSession() {
+  if (!refreshPromise) {
+    const refresh = () => request("/auth/refresh-token", { method: "POST" });
+    refreshPromise = (navigator.locks ? navigator.locks.request("medassist-session-refresh", refresh) : refresh())
+      .then((data) => { window.dispatchEvent(new Event("session-renewed")); return data; })
+      .catch((error) => { window.dispatchEvent(new Event("session-ended")); throw error; })
+      .finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
+export async function apiRequest(path, options = {}) {
+  try { return await request(path, options); }
+  catch (error) {
+    if (error.status === 401 && (!path.startsWith("/auth/") || path === "/auth/check")) {
+      await refreshSession();
+      return request(path, options);
+    }
+    throw error;
+  }
+}
+```
 
 ### 3.2 `tabStorage.js` — Fault-Tolerant Session Cache
-- **`readTab(key, fallback = null)`**: Reads serialized JSON from `sessionStorage`; returns in-memory cached state if `sessionStorage` is restricted or throws.
-- **`writeTab(key, value)`**: Writes serialized state to `sessionStorage` with automatic in-memory mirror.
-- **`readPending(conversationId)`**: Reads in-flight generation progress to recover uncommitted answers after page reload.
+Protects against storage access exceptions in restricted browser environments (incognito/private mode, blocked third-party storage cookies), maintaining in-memory fallbacks while persisting drafts per keystroke:
+
+```javascript
+// Excerpt from frontend/src/lib/tabStorage.js:
+export function readTab(key, fallback = "") {
+  try { return sessionStorage.getItem(key) ?? fallback; } catch { return fallback; }
+}
+
+export function writeTab(key, value) {
+  try { if (value === null) sessionStorage.removeItem(key); else sessionStorage.setItem(key, value); } catch { /* Keep the current in-memory draft. */ }
+}
+
+export function readPending(key) {
+  try {
+    const value = JSON.parse(readTab(key, "null"));
+    if (!value || typeof value.prompt !== "string" || typeof value.exchangeId !== "string" || !Number.isFinite(value.storedAt) || Date.now() - value.storedAt > 86400000) return null;
+    if (value.result && (typeof value.result.text !== "string" || typeof value.result.generationId !== "string" || !Array.isArray(value.result.references || []))) return null;
+    return value;
+  } catch { return null; }
+}
+```
 
 ### 3.3 `conversationImport.js` — Untrusted JSON Sanitization
-- **`parseConversationImportJson(rawJson)`**:
-  - Enforces payload bounds: $\le 512\text{ KB}$ raw string, $\le 200$ messages, $\le 20,000$ characters per turn.
-  - Strips all `verification`, `citations`, and `modelReview` fields to prevent external malicious JSON files from spoofing verified medical facts.
-  - Returns `{ title, messages, importPreview: true }`. In the UI, `importPreview: true` locks the input composer, ensuring untrusted text cannot be injected into subsequent LLM conversational context.
+Enforces payload boundaries ($\le 512\text{ KB}$, $\le 100$ Q&A pairs, $\le 20,000$ chars per turn) and strips untrusted verification metadata:
+
+```javascript
+// Excerpt from frontend/src/lib/conversationImport.js:
+export const MAX_IMPORT_BYTES = 512 * 1024;
+const MAX_MESSAGES = 200;
+const MAX_MESSAGE_LENGTH = 20000;
+
+export function parseConversationImport(jsonText) {
+  if (typeof jsonText !== "string" || new TextEncoder().encode(jsonText).length > MAX_IMPORT_BYTES) {
+    throw new Error("The JSON file must be 512 KB or smaller.");
+  }
+  let parsed;
+  try { parsed = JSON.parse(jsonText); }
+  catch { throw new Error("Could not parse file. Please choose a valid JSON conversation export."); }
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.messages) || !parsed.messages.length) {
+    throw new Error("The file must contain a nonempty messages list.");
+  }
+  if (parsed.messages.length > MAX_MESSAGES || parsed.messages.length % 2 !== 0) {
+    throw new Error("A preview supports up to 100 complete question-and-answer pairs.");
+  }
+  // Exported verification, citations, IDs, and provider metadata are untrusted.
+  const messages = parsed.messages.map((message, index) => ({
+    id: `import-${index}`,
+    isUser: message.isUser,
+    text: message.text,
+  }));
+  return { title: parsed.title?.trim().slice(0, 80) || "Imported conversation", messages };
+}
+```
 
 ---
 

@@ -183,3 +183,70 @@ curl http://localhost:8080/api/health
 # Check full readiness probe (verifies MongoDB connection)
 curl http://localhost:8080/api/ready
 ```
+
+---
+
+## 6. Zero-Downtime Rolling Deployment & Cutover Workflow
+
+```
+========================================================================================================================
+                          MEDASSIST AI — ZERO-DOWNTIME ROLLING DEPLOYMENT FLOW
+========================================================================================================================
+
+    [ STEP 1: PULL & BUILD STAGED IMAGES ]
+    ├── docker compose build --pull backend
+    └── docker compose build --pull frontend
+
+                                │
+                                ▼
+    [ STEP 2: SPIN UP BLUE/GREEN STAGING CONTAINERS ]
+    ├── Launch standby backend-green on ephemeral port (e.g., 5001)
+    └── Poll readiness probe: curl http://localhost:5001/api/ready
+          ├── If /api/ready returns 200 OK within 30s -> Proceed
+          └── If probe fails -> Abort deployment, keep blue active
+
+                                │
+                                ▼
+    [ STEP 3: NGINX UPSTREAM ATOMIC SWITCH ]
+    ├── Reload Nginx config pointing proxy_pass to green: `nginx -s reload`
+    └── Active TCP connections seamlessly drain from blue container
+
+                                │
+                                ▼
+    [ STEP 4: DECOMMISSION OLD RUNTIME ]
+    ├── Send SIGTERM to backend-blue (allows active LLM generations to finish up to 30s)
+    └── Terminate backend-blue container: `docker stop medassist-backend-blue`
+========================================================================================================================
+```
+
+---
+
+## 7. Incident Response, Triage & Health Remediation Matrix
+
+| Symptom / Alert | Root Cause | Diagnosis Command | Remediation Runbook |
+|:---|:---|:---|:---|
+| **`/api/health` 200, but `/api/ready` 503** | MongoDB disconnected or replica election failed. | `docker compose logs backend --tail 50` | Verify MongoDB container status (`docker compose ps mongodb`). Check network connectivity and credentials in `MONGO_APP_PASSWORD`. |
+| **HTTP 504 Gateway Timeout on Chat** | External LLM provider latency exceeded 30s circuit breaker ceiling. | `grep "AI_TIMEOUT" /var/log/nginx/error.log` | Switch provider to Groq or local vLLM via `AI_PROVIDER` in `.env`. Instruct users to use alternative provider keys in Account Settings. |
+| **HTTP 429 Too Many Requests on Login** | Rate limiter triggered (authLimiter: 30 req / 15 min). | `docker compose logs backend \| grep "Too many requests"` | Normal brute-force mitigation. For load testing, set `RATE_LIMIT_DISABLED=true` in testing environment only. |
+| **WebSocket Connection Failure (Code 4001)** | Expired or mismatched `sessionVersion` due to login on another device. | Inspect browser DevTools Console | Normal single-device session behavior. Client will auto-trigger refreshSession via Web Locks or prompt re-login. |
+
+---
+
+## 8. Automated SSL/TLS Let's Encrypt Certbot Configuration
+
+To configure automatic SSL/TLS certificate issuance and renewal via Certbot:
+
+```bash
+# Initial certificate request (standalone HTTP challenge)
+docker run -it --rm --name certbot \
+  -v "$(pwd)/certbot/conf:/etc/letsencrypt" \
+  -v "$(pwd)/certbot/www:/var/www/certbot" \
+  certbot/certbot certonly --webroot \
+  -w /var/www/certbot \
+  -d medassist.yourdomain.com \
+  --email admin@yourdomain.com \
+  --agree-tos --no-eff-email
+
+# Test automated certificate dry-run renewal
+docker run --rm -v "$(pwd)/certbot/conf:/etc/letsencrypt" certbot/certbot renew --dry-run
+```

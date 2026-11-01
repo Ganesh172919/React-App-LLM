@@ -86,7 +86,41 @@ const MEDICAL_QUESTION_PREFIXES = [
 ];
 ```
 
-### 3.2 False-Positive Disambiguation
+### 3.2 Detection Logic & Implementation
+The complete implementation of `isMedicalQuery(text)` handles normalization, direct keyword matching, and false-positive filtering:
+
+```javascript
+// Excerpt from frontend/src/utils/medicalDetector.js:
+const CLINICAL_REGEX = new RegExp(
+  `(?:^|\\b)(${MEDICAL_KEYWORDS.join("|")})\\b|` +
+    `^(?:${MEDICAL_QUESTION_PREFIXES.join("|")})`,
+  "i"
+);
+
+export const isMedicalQuery = (text) => {
+  if (!text || typeof text !== "string") return false;
+
+  const cleanText = text.toLowerCase().replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
+  if (!cleanText || cleanText.length < 2) return false;
+
+  // Direct match for explicit clinical keywords or specific medical prefixes
+  if (CLINICAL_REGEX.test(cleanText)) return true;
+
+  // Question syntax or multi-word structure with health context
+  const isQuestion =
+    text.trim().endsWith("?") ||
+    /^(?:what|how|why|when|where|who|can|should|is|are|does)\b/i.test(cleanText);
+  const isDetailedQuery = cleanText.split(/\s+/).length > 2;
+
+  const hasMedicalContext =
+    /\b(?:medical|doctor|nurse|physician|patient|prescriber)\b/i.test(cleanText) ||
+    (/\bhealth\b/i.test(cleanText) && !/\b(?:financial|economic|fiscal|market)\b/i.test(cleanText));
+
+  return Boolean(hasMedicalContext && (isQuestion || isDetailedQuery));
+};
+```
+
+### 3.3 False-Positive Disambiguation
 General terms such as "health" can appear in economic or corporate contexts (*"What is the financial health of Company X?"*). The classifier enforces contextual disambiguation:
 ```javascript
 const hasMedicalContext =
