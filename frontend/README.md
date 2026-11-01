@@ -163,7 +163,7 @@ frontend/
     │   │   └── ChatWorkspace.jsx        # Message list, composer, IME guard, citation chips
     │   │
     │   ├── tools/                       # Evidence-Based Clinical Utilities
-    │   │   └── ClinicalCalculatorsModal.jsx # 11 calculators with strict input bounds & ARIA tabs
+    │   │   └── ClinicalCalculatorsModal.jsx # 18 evidence-based calculators with strict input bounds & ARIA tabs
     │   │
     │   ├── dashboard/                   # Telemetry & Research Analytics
     │   │   └── AnalyticsDashboard.jsx   # 7/30/90-day SVG trends, lifetime summary metrics
@@ -174,14 +174,16 @@ frontend/
     │
     ├── lib/                             # Core Client Infrastructure
     │   ├── api.js                       # Fetch client with Web Locks single-flight refresh
-    │   └── tabStorage.js                # Fault-tolerant sessionStorage draft cache
+    │   ├── tabStorage.js                # Fault-tolerant sessionStorage draft cache
+    │   └── conversationImport.js        # Bounded local conversation JSON parser & sanitizer
     │
     ├── utils/
     │   └── medicalDetector.js           # Client-side heuristic medical keyword classifier
     │
-    └── test/                            # Vitest Component & Unit Tests (43 Passing)
+    └── test/                            # Vitest Component & Unit Tests (55 Passing across 6 suites)
         ├── api.test.js                  # Web Locks refresh and fetch interceptor tests
-        ├── clinicalCalculators.test.jsx # 11 calculator math & accessibility tests
+        ├── clinicalCalculators.test.jsx # 18 calculator math & accessibility tests
+        ├── conversationImport.test.js   # JSON import bounding and anti-spoofing tests
         ├── medicalDetector.test.js      # Medical entity & suggestion chip classification
         ├── tabStorage.test.js           # sessionStorage fallback & TTL cache tests
         └── ui.test.jsx                  # Component rendering, auth, and accessibility tests
@@ -406,7 +408,7 @@ export function parseConversationImport(jsonText) {
 
 ## 5. Educational Clinical Calculators Implementation
 
-The `ClinicalCalculatorsModal.jsx` component implements 17 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
+The `ClinicalCalculatorsModal.jsx` component implements 18 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -469,6 +471,10 @@ The `ClinicalCalculatorsModal.jsx` component implements 17 standardized clinical
 
     APRI Liver Fibrosis        APRI = [(AST / AST_ULN) / Platelets] * 100                AST: 5-2000, ULN: 10-100
                                <=0.50: Low fibrosis risk; >1.50: High cirrhosis risk    Platelets: 10-1000 x10^9/L
+
+    Child-Pugh Score (Liver)   Score = Bilirubin (1-3) + Albumin (1-3) + INR (1-3)       Score: 5-15 points
+                               + Ascites (1-3) + Encephalopathy (1-3)                   Class A: 5-6 (Compensated)
+                               Class B: 7-9 (Moderate); Class C: 10-15 (Decompensated)  Mortality: 10% / 30% / 70-80%
 ========================================================================================================================
 ```
 
@@ -488,8 +494,8 @@ if (gcsScore <= 8) {
   gcsStratification = "Moderate brain injury (9–12)";
 }
 
-// Arrow key navigation across all 17 tabs
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
+// Arrow key navigation across all 18 tabs
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
 ```
 
 ---
