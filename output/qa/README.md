@@ -22,7 +22,7 @@ The quality assurance output directory (`output/qa/`) stores automated verificat
     │  - automated-results.json: Aggregate code-check metrics (backend, frontend, python, build)                     │
     │  - browser-results.json: Results of 21 core browser workflows and scenarios                                   │
     │  - build-serving-results.json: 7 HTTP ingress assertions (cache headers, SPA routing, proxying)               │
-    │  - frontend-results.json: Vitest JSON output covering 54 component and unit tests                             │
+    │  - frontend-results.json: Vitest JSON output covering 55 component and unit tests                             │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                 │
                                                 ▼
