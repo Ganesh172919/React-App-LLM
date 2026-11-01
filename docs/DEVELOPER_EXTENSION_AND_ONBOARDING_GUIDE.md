@@ -119,7 +119,7 @@ mindmap
                                                 │
                                                 ▼
 +==================================================================================================+
-|                     BACKEND APPLICATION SERVICES (Node.js 18+ Express Microcore)                  |
+|                     BACKEND APPLICATION SERVICES (Node.js 24 LTS Express Microcore)              |
 |                                                                                                  |
 |   ┌──────────────────────────────────────────────────────────────────────────────────────────┐   |
 |   │ 1. SECURITY & AUTHENTICATION MIDDLEWARES                                                 │   |
@@ -174,7 +174,7 @@ mindmap
 ### 3.1 Prerequisites
 
 Ensure your host workstation has the following runtimes installed:
-- **Node.js**: `v18.18.0` or higher (verified on Node 20 & 24).
+- **Node.js**: `v24.x LTS` (strictly enforced via `"engines": { "node": ">=24 <25" }` in `backend/package.json`).
 - **npm**: `v9.0.0` or higher.
 - **Python**: `v3.10.0` or higher (with `venv`).
 - **MongoDB**: `v6.0.0` or higher (local daemon or Docker container).
