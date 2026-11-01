@@ -146,13 +146,16 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   │   ├── AISettings.jsx           # Provider selector & AES-256-GCM key manager
 │       │   │   ├── AuthPage.jsx             # Unified authentication modal
 │       │   │   ├── ForgotPassword.jsx       # Password recovery request form
+│       │   │   ├── README.md                # Authentication & account architecture manual
 │       │   │   ├── ResetPassword.jsx        # Password reset via JWT token form
 │       │   │   ├── VerificationPending.jsx  # Notification view for unverified email
 │       │   │   └── VerifyEmail.jsx          # Email token activation handler
 │       │   ├── chat/                        # Conversational Workspace
-│       │   │   └── ChatWorkspace.jsx        # Message feed, markdown renderer, composer
+│       │   │   ├── ChatWorkspace.jsx        # Message feed, markdown renderer, composer
+│       │   │   └── README.md                # Chat workspace architecture & conversational interface manual
 │       │   ├── dashboard/                   # Operational Analytics Dashboard
-│       │   │   └── AnalyticsDashboard.jsx   # Metrics cards, SVG activity charts, audit
+│       │   │   ├── AnalyticsDashboard.jsx   # Metrics cards, SVG activity charts, audit
+│       │   │   └── README.md                # Operational analytics dashboard architecture manual
 │       │   ├── footer/Footer.jsx            # Student attribution footer
 │       │   ├── header/Header.jsx            # Top navigation bar with auth status
 │       │   ├── home/Home.jsx                # Public landing page with system notices
@@ -221,7 +224,8 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       ├── dataset_analysis.md              # Markdown summary of dataset analysis
 │       ├── dataset_audit.json               # Multi-answer variant similarity output
 │       ├── dataset_audit.md                 # Markdown summary of dataset audit
-│       └── lora_validation.json             # Parameter estimation report (147,456 params)
+│       ├── lora_validation.json             # Parameter estimation report (147,456 params)
+│       └── README.md                        # Machine learning dataset & LoRA reports manual
 │
 ├── output/                                  # Build Artifacts, Reports & Quality Assurance
 │   ├── project-review/                      # Continuous Improvement Prompts & Audits
