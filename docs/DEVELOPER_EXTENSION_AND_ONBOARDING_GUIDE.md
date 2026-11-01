@@ -101,7 +101,7 @@ mindmap
 
 ```
 +==================================================================================================+
-|                         CLIENT WORKSPACE (Vite + React 18 + TailwindCSS)                         |
+|                         CLIENT WORKSPACE (Vite 6 + React 19 + Tailwind CSS 4)                    |
 |  - WAI-ARIA 18-Tool Clinical Calculators Modal       - Chat Composer with IME Composition Guard  |
 |  - Web Locks Single-Flight Token Refresh Coordinator - Resilient tabStorage In-Memory Fallback   |
 |  - Medical Query Heuristic Classifier                - Real-Time WebSocket Telemetry Receiver    |
@@ -208,7 +208,7 @@ pip install -r requirements.txt
 cd ..
 
 # 5. Configure environment variables
-node scripts/create_env.cjs
+node deploy/create_env.cjs
 ```
 
 ### 3.3 Environment Configuration (`backend/.env`)
