@@ -164,7 +164,7 @@ backend/
 │   ├── config.js                   # Startup environment variable validation & key checks
 │   ├── emailService.js             # Brevo transactional email dispatcher
 │   ├── historySearch.js            # Conversational turn relevance ranking via token overlap
-│   ├── interactionService.js       # Deterministic 14-pair FDA black-box drug interaction scanner
+│   ├── interactionService.js       # Deterministic 19-pair FDA black-box drug interaction scanner
 │   ├── modelProvider.js            # Multi-provider client (Gemini, Groq, Together, Local)
 │   ├── providerCredentials.js      # AES-256-GCM authenticated cipher vault (seal/open)
 │   ├── providerSelection.js        # Resolves operator deployment vs personal encrypted keys
@@ -174,16 +174,17 @@ backend/
 │   ├── validation.js               # Schema validators for UUIDs, email, allowed JSON keys
 │   └── websocketService.js         # WebSocket server on /ws with 30s heartbeat watchdog
 │
-└── test/                           # Automated Backend Test Suites (64 Passing Tests)
-    ├── application.test.js         # Integration tests with in-memory MongoMemoryServer
-    ├── chatTitle.test.js           # Conversation auto-titling and markdown stripping tests
-    ├── citationService.test.js     # Unit tests for citation parsing and coverage math
-    ├── historySearch.test.js       # Unit tests for conversational history selection
-    ├── interactionService.test.js  # Unit tests for 14 high-risk drug interaction pairs
-    ├── modelProvider.test.js       # Unit tests for multi-provider API resolution
-    ├── providers.test.js           # Unit tests for PubMed sorting, XML parsing, Gemini
-    ├── pubmedService.test.js       # Unit tests for PubMed query string generation
-    └── safetyService.test.js       # Unit tests for crisis and medical emergency screening
+└── test/                           # Automated Backend Test Suites (71 Passing Tests)
+    ├── application.test.js         # Integration tests with in-memory MongoMemoryServer (24 tests)
+    ├── chatTitle.test.js           # Conversation auto-titling and markdown stripping tests (1 test)
+    ├── citationService.test.js     # Unit tests for citation parsing and coverage math (6 tests)
+    ├── historySearch.test.js       # Auxiliary tests for conversational history selection (2 tests)
+    ├── interactionService.test.js  # Unit tests for 19 high-risk drug interaction pairs (20 tests)
+    ├── modelProvider.test.js       # Unit tests for multi-provider API resolution (4 tests)
+    ├── providers.test.js           # Auxiliary tests for PubMed sorting, XML parsing, Gemini (6 tests)
+    ├── pubmedService.test.js       # Unit tests for PubMed query string generation (3 tests)
+    ├── README.md                   # Backend test architecture & verification manual
+    └── safetyService.test.js       # Unit tests for emergency & crisis screening (13 tests)
 ```
 
 ---
@@ -488,16 +489,15 @@ cd backend
 npm test
 ```
 
-### Complete Test Suite Breakdown (71 Tests across 9 Suites):
+### Complete Test Suite Breakdown (71 Tests across Default npm test):
 1. `application.test.js` (24 Tests): Comprehensive HTTP and WebSocket integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, single-device `sessionVersion` invalidation, two-phase generation commitment (`/api/save`), cursor pagination, rate limiters, and WebSocket notifications.
-2. `interactionService.test.js` (18 Tests): Validates deterministic name matching across all 19 FDA black-box drug interaction rules and ensures benign/unrelated medications pass without warnings.
-3. `safetyService.test.js` (7 Tests): Verifies crisis deflection, acute emergency symptom interception, prompt injection defense, and educational/negated exemptions.
-4. `providers.test.js` (6 Tests): Unit tests for AES-256-GCM vault seal/open, PubMed numeric UID sorting, structured XML abstract parsing, and Gemini candidate normalization.
-5. `citationService.test.js` (4 Tests): Validates numerical bracket parsing `[N]`, valid vs invalid set partitioning, and reference coverage math.
-6. `modelProvider.test.js` (4 Tests): Unit tests verifying provider completion resolution across Gemini, Groq, Together AI, and Local endpoints.
-7. `pubmedService.test.js` (3 Tests): Unit tests for E-Utilities query string construction, keyword extraction, and rate throttle delays.
-8. `historySearch.test.js` (2 Tests): Unit tests for cross-conversation token overlap relevance ranking and stop-word elimination.
-9. `chatTitle.test.js` (1 Test): Validates conversation auto-titling, markdown link/image stripping, and length bounding.
+2. `interactionService.test.js` (20 Tests): Validates deterministic name matching across all 19 FDA black-box drug interaction rules (including Theophylline + Fluoroquinolones) and ensures benign/unrelated medications pass without false warnings.
+3. `safetyService.test.js` (13 Tests): Verifies 988 crisis deflection, acute emergency symptom interception, prompt injection containment, negated symptom preservation, and output screening.
+4. `citationService.test.js` (6 Tests): Validates numerical bracket parsing `[N]`, multi-citation ranges `[1-3]`, stop-word tokenization, relevance ranking, and valid vs invalid set partitioning.
+5. `modelProvider.test.js` (4 Tests): Unit tests verifying provider completion resolution across Gemini, Groq, Together AI, Local endpoints, and model review consensus verdict parsing.
+6. `pubmedService.test.js` (3 Tests): Unit tests for E-Utilities query string construction, keyword extraction, and rate throttle delays.
+7. `chatTitle.test.js` (1 Test): Validates conversation auto-titling, markdown link/image stripping, and length bounding.
+*(Auxiliary suites executable individually: `providers.test.js` with 6 tests, `historySearch.test.js` with 2 tests).*
 
 ---
 
