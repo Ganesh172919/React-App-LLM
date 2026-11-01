@@ -822,7 +822,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 
 ### 7.3 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 
-Performs deterministic regular-expression scanning across user queries for 18 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
+Performs deterministic regular-expression scanning across user queries for 19 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
 
 | Interacting Pair | Severity | Drug A Class & Examples | Drug B Class & Examples | Clinical Risk Description |
 | :--- | :---: | :--- | :--- | :--- |
@@ -844,6 +844,7 @@ Performs deterministic regular-expression scanning across user queries for 18 ma
 | **Clopidogrel + Omeprazole / Esomeprazole** | **CRITICAL** | Clopidogrel (Plavix) | Omeprazole (Prilosec), Esomeprazole (Nexium) | CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, elevating risk of stent thrombosis and reinfarction (FDA Boxed Warning) |
 | **SSRI / SNRI / MAOI + Triptan** | **CRITICAL** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | **CRITICAL** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Enalapril, Losartan, Spironolactone | Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur |
+| **Theophylline + Fluoroquinolones** | **CRITICAL** | Theophylline, Theo-24, Aminophylline, Elixophyllin | Ciprofloxacin, Enoxacin | Potent hepatic CYP1A2 inhibition reduces theophylline metabolic clearance by 30-50%, precipitating life-threatening theophylline toxicity, intractable seizures, and malignant cardiac arrhythmias (FDA Warning) |
 
 ---
 
