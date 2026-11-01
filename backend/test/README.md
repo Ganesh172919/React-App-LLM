@@ -66,11 +66,13 @@ mindmap
       chatTitle.test.js (1 test)
         Markdown URL & Image Stripping
     (02 Clinical Safety & DDI)
-      safetyService.test.js (7 tests)
+      safetyService.test.js (13 tests)
         988 Crisis & Self-Harm Redirection
         Acute Emergency Symptoms
         Prompt Injection Template Tokens
-      interactionService.test.js (18 tests)
+        Negated Symptom Preservations
+        Output Verification Screening
+      interactionService.test.js (20 tests)
         19 FDA Black-Box Drug Pairs
         Warfarin + NSAID / Aspirin
         Nitroglycerin + Sildenafil
@@ -78,16 +80,25 @@ mindmap
         SSRI / SNRI + Triptans
         Bactrim + ACEi / ARBs
         Theophylline + Fluoroquinolones
+        Safe Non-Interacting Combinations
     (03 Biomedical Evidence & RAG)
       pubmedService.test.js (3 tests)
         Query Term Deduplication
         Conversational Filler Removal
-      providers.test.js (6 tests)
-        PubMed Numeric Key Sorting
-        fast-xml-parser Abstract Extraction
-      citationService.test.js (4 tests)
+        PubMed Term Normalization
+      citationService.test.js (6 tests)
         Numerical Citation Bracket Matching [N]
         Zero Ghost Citation Drop Rule
+        Multi-Citation & Range Parsing [1, 2], [1-3]
+        Tokenize Stop Words & Relevance Ranking
+    (04 Model Gateway & Sessions)
+      modelProvider.test.js (4 tests)
+        Multi-Provider Resolution (Gemini, Groq, Together, Local)
+        OpenAI-Compatible Wire Payload Formatting
+        Together AI Bounded Messages & Error Guards
+        Model Review Consensus Verdict Verification
+      chatTitle.test.js (1 test)
+        Markdown URL & Image Stripping
 ```
 
 ---
@@ -96,16 +107,16 @@ mindmap
 
 | Test Suite File | Test Framework | Test Count | Key Invariants Verified |
 |:---|:---:|:---:|:---|
-| `application.test.js` | `node:test` + MongoMemoryServer | **24** | Auth lifecycle, token rotation, session invalidation, two-phase generation, owner isolation, AES vault. |
-| `interactionService.test.js` | `node:test` | **18** | 19 FDA black-box drug-drug interaction pairs, brand-name detection, safe combinations. |
-| `safetyService.test.js` | `node:test` | **7** | Self-harm interception, acute emergency symptoms, prompt injection containment, output screening. |
-| `providers.test.js` | `node:test` | **6** | PubMed UID sorting, MEDLINE XML abstract parsing, Gemini normalization. |
-| `modelProvider.test.js` | `node:test` | **4** | Multi-provider resolution, OpenAI-compatible payload format, Together AI bounds. |
-| `citationService.test.js` | `node:test` | **4** | Numerical bracket `[N]` auditing, range parsing `[1-3]`, out-of-bounds rejection. |
-| `pubmedService.test.js` | `node:test` | **3** | Query tokenization, conversational noise removal, clinical keyword extraction. |
-| `historySearch.test.js` | `node:test` | **2** | Conversational context retrieval, relevance ranking by token overlap. |
-| `chatTitle.test.js` | `node:test` | **1** | Title sanitization, Markdown link stripping, length bounds. |
-| **TOTAL** | — | **71 Tests** | **100% Passing** |
+| `application.test.js` | `node:test` + MongoMemoryServer | **24** | Auth lifecycle, token rotation, session invalidation, two-phase generation, owner isolation, AES-256-GCM vault, analytics integrity. |
+| `interactionService.test.js` | `node:test` | **20** | 19 FDA black-box drug-drug interaction pairs (including Theophylline + Fluoroquinolones), brand-name detection, safe combinations. |
+| `safetyService.test.js` | `node:test` | **13** | Self-harm interception (988 lifeline), acute emergency symptoms, prompt injection containment, output screening, negated symptoms. |
+| `citationService.test.js` | `node:test` | **6** | Numerical bracket `[N]` auditing, range parsing `[1-3]`, out-of-bounds rejection, stop words tokenization, relevance ranking. |
+| `modelProvider.test.js` | `node:test` | **4** | Multi-provider resolution (Gemini, Groq, Together, Local), OpenAI-compatible payload format, Together AI bounds, model review verdict. |
+| `pubmedService.test.js` | `node:test` | **3** | Query tokenization, conversational noise removal, clinical keyword extraction, duplicate term elimination. |
+| `chatTitle.test.js` | `node:test` | **1** | Title sanitization, Markdown link/image stripping, length bounds. |
+| **TOTAL (npm test --prefix backend)** | `node:test` | **71 Tests** | **100% Passing (0 failures, 0 skipped)** |
+| *Auxiliary: `providers.test.js`* | `node:test` | *6* | PubMed UID sorting, MEDLINE XML abstract parsing, Gemini normalization. |
+| *Auxiliary: `historySearch.test.js`* | `node:test` | *2* | Conversational context retrieval, relevance ranking by token overlap. |
 
 ---
 

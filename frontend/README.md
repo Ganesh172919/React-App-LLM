@@ -603,8 +603,8 @@ When contributing a new evidence-based clinical calculator to [`frontend/src/com
 const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium", 
   "aniongap", "fena", "feurea", "fluids", "wells", 
-  "curb65", "gcs", 
-  "hasbled" // <-- Add unique tab ID
+  "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh",
+  "meld" // <-- Add unique tab ID for new tool
 ];
 ```
 

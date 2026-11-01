@@ -703,15 +703,19 @@ The `Model and Dataset/` directory contains research-grade tooling for parameter
 
 ### 9.1 Dataset Profiling & Verification
 
-The dataset pipeline enforces strict schemas on all training rows:
-- `train.jsonl`: 13,129 approved rows
-- `val.jsonl`: 1,641 approved rows
-- `test.jsonl`: 1,642 approved rows
-- **Total Approved Dataset**: **16,412 rows** (with 1,437 rows quarantined for leakage/formatting defects).
+The dataset pipeline enforces strict schemas, whitespace normalization, and SHA-256 hash partitioning:
+- `train.jsonl` / `train.csv`: 10,238 approved rows (~80% split)
+- `validation.jsonl` / `validation.csv`: 1,291 approved rows (~10% split)
+- `test.jsonl` / `test.csv`: 1,318 approved rows (~10% split)
+- **Total Prepared Splits**: **12,847 rows** (with zero cross-split question leakage)
+- **Quarantined Rows**: 1,437 contradictory multi-answer question groups (3,535 rows isolated in `quarantine.jsonl`)
+- **Filtered Rows**: 44 truncated answers (< 5 words) and 5 missing-answer rows dropped
+- **Total Source Corpus**: **16,412 rows** (`Final data set for llm based health assitance (1).csv`, SHA-256 `e4027949...`)
 
 ```bash
 cd "Model and Dataset"
-python data_profiler.py --data-dir ./release_data
+python prepare_dataset.py
+python verify_splits.py
 ```
 
 ### 9.2 LoRA Mathematical Parameter Derivation
@@ -855,14 +859,12 @@ MedAssist AI enforces a rigorous **206-check automated verification suite** acro
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
     1. Backend API & Services           Node 24 Test Runner             71 Tests          100% PASSED
        - application.test.js            Supertest + MongoMemoryServer   24 Tests          PASSED
-       - interactionService.test.js     Deterministic DDI Screeners     18 Tests          PASSED
+       - interactionService.test.js     19 DDI Rules & Safe Combos      20 Tests          PASSED
        - safetyService.test.js          Emergency Regex & Deflection    13 Tests          PASSED
        - citationService.test.js        Numeric Bracket Verifiers        6 Tests          PASSED
        - modelProvider.test.js          Provider Gateway & Fallbacks     4 Tests          PASSED
-       - providers.test.js              Multi-Provider Wire Formats      4 Tests          PASSED
        - pubmedService.test.js          NCBI E-Utilities Mock Engine     3 Tests          PASSED
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
-       - providerGateway.test.js        Provider Endpoint Routing        1 Test           PASSED
 
     2. Frontend React Components        Vitest + jsdom                  55 Tests          100% PASSED
        - ui.test.jsx                    Workspace, Modals, Forms        25 Tests          PASSED
