@@ -459,7 +459,7 @@ To facilitate collaborative engineering and enable external contributors to buil
     │                                TIER 2: LOCAL REGRESSION & COMPONENT TESTS                                      │
     │  - Backend Tests: `node --test backend/tests/<name>.test.js`                                                   │
     │  - Frontend Vitest: `npm test --prefix frontend -- <name>.test.jsx`                                            │
-    │  - Master Verification: `node scripts/verify_project.cjs` (All 182 software checks must pass)                  │
+    │  - Master Verification: `node scripts/verify_project.cjs` (All 206 software checks must pass)                  │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                        │
                        │ 3. Automated Browser Smoke & Accessibility Run
@@ -467,8 +467,8 @@ To facilitate collaborative engineering and enable external contributors to buil
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                TIER 3: PLAYWRIGHT BROWSER AUTOMATION                                           │
     │  - Fixture Server: `node scripts/run_build_qa.cjs --fixtures`                                                  │
-    │  - Smoke Workflows: `node scripts/browser_smoke.cjs` (20 workflows)                                            │
-    │  - Dark Theme & Tools: `node scripts/browser_verify_dark_and_tools.cjs` (21 workflows)                          │
+    │  - Smoke Workflows: `node scripts/browser_smoke.cjs` (21 workflows)                                            │
+    │  - Dark Theme & Tools: `node scripts/browser_verify_dark_and_tools.cjs` (33 workflows)                          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                        │
                        │ 4. Pull Request & Continuous Integration

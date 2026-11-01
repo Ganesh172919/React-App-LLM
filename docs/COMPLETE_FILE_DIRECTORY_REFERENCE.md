@@ -157,7 +157,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   ├── header/Header.jsx            # Top navigation bar with auth status
 │       │   ├── home/Home.jsx                # Public landing page with system notices
 │       │   └── tools/                       # Evidence-Based Clinical Tools
-│       │       ├── ClinicalCalculatorsModal.jsx # 17-calculator educational suite with WAI-ARIA tabs
+│       │       ├── ClinicalCalculatorsModal.jsx # 18-calculator educational suite with WAI-ARIA tabs
 │       │       └── README.md                # Clinical calculators architecture & reference manual
 │       │
 │       ├── context/                         # React State Contexts
@@ -228,20 +228,20 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── CONTINUOUS_IMPROVEMENT_PROMPT.md # 200-word cycle prompt
 │   │   └── PROJECT_ANALYSIS.md              # Project verification report & CI/CD pipeline
 │   └── qa/                                  # Automated Test Logs & Headless Browser Screenshots
-│       ├── automated-results.json           # 182-check verification summary
-│       ├── browser-results.json             # 20 browser smoke workflow logs
+│       ├── automated-results.json           # 206-check verification summary
+│       ├── browser-results.json             # 21 core browser smoke workflow logs
 │       ├── build-serving-results.json       # 7 HTTP ingress assertions
 │       └── README.md                        # Quality assurance evidence catalog & artifact reference
 │
 └── scripts/                                 # Verification & Operations Automation
-    ├── browser_smoke.cjs                    # Playwright browser smoke test suite (20 automated workflows)
-    ├── browser_verify_dark_and_tools.cjs    # Playwright accessibility & dark mode suite (21 workflows)
+    ├── browser_smoke.cjs                    # Playwright browser smoke test suite (21 automated workflows)
+    ├── browser_verify_dark_and_tools.cjs    # Playwright accessibility & dark mode suite (33 workflows)
     ├── check_build_serving.cjs              # Automated HTTP assertions against built-output server (7 checks)
     ├── generate_project_report.py           # Compiles documentation and test logs into PDF report
     ├── README.md                            # Automation scripts, verification harness & QA runbook
     ├── run_build_qa.cjs                     # Serves built frontend bundle and API on port 4173
     ├── run_local.cjs                        # Isolated local stack with in-memory Mongo & fixtures
-    └── verify_project.cjs                   # Master verification aggregator executing all 182 checks
+    └── verify_project.cjs                   # Master verification aggregator executing all 206 checks
 ```
 
 ---

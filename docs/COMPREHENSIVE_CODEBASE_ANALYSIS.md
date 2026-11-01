@@ -1043,11 +1043,11 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 3. **Multi-Byte IME Safety**: Composer input prevents premature message submission while character composition (`compositionstart` to `compositionend`) is active.
 4. **Zero Partition Leakage**: Training, validation, and test splits are partitioned strictly on SHA-256 hashes of normalized question keys, ensuring identical questions never appear across different evaluation partitions.
 5. **Full Suite Verification Status**: 100% of tests are passing in local and CI environments:
-   - **Backend**: 66 passed in-memory MongoDB tests (`node --test`)
-   - **Frontend**: 49 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
+   - **Backend**: 71 passed in-memory MongoDB tests (`node --test`)
+   - **Frontend**: 55 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
    - **Python Suites**: 19 passed unit tests (13 dataset + 6 LoRA)
    - **Built-Output Gateway**: 7 passed HTTP serving checks
-   - **Headless Browser Workflows**: 41 passed Playwright workflows (20 smoke + 21 dark mode/tools)
+   - **Headless Browser Workflows**: 54 passed Playwright workflows (21 smoke + 33 dark mode/tools)
    - **Production Dependencies**: 0 reported critical runtime vulnerabilities
 
 ---
