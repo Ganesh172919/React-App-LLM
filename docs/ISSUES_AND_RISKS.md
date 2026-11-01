@@ -24,7 +24,7 @@ MedAssist AI operates at the intersection of generative language models, automat
 | Medium | A local JSON export could display forged verification and PubMed source metadata as if MedAssist had checked it; the old import label also implied the file was saved. | Fixed: bounded local preview strips evidence metadata, marks imported answers unverified, disables sending, and states that it is not saved or used as model context. Browser and component regressions cover this path. |
 | Medium | A Markdown export of an imported file still claimed to be a MedAssist evidence report and retained active Markdown image syntax from untrusted text. | Fixed: preview downloads carry an unverified label; all conversation text is emitted in literal Markdown fences, and saved-chat reference links are constructed only from numeric PubMed IDs. Export and render regressions cover this path. |
 
-The integrated working tree passed 67 backend, 50 frontend (with a single Vitest worker), 19 Python, 7 built HTTP, 21 core browser, and 27 executed dark/tools browser checks. A parallel Vitest run timed out starting one worker under local resource pressure; the single-worker rerun passed all six files. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
+The integrated working tree passed 71 backend, 55 frontend, 19 Python, 7 built HTTP, and 54 browser checks (21 core browser and 33 dark/tools browser checks). A parallel Vitest run timed out starting one worker under local resource pressure; the single-worker rerun passed all six files. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
 
 ```
 ========================================================================================================================
@@ -62,7 +62,7 @@ The integrated working tree passed 67 backend, 50 frontend (with a single Vitest
                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ TIER 4: PHARMACOLOGICAL NAME MATCHER & CALCULATOR BOUNDS (backend/services/interactionService.js)              │
-    │ ├── 18 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
+    │ ├── 19 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
     │ ├── Preservation Across Redirects: Retains drug interaction warnings even during emergency deflection           │
     │ └── Calculator Physiological Bounds: Caps input parameters to prevent clinically impossible calculations       │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -173,7 +173,7 @@ A primary vulnerability of Retrieval-Augmented Generation (RAG) systems is **hal
 
 ### 4.2 Drug Interaction Screening Boundaries
 
-The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 18 selected medication pairs. Its coverage is incomplete and has not been clinically validated:
+The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 19 selected medication pairs. Its coverage is incomplete and has not been clinically validated:
 
 1. **Anticoagulants / Antiplatelets + NSAIDs / Aspirin** (Elevated systemic & intracranial hemorrhage risk)
 2. **PDE5 Inhibitors + Nitrates** (Profound refractory systemic hypotension and syncope)
@@ -193,6 +193,7 @@ The medication interaction service (`backend/services/interactionService.js`) em
 16. **Clopidogrel + Omeprazole / Esomeprazole** (CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, elevating risk of stent thrombosis and reinfarction)
 17. **SSRI / SNRI / MAOI + Triptan** (Concurrent use of 5-HT1 receptor agonist triptans with serotonergic antidepressants substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome)
 18. **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing Diuretics** (Trimethoprim blocks distal nephron epithelial sodium channels identically to amiloride. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur)
+19. **Theophylline + Fluoroquinolones (Ciprofloxacin / Enoxacin)** (Potent CYP1A2 inhibition reduces hepatic clearance of theophylline by 30–50%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and seizures)
 
 ```javascript
 // Implementation snippet from backend/services/interactionService.js:

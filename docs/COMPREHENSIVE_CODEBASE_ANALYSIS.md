@@ -549,7 +549,7 @@ function attachWebSockets(server, app) {
 
 ### 4.10 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 - **File Path**: [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js)
-- **Role**: Performs deterministic name matching for 18 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
+- **Role**: Performs deterministic name matching for 19 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
 
 ```
 ========================================================================================================================
@@ -560,7 +560,7 @@ function attachWebSockets(server, app) {
               │
               ▼
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │ 18 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
+    │ 19 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
     │ ├── 1. Anticoagulants/Antiplatelets + NSAIDs/Aspirin (Major Bleeding Risk)                       │
     │ ├── 2. PDE5 Inhibitors + Nitrates (Profound Refractory Hypotension)                              │
     │ ├── 3. Serotonergic Opioids + SSRIs/SNRIs (Serotonin Syndrome)                                   │
@@ -578,7 +578,8 @@ function attachWebSockets(server, app) {
     │ ├── 15. Warfarin + Trimethoprim-Sulfamethoxazole (Bactrim INR Surge & Hemorrhage)                │
     │ ├── 16. Clopidogrel + Omeprazole/Esomeprazole (CYP2C19 Inhibition & Stent Thrombosis)            │
     │ ├── 17. SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity & Acute Serotonin Syndrome)          │
-    │ └── 18. Bactrim + ACE Inhibitors/ARBs/K-Sparing Diuretics (Refractory Hyperkalemia & Arrhythmia)  │
+    │ ├── 18. Bactrim + ACE Inhibitors/ARBs/K-Sparing Diuretics (Refractory Hyperkalemia & Arrhythmia)  │
+    │ └── 19. Theophylline + Fluoroquinolones (CYP1A2 Inhibition & Theophylline Toxicity)             │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
               │
               ├── Matches Found ──► Emit structured `drugInteractions` array with clinical descriptions
@@ -764,7 +765,7 @@ const handleKeyDown = (e) => {
 
 ### 5.4 Clinical Educational Calculators Suite (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 - **File Path**: [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx)
-- **Role**: Implements 17 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
+- **Role**: Implements 18 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -779,7 +780,7 @@ const handleKeyDown = (e) => {
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ WAI-ARIA Tab Navigation: role="tablist"                                                          │
     │ [BMI] [eGFR] [CHA₂DS₂-VASc] [MAP] [CrCl] [Payne Ca] [Anion Gap] [FeNa] [FeUrea] [Fluids] [Wells]│
-    │ [CURB-65] [Glasgow Coma Scale (GCS)] [HAS-BLED] [qSOFA] [Mosteller BSA] [APRI]                   │
+    │ [CURB-65] [Glasgow Coma Scale (GCS)] [HAS-BLED] [qSOFA] [Mosteller BSA] [APRI] [Child-Pugh Score]│
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -795,7 +796,7 @@ const handleKeyDown = (e) => {
 
 ```javascript
 // Implementation Snippet: Keyboard Arrow Tab Cycling in ClinicalCalculatorsModal.jsx
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
 if (activeEl && activeEl.getAttribute("role") === "tab") {
   const curTabId = activeEl.id.replace(/^tab-/, "");
   const curIndex = tabList.indexOf(curTabId);
@@ -959,7 +960,7 @@ async function runBrowserSmoke() {
 
 ### 7.3 High-Risk Drug Interaction Unit Tests (`backend/test/interactionService.test.js`)
 - **File Path**: [`backend/test/interactionService.test.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/test/interactionService.test.js)
-- **Role**: Validates name matching for all 18 configured medication-pair cautions and negative non-interference on clean queries (17 passing tests). This is not clinical validation.
+- **Role**: Validates name matching for all 19 configured medication-pair cautions and negative non-interference on clean queries (18 passing tests). This is not clinical validation.
 
 ```javascript
 // Implementation Snippet: backend/test/interactionService.test.js
@@ -1030,8 +1031,8 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `Model and Dataset/lora/validate_lora_setup.py`| Parameter Estimator | CI & Verification | Analytical closed-form parameter math ($147,456$ weights) |
 | `Model and Dataset/lora/train_lora.py` | LoRA Training Script | Training Pipeline | Dry-run validation, SFT label masking (`-100`), adapter checkpointing |
 | `scripts/verify_project.cjs` | Master Test Runner | CI & Local Dev | Orchestrates all unit/integration test suites across Node, Python, Vite |
-| `scripts/browser_smoke.cjs` | Playwright Browser Smoke| CI & Local Dev | End-to-end headless browser regression verification (19 workflows) |
-| `scripts/browser_verify_dark_and_tools.cjs` | Playwright Tools & Theme| CI & Local Dev | Automated verification of dark mode and clinical calculators (20 workflows) |
+| `scripts/browser_smoke.cjs` | Playwright Browser Smoke| CI & Local Dev | End-to-end headless browser regression verification (21 workflows) |
+| `scripts/browser_verify_dark_and_tools.cjs` | Playwright Tools & Theme| CI & Local Dev | Automated verification of dark mode and 18 clinical calculators (33 workflows) |
 
 ---
 

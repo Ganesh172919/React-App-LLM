@@ -41,7 +41,7 @@ The MedAssist AI client is an enterprise-grade, accessibility-audited single-pag
     │  - <AuthPage />         │                   │  - <Sidebar />          │                   │  - <AccountPage />      │
     │    (Login, Register,    │                   │    (History CRUD, filter│                   │    (Profile, data wipe) │
     │     Password Recovery)  │                   │  - <ClinicalCalculators>│                   │  - <AISettings />       │
-    │  - <VerifyEmail />      │                   │    (17 validated tools) │                   │    (Provider & Vault)   │
+    │  - <VerifyEmail />      │                   │    (18 validated tools) │                   │    (Provider & Vault)   │
     └─────────────────────────┘                   └─────────────────────────┘                   └─────────────────────────┘
                  │                                             │                                             │
                  └─────────────────────────────────────────────┼─────────────────────────────────────────────┘
