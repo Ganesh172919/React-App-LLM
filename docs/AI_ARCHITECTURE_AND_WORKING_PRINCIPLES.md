@@ -312,7 +312,6 @@ const detectDrugInteractions = (text) => {
 | **17** | SSRI / SNRI / MAOI + Triptan | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | **CRITICAL** | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **18** | TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | **CRITICAL** | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | **19** | Theophylline + Fluoroquinolones | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
-```
 
 ### 3.3 Secondary Consensus Model Review (`backend/services/answerVerifier.js`)
 
