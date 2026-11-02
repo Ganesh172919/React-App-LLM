@@ -24,6 +24,7 @@
  *   - Clopidogrel + Omeprazole/Esomeprazole (Loss of Antiplatelet Efficacy)
  *   - SSRIs/SNRIs/MAOIs + Triptans (Serotonin Syndrome)
  *   - Bactrim + ACE Inhibitors/ARBs/K-Sparing Diuretics (Refractory Hyperkalemia & Arrhythmia)
+ *   - Theophylline + Fluoroquinolones (CYP1A2 Inhibition, Seizures & Arrhythmias)
  * ============================================================================
  */
 
@@ -363,6 +364,21 @@ const HIGH_RISK_INTERACTION_RULES = [
       /\beplerenone\b/i, /\binspra\b/i,
     ],
     description: "Major clinical contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with renin-angiotensin-aldosterone system (RAAS) inhibitors, renal potassium elimination is severely impaired, precipitating acute refractory hyperkalemia and sudden cardiac arrest.",
+  },
+  {
+    pair: "Theophylline + Fluoroquinolone (CYP1A2 Inhibition)",
+    drugA: "Theophylline / Methylxanthines (e.g., Theophylline, Theo-24, Elixophyllin, Aminophylline)",
+    drugB: "CYP1A2-Inhibiting Fluoroquinolones (e.g., Ciprofloxacin, Cipro)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\btheophylline\b/i, /\btheo-24\b/i, /\btheochron\b/i,
+      /\belixophyllin\b/i, /\baminophylline\b/i, /\buniphyl\b/i,
+    ],
+    drugsB: [
+      /\bciprofloxacin\b/i, /\bcipro\b/i,
+      /\benoxacin\b/i, /\bpenetrex\b/i,
+    ],
+    description: "Major contraindication (FDA Warning): Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more. This precipitous accumulation drives serum theophylline into toxic ranges, causing refractory seizures, malignant cardiac arrhythmias, and sudden death.",
   },
 ];
 

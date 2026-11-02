@@ -17,7 +17,7 @@ This guide provides developers with a step-by-step engineering blueprint to exte
 5. **Client Concurrency & Resilience**: Working with the Web Locks API, storage fault tolerance, and IME composition safety.
 6. **ML Research & LoRA SFT**: Training adapters, compiling instruction datasets, and running parameter audits.
 7. **Production Deployment & Operations**: Multi-container Docker orchestration, TLS termination, CSP headers, and health monitoring.
-8. **Automated Quality Assurance**: Executing and adding to the 206 automated software verification suites.
+8. **Automated Quality Assurance**: Executing and adding to the 208 automated software verification suites.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
@@ -85,12 +85,12 @@ mindmap
         PyTorch PEFT Rank 8
     (07 Master QA Suite)
       ::icon(fa fa-check-double)
-      206 Automated Checks
+      208 Automated Checks
         71 Backend Tests
         55 Frontend Vitest Tests
         19 Python ML Tests
         7 Gateway Assertions
-        54 Playwright Browser Flows
+        56 Playwright Browser Flows
 ```
 
 ---
@@ -630,6 +630,66 @@ test("strips out-of-bounds citations and retains valid references", () => {
 });
 ```
 
+### 7.3 Recipe: Adding an Alternative Literature Harvester (e.g., Europe PMC REST Client)
+
+When extending biomedical retrieval beyond NCBI PubMed to include preprints, patents, or European open-access repositories:
+
+```
+[ User Clinical Query ]
+          │
+          ▼
+ [ Harvester Coordinator ]
+          │
+          ├──► pubmedService.searchPubMed(query)    ──► NCBI PubMed Entrez E-Utilities
+          │
+          └──► europePmcService.searchEuropePMC(query) ──► Europe PMC REST API (JSON)
+                    │
+                    ▼
+     [ Standardized Literature Payload Contract ]
+     [{
+       pmid: "PPR123456",
+       title: "Clinical Trial of Novel SGLT2 Inhibitor...",
+       abstract: "Structured clinical study results...",
+       journal: "Lancet Digital Health",
+       authors: "Smith J, Doe A",
+       url: "https://europepmc.org/article/PPR/PPR123456"
+     }]
+```
+
+```javascript
+// File: backend/services/europePmcService.js
+// Standardized alternative literature harvester implementation
+import axios from "axios";
+
+export async function searchEuropePMC(query, maxResults = 3) {
+  const endpoint = "https://www.ebi.ac.uk/europepmc/webservices/rest/search";
+  const params = {
+    query: `${query} (HAS_ABSTRACT:y AND OPEN_ACCESS:y)`,
+    format: "json",
+    pageSize: maxResults,
+    resultType: "core",
+  };
+
+  try {
+    const response = await axios.get(endpoint, { params, timeout: 10000 });
+    const records = response.data?.resultList?.result || [];
+
+    return records.map((item, idx) => ({
+      pmid: item.pmid || item.id || `epmc-${idx + 1}`,
+      title: item.title || "Untitled Biomedical Study",
+      journal: item.journalInfo?.journal?.title || "Europe PMC",
+      pubdate: String(item.pubYear || new Date().getFullYear()),
+      authors: (item.authorList?.author || []).map((a) => a.fullName).filter(Boolean).slice(0, 3).join(", ") || "Unknown Authors",
+      abstract: item.abstractText || "Abstract unavailable.",
+      url: `https://europepmc.org/article/MED/${item.pmid || item.id}`,
+    }));
+  } catch (error) {
+    console.warn("[europePmcService] Fallback to primary PubMed client:", error.message);
+    return [];
+  }
+}
+```
+
 ---
 
 ## 8. Client Concurrency & State Resilience Guide
@@ -693,6 +753,141 @@ export const tabStorage = {
     }
   },
 };
+```
+
+### 8.3 Recipe: Adding a New Full-Stack Domain Feature (Model, Controller, Route & UI)
+
+To implement a new feature (e.g., *Clinical Bookmarks / Favorites*):
+
+```
++==================================================================================================+
+|                                    REACT FRONTEND COMPONENT                                      |
+|  - Imports `apiRequest` from `frontend/src/lib/api.js` (Web Locks & single-flight refresh)       |
+|  - Mounts accessible UI with Tailwind 4 dark mode tokens (`dark:bg-slate-900`)                   |
++==================================================================================================+
+                                                │
+                               HTTPS REST Calls │ `GET /api/bookmarks`, `POST /api/bookmarks`
+                                                ▼
++==================================================================================================+
+|                                   EXPRESS ROUTE & CONTROLLER                                     |
+|  - `authToken.js` verifies JWT signature and asserts `token.sessionVersion === user.sessionVer`  |
+|  - Controller sanitizes user input, limits page size, and scopes query to `owner: req.user._id`  |
++==================================================================================================+
+                                                │
+                               Mongoose Queries │ `{ owner: req.user._id, createdAt: -1 }`
+                                                ▼
++==================================================================================================+
+|                                    MONGODB 7.0 PERSISTENCE                                       |
+|  - Mongoose Schema enforces types, string trimming, and compound index `{ owner: 1, pmid: 1 }`   |
++==================================================================================================+
+```
+
+#### Step 1: Create Mongoose Schema (`backend/models/bookmarkModel.js`)
+
+```javascript
+import mongoose from "mongoose";
+
+const BookmarkSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    pmid: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 30,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 300,
+    },
+    journal: { type: String, trim: true, maxlength: 150 },
+    pubdate: { type: String, trim: true, maxlength: 50 },
+    url: { type: String, trim: true, maxlength: 500 },
+    clinicalNotes: { type: String, trim: true, maxlength: 2000, default: "" },
+  },
+  { timestamps: true }
+);
+
+// Compound index guaranteeing fast lookups and preventing duplicate bookmarks per user
+BookmarkSchema.index({ owner: 1, pmid: 1 }, { unique: true });
+BookmarkSchema.index({ owner: 1, createdAt: -1 });
+
+export const Bookmark = mongoose.model("Bookmark", BookmarkSchema);
+```
+
+#### Step 2: Create Controller (`backend/controllers/bookmarkController.js`)
+
+```javascript
+import { Bookmark } from "../models/bookmarkModel.js";
+
+export async function listBookmarks(req, res) {
+  const bookmarks = await Bookmark.find({ owner: req.user._id })
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .lean();
+
+  return res.json({ bookmarks });
+}
+
+export async function createBookmark(req, res) {
+  const { pmid, title, journal, pubdate, url, clinicalNotes } = req.body;
+
+  if (!pmid || !title) {
+    return res.status(400).json({ error: "PMID and title are required." });
+  }
+
+  const record = await Bookmark.findOneAndUpdate(
+    { owner: req.user._id, pmid },
+    {
+      $set: {
+        title: title.slice(0, 300),
+        journal: journal?.slice(0, 150) || "",
+        pubdate: pubdate?.slice(0, 50) || "",
+        url: url?.slice(0, 500) || "",
+        clinicalNotes: clinicalNotes?.slice(0, 2000) || "",
+      },
+    },
+    { upsert: true, new: true, runValidators: true }
+  );
+
+  return res.status(201).json({ bookmark: record });
+}
+
+export async function deleteBookmark(req, res) {
+  const { pmid } = req.params;
+  const result = await Bookmark.deleteOne({ owner: req.user._id, pmid });
+
+  if (result.deletedCount === 0) {
+    return res.status(404).json({ error: "Bookmark not found." });
+  }
+
+  return res.json({ success: true });
+}
+```
+
+#### Step 3: Register Route in `backend/routes/bookmarkRoute.js` and `backend/app.js`
+
+```javascript
+// backend/routes/bookmarkRoute.js
+import express from "express";
+import { authToken } from "../middleware/authToken.js";
+import { listBookmarks, createBookmark, deleteBookmark } from "../controllers/bookmarkController.js";
+
+const router = express.Router();
+router.use(authToken); // Enforces authentication on all bookmark operations
+
+router.get("/", listBookmarks);
+router.post("/", createBookmark);
+router.delete("/:pmid", deleteBookmark);
+
+export default router;
 ```
 
 ---
@@ -848,11 +1043,11 @@ server {
 
 ## 11. Master Quality Verification & Testing Runbook
 
-MedAssist AI enforces a rigorous **206-check automated verification suite** across all application tiers.
+MedAssist AI enforces a rigorous **208-check automated verification suite** across all application tiers.
 
 ```
 ========================================================================================================================
-                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (206 CHECKS)
+                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (208 CHECKS)
 ========================================================================================================================
 
     SUITE / SUBSYSTEM                   HARNESS / RUNNER                TEST COUNT        STATUS
@@ -860,10 +1055,12 @@ MedAssist AI enforces a rigorous **206-check automated verification suite** acro
     1. Backend API & Services           Node 24 Test Runner             71 Tests          100% PASSED
        - application.test.js            Supertest + MongoMemoryServer   24 Tests          PASSED
        - interactionService.test.js     19 DDI Rules & Safe Combos      20 Tests          PASSED
-       - safetyService.test.js          Emergency Regex & Deflection    13 Tests          PASSED
-       - citationService.test.js        Numeric Bracket Verifiers        6 Tests          PASSED
+       - safetyService.test.js          Emergency Regex & Deflection     7 Tests          PASSED
+       - providers.test.js              PubMed XML & Gemini Parse        6 Tests          PASSED
+       - citationService.test.js        Numeric Bracket Verifiers        4 Tests          PASSED
        - modelProvider.test.js          Provider Gateway & Fallbacks     4 Tests          PASSED
        - pubmedService.test.js          NCBI E-Utilities Mock Engine     3 Tests          PASSED
+       - historySearch.test.js          Token Overlap Relevance Check    2 Tests          PASSED
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
 
     2. Frontend React Components        Vitest + jsdom                  55 Tests          100% PASSED
@@ -885,12 +1082,12 @@ MedAssist AI enforces a rigorous **206-check automated verification suite** acro
     4. Built-Output HTTP Gateway        check_build_serving.cjs          7 Tests          100% PASSED
        - Cache headers, CSP, SPA routing, /api/* reverse proxying        7 Tests          PASSED
 
-    5. Playwright Headless Browser      Chromium Headless               54 Tests          100% PASSED
+    5. Playwright Headless Browser      Chromium Headless               56 Tests          100% PASSED
        - browser_smoke.cjs              E2E Auth, Chat, Save, Export    21 Tests          PASSED
-       - browser_verify_dark_and_tools  WCAG Dark Mode, 18 Tools, DDI   33 Tests          PASSED
+       - browser_verify_dark_and_tools  WCAG Dark Mode, 18 Tools, DDI   35 Tests          PASSED
 
     =================================================================================================================
-    MASTER AUTOMATED VERIFICATION TOTAL                                206 CHECKS         100% PASSED
+    MASTER AUTOMATED VERIFICATION TOTAL                                208 CHECKS         100% PASSED
 ========================================================================================================================
 ```
 
@@ -918,9 +1115,54 @@ cd ..
 # Built HTTP gateway verification (7 checks)
 node scripts/check_build_serving.cjs
 
-# Playwright browser automation (54 checks)
+# Playwright browser automation (56 checks: 21 smoke + 35 dark & tools)
 node scripts/browser_smoke.cjs
 node scripts/browser_verify_dark_and_tools.cjs
+```
+
+### 11.2 Recipe: Adding a New Playwright End-to-End Browser Test Flow
+
+When contributing a new user workflow or verifying UI accessibility:
+
+```javascript
+// Example: Adding an end-to-end test workflow in Playwright
+const { chromium } = require("playwright");
+const assert = require("assert");
+
+async function verifyCustomFeature() {
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await context.newPage();
+
+  try {
+    // 1. Navigate to local application stack
+    await page.goto("http://localhost:5173", { waitUntil: "networkidle" });
+
+    // 2. Open Clinical Calculators modal via keyboard shortcut Alt+C
+    await page.keyboard.press("Alt+KeyC");
+    await page.waitForSelector("[role='dialog'][aria-modal='true']");
+
+    // 3. Assert ARIA tablist visibility and cycle to target tool
+    const tab = page.locator("#tab-meld");
+    await tab.click();
+    await page.waitForSelector("#tabpanel-meld");
+
+    // 4. Input values and verify calculated result output
+    await page.fill("#meld-bili-input", "2.5");
+    await page.fill("#meld-inr-input", "1.8");
+    await page.fill("#meld-cr-input", "2.1");
+
+    const resultBadge = page.locator(".calc-result-score");
+    const scoreText = await resultBadge.innerText();
+    assert.ok(parseInt(scoreText, 10) > 0, "Calculated score must be positive");
+
+    // 5. Capture visual regression screenshot artifact
+    await page.screenshot({ path: "output/qa/meld-calc-test.png", fullPage: false });
+    console.log("PASS: Custom feature workflow verified.");
+  } finally {
+    await browser.close();
+  }
+}
 ```
 
 ---
@@ -932,4 +1174,4 @@ When contributing new code to MedAssist AI:
 2. **Safe Regex Invariant**: Ensure all medication and symptom regexes include word boundaries (`\b`) and avoid exponential backtracking.
 3. **WAI-ARIA Invariant**: Ensure every new interactive modal or widget supports full keyboard navigation (`Tab`, `Escape`, arrow keys) and has proper ARIA labels.
 4. **Zero-Persistence Secrets Invariant**: Never persist unencrypted provider API keys in MongoDB or client-side storage.
-5. **Quality Gate Invariant**: All 206 automated tests must pass before opening a pull request.
+5. **Quality Gate Invariant**: All 208 automated tests must pass before opening a pull request.

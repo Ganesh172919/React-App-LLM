@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive QA Overview & Artifact Topology
 
-The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 206 automated checks.
+The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 208 automated checks.
 
 ```
 ========================================================================================================================
@@ -29,8 +29,10 @@ The quality assurance output directory (`output/qa/`) stores automated verificat
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                TIER 2: CHROMIUM HEADLESS SCREENSHOT EVIDENCE                                   │
     │  - Mobile Viewports (320px, 390px): `chat-320.png`, `chat-mobile.png`, `register-mobile.png`                  │
-    │  - Dark Theme Modals: `calculators-dark-modal.png`, `bsa-dark-modal.png`, `apri-dark-modal.png`, etc.         │
-    │  - Clinical Caution Banners: `triptan-ssri-dark.png`, `bactrim-lisinopril-dark.png`, etc.                     │
+    │  - Dark Theme Modals: `calculators-dark-modal.png`, `bsa-dark-modal.png`, `apri-dark-modal.png`,               │
+    │    `childpugh-dark-modal.png`, `wells-dark-modal.png`, `gcs-dark-modal.png`, `curb65-dark-modal.png`, etc.     │
+    │  - Clinical Caution Banners: `theophylline-cipro-dark.png`, `triptan-ssri-dark.png`,                          │
+    │    `bactrim-lisinopril-dark.png`, `statin-clarithromycin-dark.png`, `allopurinol-imuran-dark.png`, etc.        │
     │  - Desktop Workspaces: `chat-desktop.png`, `dashboard-desktop.png`, `home-desktop.png`                        │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
@@ -47,7 +49,7 @@ mindmap
     ::icon(fa fa-clipboard-check)
     (01 Structured Metrics)
       automated-results.json
-        206 Master Checks
+        208 Master Checks
         Duration & Timestamp
       browser-results.json
         21 Smoke Workflows
@@ -60,7 +62,9 @@ mindmap
       Dark Theme Modals
         WCAG AA Contrast
         18 Clinical Calculators
+        Child-Pugh Cirrhosis Modal
       Drug Interaction Banners
+        Theophylline + Ciprofloxacin
         Warfarin + Bactrim
         SSRI + Triptan
         Bactrim + Lisinopril
@@ -78,13 +82,15 @@ mindmap
 
 | Artifact File | Category | Source Script | Description |
 |:---|:---:|:---:|:---|
-| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 206 automated software checks across all suites. |
+| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 208 automated software checks across all suites. |
 | `browser-results.json` | Report | `browser_smoke.cjs` | Verification logs for 21 browser end-to-end user workflows. |
 | `build-serving-results.json` | Report | `check_build_serving.cjs` | HTTP response header assertions (immutable cache, CSP, SPA fallbacks). |
 | `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (18 tools). |
+| `childpugh-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Child-Pugh cirrhosis mortality score calculator. |
 | `bsa-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Mosteller BSA calculator. |
 | `apri-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of APRI liver fibrosis calculator. |
 | `wells-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Wells PE score calculator. |
+| `theophylline-cipro-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for Theophylline + Ciprofloxacin (CYP1A2 inhibition). |
 | `triptan-ssri-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for SSRI + Triptan. |
 | `bactrim-lisinopril-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for Bactrim + Lisinopril. |
 | `statin-clarithromycin-dark.png` | Visual | `browser_verify_dark_and_tools.cjs` | Drug interaction warning banner for Statin + Clarithromycin. |

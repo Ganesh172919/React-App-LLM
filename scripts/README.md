@@ -41,8 +41,8 @@ The `scripts/` directory hosts the continuous verification harness, local develo
     ┌─────────────────────────────────────────────────────────────────┐
     │ PLAYWRIGHT HEADLESS BROWSER REGRESSION SUITES                   │
     │ ├── browser_smoke.cjs: 21 E2E flows (Auth, Chat, Save, Export)  │
-    │ └── browser_verify_dark_and_tools.cjs: 33 flows (18 Tools, ARIA)│
-    │ └── 54 passed browser workflows                                 │
+    │ └── browser_verify_dark_and_tools.cjs: 35 flows (18 Tools, ARIA)│
+    │ └── 56 passed browser workflows                                 │
     └─────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
 ```
@@ -76,7 +76,7 @@ mindmap
     (04 Playwright E2E)
       ::icon(fa fa-browser)
       browser_smoke.cjs (21 flows)
-      browser_verify_dark_and_tools (33 flows)
+      browser_verify_dark_and_tools (35 flows)
       Screenshot artifacts in output/qa/
 ```
 
@@ -91,8 +91,9 @@ mindmap
 | **`run_build_qa.cjs`** | Node.js | Serves the compiled production Vite bundle alongside mock API endpoints on port 4173 for pre-deployment validation. |
 | **`check_build_serving.cjs`** | Node.js | Performs 7 automated HTTP header assertions against the serving gateway, verifying CSP, HSTS, X-Frame-Options, and gzip content delivery. |
 | **`browser_smoke.cjs`** | Playwright / Chromium | Executes 21 automated end-to-end browser workflows, verifying user registration, login, chat generation, two-phase commitment (`/api/save`), thread deletion, and conversation export. |
-| **`browser_verify_dark_and_tools.cjs`** | Playwright / Chromium | Executes 33 automated browser workflows verifying WCAG AA contrast in dark mode, OS `prefers-color-scheme` synchronization, 18 clinical calculators, DDI alert banners, and WAI-ARIA tabpanel keyboard cycling. |
+| **`browser_verify_dark_and_tools.cjs`** | Playwright / Chromium | Executes 35 automated browser workflows verifying WCAG AA contrast in dark mode, OS `prefers-color-scheme` synchronization, 18 clinical calculators (including Child-Pugh), DDI alert banners (including Theophylline + Ciprofloxacin), and WAI-ARIA tabpanel keyboard cycling. |
 | **`generate_project_report.py`** | Python | Compiles architectural documentation, system metrics, and test logs into a unified, formal PDF project review report. |
+| **`generate_interview_mastery_pdf.py`** | Python | Compiles exhaustive production engineering architecture, clinical interview mastery, mathematical derivations, and technical tradeoff defense into `Medical_LLM_System_Architecture_and_Interview_Mastery.pdf`. |
 
 ---
 
@@ -116,4 +117,7 @@ node scripts/browser_smoke.cjs
 
 # 6. Run Playwright dark mode and clinical tools accessibility workflows
 node scripts/browser_verify_dark_and_tools.cjs
+
+# 7. Generate Master Architecture & Interview Mastery PDF
+python scripts/generate_interview_mastery_pdf.py
 ```

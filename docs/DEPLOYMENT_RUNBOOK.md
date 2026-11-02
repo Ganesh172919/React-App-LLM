@@ -727,7 +727,7 @@ mindmap
       Express Process /api/health
       Database Wire /api/ready
     (02 End-to-End Verification)
-      206 Master Gate Tests
+      208 Master Gate Tests
       Browser Smoke Playwright
       Dark Theme & ARIA Trapping
       18 Clinical Calculators

@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -154,6 +154,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [apriAst, setApriAst] = useState("45"); // U/L
   const [apriAstUln, setApriAstUln] = useState("40"); // U/L
   const [apriPlatelets, setApriPlatelets] = useState("150"); // 10^9/L or x10^3/uL
+
+  // Child-Pugh Score State
+  const [cpBilirubin, setCpBilirubin] = useState("1.5"); // mg/dL
+  const [cpAlbumin, setCpAlbumin] = useState("3.8"); // g/dL
+  const [cpInr, setCpInr] = useState("1.1");
+  const [cpAscites, setCpAscites] = useState("none"); // none | mild | moderate
+  const [cpEncephalopathy, setCpEncephalopathy] = useState("none"); // none | grade1_2 | grade3_4
 
   const titleId = useId();
 
@@ -437,6 +444,58 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     }
   }
 
+  // 18. Child-Pugh Score for Cirrhosis Mortality
+  let cpScore = null;
+  let cpClass = "";
+  let cpInterpretation = "";
+  const cpBiliNum = parseFloat(cpBilirubin);
+  const cpAlbNum = parseFloat(cpAlbumin);
+  const cpInrNum = parseFloat(cpInr);
+
+  if (
+    !isNaN(cpBiliNum) && cpBiliNum >= 0.1 && cpBiliNum <= 50 &&
+    !isNaN(cpAlbNum) && cpAlbNum >= 0.5 && cpAlbNum <= 6.0 &&
+    !isNaN(cpInrNum) && cpInrNum >= 0.5 && cpInrNum <= 10.0
+  ) {
+    let points = 0;
+    // Bilirubin points (<2.0: 1, 2.0-3.0: 2, >3.0: 3)
+    if (cpBiliNum < 2.0) points += 1;
+    else if (cpBiliNum <= 3.0) points += 2;
+    else points += 3;
+
+    // Albumin points (>3.5: 1, 2.8-3.5: 2, <2.8: 3)
+    if (cpAlbNum > 3.5) points += 1;
+    else if (cpAlbNum >= 2.8) points += 2;
+    else points += 3;
+
+    // INR points (<1.7: 1, 1.7-2.3: 2, >2.3: 3)
+    if (cpInrNum < 1.7) points += 1;
+    else if (cpInrNum <= 2.3) points += 2;
+    else points += 3;
+
+    // Ascites points
+    if (cpAscites === "none") points += 1;
+    else if (cpAscites === "mild") points += 2;
+    else points += 3;
+
+    // Encephalopathy points
+    if (cpEncephalopathy === "none") points += 1;
+    else if (cpEncephalopathy === "grade1_2") points += 2;
+    else points += 3;
+
+    cpScore = points;
+    if (cpScore <= 6) {
+      cpClass = "Class A (5–6 points)";
+      cpInterpretation = "Well-compensated cirrhosis (1-year survival ~100%, 2-year survival ~85%, perioperative abdominal mortality ~10%)";
+    } else if (cpScore <= 9) {
+      cpClass = "Class B (7–9 points)";
+      cpInterpretation = "Significant functional compromise (1-year survival ~80%, 2-year survival ~60%, perioperative abdominal mortality ~30%)";
+    } else {
+      cpClass = "Class C (10–15 points)";
+      cpInterpretation = "Decompensated cirrhosis (1-year survival ~45%, 2-year survival ~35%, perioperative abdominal mortality ~70–80%)";
+    }
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -657,6 +716,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("apri")}
           >
             APRI (Liver Fibrosis)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-childpugh"
+            aria-selected={activeTab === "childpugh"}
+            aria-controls="tabpanel-childpugh"
+            className={`calc-tab ${activeTab === "childpugh" ? "active" : ""}`}
+            onClick={() => setActiveTab("childpugh")}
+          >
+            Child-Pugh (Cirrhosis)
           </button>
         </div>
 
@@ -2145,6 +2215,120 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
               ) : (
                 <p className="muted small-text" style={{ marginTop: "12px" }}>
                   Please enter valid AST (5–2000 U/L), AST ULN (10–100 U/L), and Platelet count (10–1000 ×10⁹/L).
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* TAB 18: Child-Pugh Score for Cirrhosis Mortality */}
+          {activeTab === "childpugh" && (
+            <div id="tabpanel-childpugh" role="tabpanel" aria-labelledby="tab-childpugh" className="calc-pane">
+              <p className="small-text muted">
+                The Child-Pugh (Child-Turcotte-Pugh / CTP) score is a classic clinical staging and prognostic system for assessing the severity of cirrhosis, 1- to 2-year survival probability, and perioperative surgical mortality risk.
+              </p>
+              <div className="settings-grid">
+                <label htmlFor="cp-bilirubin">
+                  Total Bilirubin (mg/dL)
+                  <input
+                    id="cp-bilirubin"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="50"
+                    value={cpBilirubin}
+                    onChange={(e) => setCpBilirubin(e.target.value)}
+                  />
+                </label>
+                <label htmlFor="cp-albumin">
+                  Serum Albumin (g/dL)
+                  <input
+                    id="cp-albumin"
+                    type="number"
+                    step="0.1"
+                    min="0.5"
+                    max="6.0"
+                    value={cpAlbumin}
+                    onChange={(e) => setCpAlbumin(e.target.value)}
+                  />
+                </label>
+                <label htmlFor="cp-inr">
+                  INR (Prothrombin Time / INR)
+                  <input
+                    id="cp-inr"
+                    type="number"
+                    step="0.1"
+                    min="0.5"
+                    max="10.0"
+                    value={cpInr}
+                    onChange={(e) => setCpInr(e.target.value)}
+                  />
+                </label>
+                <label htmlFor="cp-ascites">
+                  Ascites
+                  <select
+                    id="cp-ascites"
+                    aria-label="Ascites"
+                    value={cpAscites}
+                    onChange={(e) => setCpAscites(e.target.value)}
+                  >
+                    <option value="none">None (+1)</option>
+                    <option value="mild">Slight / Controlled by diuretics (+2)</option>
+                    <option value="moderate">Moderate to severe / Refractory (+3)</option>
+                  </select>
+                </label>
+                <label htmlFor="cp-encephalopathy">
+                  Hepatic Encephalopathy
+                  <select
+                    id="cp-encephalopathy"
+                    aria-label="Hepatic Encephalopathy"
+                    value={cpEncephalopathy}
+                    onChange={(e) => setCpEncephalopathy(e.target.value)}
+                  >
+                    <option value="none">None (+1)</option>
+                    <option value="grade1_2">Grade 1–2 (Mild confusion, sleep inversion, asterixis) (+2)</option>
+                    <option value="grade3_4">Grade 3–4 (Severe confusion, somnolence, coma) (+3)</option>
+                  </select>
+                </label>
+              </div>
+
+              {cpScore !== null ? (
+                <div className="calc-result">
+                  <div className="calc-result-metric">
+                    <strong>Score: {cpScore} points</strong>
+                    <span className="badge">{cpClass}</span>
+                  </div>
+                  <p className="small-text">{cpInterpretation}</p>
+                  <p className="small-text muted">
+                    Educational prognostic estimate only. Ascites and encephalopathy assessments involve clinical subjectivity. Organ allocation for liver transplantation in the US (UNOS) is primarily directed by the MELD-Na score rather than Child-Pugh alone.
+                  </p>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="button small"
+                      onClick={() =>
+                        insertAndClose(
+                          `For educational purposes, explain how a Child-Pugh score of ${cpScore} points (${cpClass}: ${cpInterpretation}) is interpreted in chronic liver disease prognosis, how it guides elective surgery risk evaluation, and why MELD-Na is preferred for transplant prioritization.`
+                        )
+                      }
+                    >
+                      Ask MedAssist about this Child-Pugh score
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary small"
+                      onClick={() =>
+                        handleCopy(
+                          `Child-Pugh Cirrhosis Mortality Score: ${cpScore} points (${cpClass}; educational estimate only; not clinical or surgical advice)`
+                        )
+                      }
+                    >
+                      {copied ? "Copied" : "Copy result"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted small-text" style={{ marginTop: "12px" }}>
+                  Please enter valid Bilirubin (0.1–50 mg/dL), Albumin (0.5–6.0 g/dL), and INR (0.5–10.0).
                 </p>
               )}
             </div>

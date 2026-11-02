@@ -304,6 +304,52 @@ it("calculates AST to Platelet Ratio Index (APRI) with fibrosis risk stratificat
   expect(promptCall).toContain("APRI");
 });
 
+it("calculates Child-Pugh cirrhosis mortality score across risk classes and validates bounds", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" }));
+  expect(screen.getByText(/Child-Pugh \(Child-Turcotte-Pugh \/ CTP\) score is a classic clinical staging and prognostic system/)).toBeTruthy();
+
+  // Default: Bili 1.5 (1 pt), Alb 3.8 (1 pt), INR 1.1 (1 pt), Ascites none (1 pt), Enceph none (1 pt) -> 5 points -> Class A
+  expect(screen.getByText("Score: 5 points")).toBeTruthy();
+  expect(screen.getByText("Class A (5–6 points)")).toBeTruthy();
+  expect(screen.getByText(/Well-compensated cirrhosis/)).toBeTruthy();
+
+  // Change to Class B (7-9 points):
+  // Bili 2.5 (+2 pts), Alb 3.0 (+2 pts), INR 1.9 (+2 pts), Ascites mild (+2 pts), Enceph none (+1 pt) -> 9 points -> Class B
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "2.5" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Albumin (g/dL)" }), { target: { value: "3.0" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }), { target: { value: "1.9" } });
+  fireEvent.change(screen.getByRole("combobox", { name: "Ascites" }), { target: { value: "mild" } });
+  expect(screen.getByText("Score: 9 points")).toBeTruthy();
+  expect(screen.getByText("Class B (7–9 points)")).toBeTruthy();
+  expect(screen.getByText(/Significant functional compromise/)).toBeTruthy();
+
+  // Change to Class C (10-15 points):
+  // Bili 4.0 (+3 pts), Alb 2.5 (+3 pts), INR 2.5 (+3 pts), Ascites moderate (+3 pts), Enceph grade3_4 (+3 pts) -> 15 points -> Class C
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "4.0" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Albumin (g/dL)" }), { target: { value: "2.5" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }), { target: { value: "2.5" } });
+  fireEvent.change(screen.getByRole("combobox", { name: "Ascites" }), { target: { value: "moderate" } });
+  fireEvent.change(screen.getByRole("combobox", { name: "Hepatic Encephalopathy" }), { target: { value: "grade3_4" } });
+  expect(screen.getByText("Score: 15 points")).toBeTruthy();
+  expect(screen.getByText("Class C (10–15 points)")).toBeTruthy();
+  expect(screen.getByText(/Decompensated cirrhosis/)).toBeTruthy();
+
+  // Input out of bounds validation
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "0" } });
+  expect(screen.queryByText("Score: 15 points")).toBeNull();
+  expect(screen.getByText(/Please enter valid Bilirubin/)).toBeTruthy();
+
+  // Restore and check prompt insertion
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "4.0" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this Child-Pugh score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const promptCall = onInsertPrompt.mock.calls[0][0];
+  expect(promptCall).toContain("Child-Pugh score of 15 points");
+  expect(promptCall).toContain("Class C");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -314,11 +360,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (APRI) to first (BMI) and back
-  const apriTab = screen.getByRole("tab", { name: "APRI (Liver Fibrosis)" });
-  apriTab.focus();
-  fireEvent.keyDown(apriTab, { key: "ArrowRight" });
+  // Wrapping from last tab (Child-Pugh) to first (BMI) and back
+  const childpughTab = screen.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" });
+  childpughTab.focus();
+  fireEvent.keyDown(childpughTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(apriTab.getAttribute("aria-selected")).toBe("true");
+  expect(childpughTab.getAttribute("aria-selected")).toBe("true");
 });

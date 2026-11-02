@@ -10,7 +10,7 @@ Developed by **J Ganesh kumar reddy**
 This review documents the verified technical state of the MedAssist AI repository, evaluating the working tree across frontend client state, backend controllers and services, database models, AI/PubMed grounding pipelines, clinical calculators, offline dataset and LoRA research tools, container orchestration, and continuous integration suites.
 
 > [!NOTE]
-> **Verification Status**: All software engineering gates, linting checks, unit tests, integration tests, and Playwright browser regression suites are passing with **100% pass rate across 206 automated checks**.
+> **Verification Status**: All software engineering gates, linting checks, unit tests, integration tests, and Playwright browser regression suites are passing with **100% pass rate across 208 automated checks**.
 
 ```
 ========================================================================================================================
@@ -46,14 +46,14 @@ This review documents the verified technical state of the MedAssist AI repositor
     │                         PLAYWRIGHT HEADLESS BROWSER E2E QA                          │
     │  - Engine: Chromium Headless                                                        │
     │  - Smoke Suite: 21 Passed (Registration, Login, Chat, Save, History, Export)        │
-    │  - Accessibility & Dark Mode Suite: 33 Passed (WCAG Contrast, 18 Tools, DDI Banners)│
-    │  - Total Browser Workflow Checks: 54 Passed                                         │
+    │  - Accessibility & Dark Mode Suite: 35 Passed (WCAG Contrast, 18 Tools, DDI Banners)│
+    │  - Total Browser Workflow Checks: 56 Passed                                         │
     └─────────────────────────────────────────────────────────────────────────────────────┘
                                                │
                                                ▼
     ┌─────────────────────────────────────────────────────────────────────────────────────┐
     │                        MASTER VERIFICATION AGGREGATE TOTAL                          │
-    │  - 206 Automated Tests Executed & Passed                                            │
+    │  - 208 Automated Tests Executed & Passed                                            │
     │  - 0 Critical Vulnerabilities Reported Across Dependencies                         │
     └─────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
@@ -87,8 +87,8 @@ mindmap
       Dataset: 13 Tests Passed
       LoRA Math: 6 Tests Passed
       Serving Probes: 7 Passed
-      Browser Flows: 54 Passed
-      Total: 206 Automated Checks
+      Browser Flows: 56 Passed
+      Total: 208 Automated Checks
     (03 Production Invariants)
       Single Active Device Session
       Rotating SHA-256 Tokens
@@ -113,15 +113,15 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
 | :--- | :--- | :--- | :--- | :---: |
 | **Frontend Lint Error** | Unescaped single quotes in JSX within `ClinicalCalculatorsModal.jsx` | Replaced unescaped quotes with standard XML entities (`&apos;` / `&quot;`) | `npm run lint` in `frontend` passes with 0 errors | **RESOLVED** |
 | **CORS Allowed Methods** | `AISettings.jsx` sent HTTP `PUT`, but Express CORS method array omitted it | Added `PUT` to allowed CORS methods in `backend/app.js` | Integration test verifies preflight and `PUT /api/settings/providers` succeeds | **RESOLVED** |
-| **High-Risk Medication Pairs** | Lexicon lacked common FDA black-box warning pairs | Implemented 18 comprehensive interaction rules in `interactionService.js` (including statins + CYP3A4 inhibitors, warfarin + azoles, digoxin, MAOIs, allopurinol + azathioprine, methotrexate + NSAIDs, warfarin + Bactrim, clopidogrel + omeprazole, SSRI/SNRI + triptans, and Bactrim + ACEi/ARB) | 17 passing unit tests in `backend/test/interactionService.test.js` | **RESOLVED** |
+| **High-Risk Medication Pairs** | Lexicon lacked common FDA black-box warning pairs | Implemented 19 comprehensive interaction rules in `interactionService.js` (including statins + CYP3A4 inhibitors, warfarin + azoles, digoxin, MAOIs, allopurinol + azathioprine, methotrexate + NSAIDs, warfarin + Bactrim, clopidogrel + omeprazole, SSRI/SNRI + triptans, Bactrim + ACEi/ARB, and theophylline + fluoroquinolones) | 20 passing unit tests in `backend/test/interactionService.test.js` | **RESOLVED** |
 | **Emergency Drug Context Drop** | Safety redirects previously dropped co-occurring drug interaction warnings | Preserved `drugInteractions` array within the verification object during emergency deflections | Browser regression test verifies drug interaction alert appears alongside 911 advice | **RESOLVED** |
-| **Clinical Calculator Gaps** | Lacked standardized pre-test probability for acute pulmonary embolism and Payne calcium correction | Added Wells' Criteria for PE, Payne Corrected Calcium, CURB-65 Pneumonia Severity, Glasgow Coma Scale (GCS), HAS-BLED, qSOFA, Mosteller BSA, and APRI Liver Fibrosis (17 total tools) | 15 passing Vitest tests in `frontend/src/test/clinicalCalculators.test.jsx` | **RESOLVED** |
-| **ARIA Keyboard Accessibility** | Calculator tabs lacked standard keyboard cycling | Added `role="tablist"`, `role="tabpanel"`, and `ArrowRight`/`ArrowLeft`/`Home`/`End` keyboard cycling | Verified in unit test and headless Playwright browser suite | **RESOLVED** |
+| **Clinical Calculator Gaps** | Lacked standardized pre-test probability for acute pulmonary embolism and Payne calcium correction | Added Wells' Criteria for PE, Payne Corrected Calcium, CURB-65 Pneumonia Severity, Glasgow Coma Scale (GCS), HAS-BLED, qSOFA, Mosteller BSA, APRI Liver Fibrosis, and Child-Pugh Cirrhosis Mortality (18 total tools) | 16 passing Vitest tests in `frontend/src/test/clinicalCalculators.test.jsx` | **RESOLVED** |
+| **ARIA Keyboard Accessibility** | Calculator tabs lacked standard keyboard cycling | Added `role="tablist"`, `role="tabpanel"`, and `ArrowRight`/`ArrowLeft`/`Home`/`End` keyboard cycling across all 18 tabs | Verified in unit test and headless Playwright browser suite | **RESOLVED** |
 | **Dark Theme Styling** | Low-light theme lacked styling for modals, links, and code blocks | Added comprehensive WCAG AA-compliant styles and automatic system `prefers-color-scheme` detection | 21 passing Playwright visual regression screenshots in `output/qa/` | **RESOLVED** |
 
 ---
 
-## 4. Current Test Suite Inventory (206 Passed Tests)
+## 4. Current Test Suite Inventory (208 Passed Tests)
 
 ```
 ========================================================================================================================
@@ -131,7 +131,7 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
     [ TEST SUITE / RUNNER ]                     [ ENVIRONMENT ]                 [ COUNT ]        [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────
     backend/test/application.test.js            Node 24 + MongoMemoryServer     24 Tests         PASSED
-    backend/test/interactionService.test.js     Node 24 Standalone              18 Tests         PASSED
+    backend/test/interactionService.test.js     Node 24 Standalone              20 Tests         PASSED
     backend/test/safetyService.test.js          Node 24 Standalone               7 Tests         PASSED
     backend/test/providers.test.js              Node 24 Standalone               6 Tests         PASSED
     backend/test/citationService.test.js        Node 24 Standalone               4 Tests         PASSED
@@ -162,12 +162,12 @@ All items flagged in earlier analysis runs have been resolved, implemented, and 
 
     scripts/check_build_serving.cjs             Built Express + Nginx            7 Tests         PASSED
     scripts/browser_smoke.cjs                   Playwright Chromium Headless    21 Tests         PASSED
-    scripts/browser_verify_dark_and_tools.cjs   Playwright Chromium Headless    33 Tests         PASSED
+    scripts/browser_verify_dark_and_tools.cjs   Playwright Chromium Headless    35 Tests         PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────
-    END-TO-END QA & BROWSER SUB-TOTAL                                           61 Tests         PASSED
+    END-TO-END QA & BROWSER SUB-TOTAL                                           63 Tests         PASSED
 
     =====================================================================================================
-    MASTER AGGREGATE TOTAL ACROSS ALL SUITES                                   206 Tests        100% PASSED
+    MASTER AGGREGATE TOTAL ACROSS ALL SUITES                                   208 Tests        100% PASSED
 ========================================================================================================================
 ```
 
@@ -205,7 +205,7 @@ For developers looking to contribute, fork, or build upon MedAssist AI, detailed
 
 ## 7. Production CI/CD Pipeline & GitHub Actions Automation
 
-To maintain code quality, prevent regressions, and ensure that every pull request adheres to the 206-check verification bar, MedAssist AI utilizes an automated continuous integration pipeline.
+To maintain code quality, prevent regressions, and ensure that every pull request adheres to the 208-check verification bar, MedAssist AI utilizes an automated continuous integration pipeline.
 
 ```
 ========================================================================================================================
@@ -258,13 +258,13 @@ mindmap
     (02 Static & Dynamic Checks)
       ESLint 9 Clean Sweep
       Vite 6 Production Build
-      66 Backend Node Tests
-      49 Frontend Vitest Tests
+      71 Backend Node Tests
+      55 Frontend Vitest Tests
       19 Python Research Tests
     (03 End-to-End Browser)
       Playwright Chromium Headless
-      20 Core Smoke Flows
-      21 Accessibility Flows
+      21 Core Smoke Flows
+      35 Dark Mode & Tools Flows
       Static Ingress Assertions
     (04 Artifact Publishing)
       Release Image Tagging
@@ -314,7 +314,7 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run Master Verification Harness (206 Checks)
+      - name: Run Master Verification Harness (208 Checks)
         run: node scripts/verify_project.cjs
 
       - name: Run Browser Smoke & Accessibility Suites

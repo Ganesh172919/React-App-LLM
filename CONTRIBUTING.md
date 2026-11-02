@@ -168,7 +168,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## 5. Step-by-Step Developer Implementation Walkthroughs
 
 > [!TIP]
-> For an exhaustive, end-to-end production blueprint with step-by-step code walkthroughs for adding high-risk DDI rules (19+ rules), clinical calculators (18+ tools), multi-provider adapters, and running the 206 automated tests, consult the dedicated **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)**.
+> For an exhaustive, end-to-end production blueprint with step-by-step code walkthroughs for adding high-risk DDI rules (19+ rules), clinical calculators (18+ tools), multi-provider adapters, and running the 208 automated tests, consult the dedicated **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)**.
 
 ### 5.1 Guide A: Adding a Custom AI Model Provider / Gateway
 
@@ -322,7 +322,7 @@ python "Model and Dataset/lora/validate_lora_setup.py"
 
 ## 6. Verification Harness & Pull Request Checklist
 
-Before submitting a Pull Request, run the automated verification suite to guarantee 100% compliance across all 206 test checks:
+Before submitting a Pull Request, run the automated verification suite to guarantee 100% compliance across all 208 test checks:
 
 ```powershell
 # Execute the unified multi-tier verification runner
@@ -337,5 +337,5 @@ node scripts/verify_project.cjs
 - [ ] Vite production bundle compiles cleanly (`npm run build --prefix frontend`).
 - [ ] All 19 Python research unit tests pass (`python -m unittest discover -s "Model and Dataset"`).
 - [ ] Built HTTP server passes all 7 ingress probes (`node scripts/check_build_serving.cjs`).
-- [ ] All 54 Playwright browser workflows pass (21 smoke in `node scripts/browser_smoke.cjs` and 33 assertions in `node scripts/browser_verify_dark_and_tools.cjs`).
+- [ ] All 56 Playwright browser workflows pass (21 smoke in `node scripts/browser_smoke.cjs` and 35 assertions in `node scripts/browser_verify_dark_and_tools.cjs`).
 - [ ] No secrets, keys, or `.env` files committed.

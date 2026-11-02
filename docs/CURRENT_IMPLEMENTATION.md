@@ -1411,3 +1411,5 @@ To add a new database model or REST endpoint:
 2. **Add Controller**: Implement controller in `backend/controllers/<entity>Controller.js`, always wrapping asynchronous handlers with `try/catch` and passing errors to `next(error)`.
 3. **Attach Middleware**: In `backend/routes/<entity>Route.js`, protect routes with `authToken` middleware to ensure `req.user` is verified against monotonic `sessionVersion`.
 4. **Rate Limiting**: Apply tiered rate limiters (`authLimiter`, `aiLimiter`, `settingsLimiter`) in `backend/app.js` to guard against denial-of-service floods.
+
+*For complete end-to-end production developer recipes and extension guides, see [`DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) and [`PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](PRODUCTION_DEVELOPER_BUILD_GUIDE.md).*

@@ -483,7 +483,7 @@ Educational guidance only. This consultation does not establish a doctor-patient
           <div className="row-between">
             <h2>{importPreview ? "Local preview · " : ""}{activeTitle}</h2>
             <div className="actions" style={{ margin: 0 }}>
-              <button type="button" className="text-button small-text" onClick={() => setCalcModalOpen(true)} title="Open clinical reference calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Ca, Anion Gap, FeNa) (Alt+C)" aria-keyshortcuts="Alt+C">Clinical tools</button>
+              <button type="button" className="text-button small-text" onClick={() => setCalcModalOpen(true)} title="Open clinical reference calculators (18 educational tools: BMI, eGFR, CHA₂DS₂-VASc, MAP, CrCl, Ca, Anion Gap, FeNa, FeUrea, Fluids, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh) (Alt+C)" aria-keyshortcuts="Alt+C">Clinical tools</button>
               {messages.length > 0 && (
                 <>
                   <button className="text-button small-text" onClick={exportActiveMarkdown} title={importPreview ? "Export an unverified local preview as Markdown" : "Export as structured Markdown document"}>{importPreview ? "Export preview Markdown" : "Export Markdown"}</button>

@@ -269,6 +269,6 @@ npm test --prefix frontend -- ui.test.jsx
 # Run Playwright browser smoke flows (21 workflows)
 node scripts/browser_smoke.cjs
 
-# Run dark mode and accessibility verification (33 workflows)
+# Run dark mode and accessibility verification (35 workflows)
 node scripts/browser_verify_dark_and_tools.cjs
 ```

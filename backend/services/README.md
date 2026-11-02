@@ -148,6 +148,57 @@ mindmap
   - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 19 rule definitions with risk severity (`CRITICAL`, `HIGH`).
 - **Invariants**: Detected interaction warnings are preserved even if a query is deflected by emergency screening.
 
+```
+========================================================================================================================
+                          DETERMINISTIC PHARMACOLOGICAL INTERACTION SCREENING FLOW
+========================================================================================================================
+
+    [ User Question Text ] ──► detectDrugInteractions(text)
+                                     │
+                                     ├── Lowercase normalization & word-boundary tokenization
+                                     ├── Iterate canonical HIGH_RISK_INTERACTION_RULES (19 Rules)
+                                     │     ├── rule.drugsA.some(pattern.test(text))  ──► Matches Drug Group A
+                                     │     └── rule.drugsB.some(pattern.test(text))  ──► Matches Interacting Partner
+                                     │
+                                     ▼ Both Groups Matched:
+    ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │ Warning Object Constructed:                                                                                    │
+    │ {                                                                                                              │
+    │   pair: "Theophylline + Fluoroquinolone (CYP1A2 Inhibition)",                                                  │
+    │   severity: "CRITICAL",                                                                                        │
+    │   description: "Ciprofloxacin potently inhibits CYP1A2, reducing theophylline clearance by 50-70%...",        │
+    │   clinicalRecommendation: "Check with your prescriber or pharmacist..."                                        │
+    │ }                                                                                                              │
+    └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+    [ Injected into API response ] ──► Retained even across emergency 911 redirects
+```
+
+#### 19 High-Risk Drug-Drug Interaction Rules Inventory:
+
+| # | Pair | Severity | Mechanism & Clinical Hazard |
+|:---:|:---|:---:|:---|
+| 01 | **Anticoagulant + NSAID / Aspirin** | `CRITICAL` | Severe gastrointestinal ulceration and intracranial hemorrhage. |
+| 02 | **PDE5 Inhibitor + Nitrate** | `CRITICAL` | Synergistic cGMP accumulation causing profound, fatal hypotension. |
+| 03 | **Tramadol / Opioids + SSRI / SNRI** | `HIGH` | Massive serotonin accumulation causing Serotonin Syndrome. |
+| 04 | **ACEI / ARB + K-Sparing Diuretic** | `HIGH` | Additive potassium retention causing fatal cardiac arrhythmias. |
+| 05 | **Methotrexate + TMP-SMX (Bactrim)** | `CRITICAL` | Reduced renal tubular excretion causing lethal bone marrow suppression. |
+| 06 | **Fluoroquinolone + Corticosteroid** | `HIGH` | Synergistic collagen degradation causing Achilles tendon rupture. |
+| 07 | **Benzodiazepine + Opioid Analgesic** | `CRITICAL` | Severe CNS and respiratory depression, coma, fatal overdose (FDA Black Box). |
+| 08 | **Lithium + NSAID / ACE Inhibitor** | `HIGH` | Reduced renal prostaglandin clearance elevating serum lithium into toxic range. |
+| 09 | **Statin + Strong CYP3A4 Inhibitor** | `CRITICAL` | CYP3A4 inhibition elevates statin AUC up to 10x, causing rhabdomyolysis. |
+| 10 | **Warfarin + Azole Antifungal** | `CRITICAL` | CYP2C9 inhibition suppresses S-warfarin clearance, spiking INR. |
+| 11 | **Digoxin + Amiodarone / Verapamil** | `HIGH` | P-glycoprotein inhibition doubles serum digoxin, causing heart block. |
+| 12 | **MAOI + SSRI / Sympathomimetic** | `CRITICAL` | Malignant hypertensive crisis and hyperthermic Serotonin Syndrome. |
+| 13 | **Allopurinol + Azathioprine / 6-MP** | `CRITICAL` | Xanthine oxidase inhibition blocks thiopurine degradation, causing pancytopenia. |
+| 14 | **Methotrexate + NSAIDs / Aspirin** | `CRITICAL` | Renal prostaglandin inhibition reduces methotrexate clearance, causing fatal AKI. |
+| 15 | **Warfarin + TMP-SMX (Bactrim)** | `CRITICAL` | Potent CYP2C9 inhibition suppresses active S-warfarin clearance, spiking INR. |
+| 16 | **Clopidogrel + Omeprazole / Esomeprazole** | `CRITICAL` | CYP2C19 inhibition prevents prodrug bioactivation, elevating stent thrombosis. |
+| 17 | **SSRI / SNRI / MAOI + Triptan** | `CRITICAL` | Concurrent 5-HT1 agonist with serotonergic antidepressants triggers Serotonin Syndrome. |
+| 18 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | `CRITICAL` | ENaC channel blockade combined with RAAS inhibition causes refractory hyperkalemia. |
+| 19 | **Theophylline + Fluoroquinolones** | `CRITICAL` | Potent hepatic CYP1A2 inhibition reduces clearance by 50–70%, triggering fatal seizures and arrhythmias. |
+
 ### 3.5 `providerCredentials.js` — AES-256-GCM Personal Key Vault
 - **Role**: Secures user-supplied API keys for Google Gemini, Groq, and Together AI.
 - **Exported Symbols**:

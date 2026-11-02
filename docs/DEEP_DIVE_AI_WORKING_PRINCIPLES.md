@@ -852,7 +852,7 @@ export function parseConversationImportJson(rawJson) {
 
 ## 11. Evidence-Based Clinical Calculators: Physiological Boundary Clamping & WAI-ARIA Trapping
 
-Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the suite implements 13 validated evidence-based medical formulas with explicit boundary checking:
+Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the suite implements 18 validated evidence-based medical formulas with explicit boundary checking:
 
 | Tool Name | Input Parameters | Formula / Scoring Logic | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -869,6 +869,11 @@ Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the sui
 | **Wells' Criteria for PE** | DVT signs (3), Alternative less likely (3), HR >100 (1.5), Immobilization/Surgery (1.5), Prior DVT/PE (1.5), Hemoptysis (1), Malignancy (1) | Point summation (Range: 0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Proceed to D-dimer).<br>>4.0: PE Likely (Proceed directly to CT Pulmonary Angiography). |
 | **CURB-65 Pneumonia Score** | Confusion (+1), Urea >19 mg/dL (+1), RR ≥30 (+1), Low BP SBP <90 or DBP ≤60 (+1), Age ≥65 (+1) | Point summation (Range: 0–5) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient management).<br>2: Intermediate risk (~9% mortality, short inpatient admission).<br>3–5: High / severe risk (15–40% mortality, urgent admission/ICU). |
 | **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
+| **HAS-BLED Bleeding Risk** | HTN, Abnormal renal/liver (1-2), Stroke, Bleeding, Labile INR, Elderly >65, Drugs/Alcohol (1-2) | Sum of risk factors (0–9 points) | Binary checkboxes | 0–1: Low risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; review modifiable bleeding risks). |
+| **qSOFA Sepsis Screening** | Altered mental status (GCS <15) + Tachypnea (RR ≥22) + Hypotension (SBP ≤100 mmHg) | 3 clinical criteria (0–3 points) | Binary checkboxes | 0–1: Low in-hospital sepsis mortality.<br>2–3: High in-hospital mortality; prompt organ dysfunction assessment & sepsis protocol. |
+| **Mosteller Body Surface Area (BSA)** | Height (cm or in), Weight (kg or lbs) | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Reference adult norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
+| **AST to Platelet Ratio Index (APRI)** | AST (U/L), AST ULN (U/L), Platelets ($10^9$/L) | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
+| **Child-Pugh Cirrhosis Mortality Score** | Total Bilirubin, Albumin, INR, Ascites, Hepatic Encephalopathy | $\text{Points} = \text{Bili (1–3)} + \text{Alb (1–3)} + \text{INR (1–3)} + \text{Ascites (1–3)} + \text{Enceph (1–3)}$ | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated (~45% 1-yr survival; 70–80% surgical mortality). |
 
 ### 11.1 Glasgow Coma Scale (GCS) Implementation & Keyboard Accessibility
 
@@ -896,7 +901,7 @@ export function ClinicalCalculatorsModal({ isOpen, onClose }) {
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -923,6 +928,63 @@ export function ClinicalCalculatorsModal({ isOpen, onClose }) {
     };
   }, [isOpen]);
 }
+```
+
+### 11.2 Child-Pugh Score Calculation & Cirrhosis Prognosis Implementation
+
+```jsx
+// Tab 18: Child-Pugh Score in ClinicalCalculatorsModal.jsx
+let cpScore = null;
+let cpClass = "";
+let cpInterpretation = "";
+const cpBiliNum = parseFloat(cpBilirubin);
+const cpAlbNum = parseFloat(cpAlbumin);
+const cpInrNum = parseFloat(cpInr);
+
+if (
+  !isNaN(cpBiliNum) && cpBiliNum >= 0.1 && cpBiliNum <= 50 &&
+  !isNaN(cpAlbNum) && cpAlbNum >= 0.5 && cpAlbNum <= 6.0 &&
+  !isNaN(cpInrNum) && cpInrNum >= 0.5 && cpInrNum <= 10.0
+) {
+  let points = 0;
+  // Bilirubin points (<2.0: 1, 2.0-3.0: 2, >3.0: 3)
+  if (cpBiliNum < 2.0) points += 1;
+  else if (cpBiliNum <= 3.0) points += 2;
+  else points += 3;
+
+  // Albumin points (>3.5: 1, 2.8-3.5: 2, <2.8: 3)
+  if (cpAlbNum > 3.5) points += 1;
+  else if (cpAlbNum >= 2.8) points += 2;
+  else points += 3;
+
+  // INR points (<1.7: 1, 1.7-2.3: 2, >2.3: 3)
+  if (cpInrNum < 1.7) points += 1;
+  else if (cpInrNum <= 2.3) points += 2;
+  else points += 3;
+
+  // Ascites points
+  if (cpAscites === "none") points += 1;
+  else if (cpAscites === "mild") points += 2;
+  else points += 3;
+
+  // Encephalopathy points
+  if (cpEncephalopathy === "none") points += 1;
+  else if (cpEncephalopathy === "grade1_2") points += 2;
+  else points += 3;
+
+  cpScore = points;
+  if (cpScore <= 6) {
+    cpClass = "Class A (5–6 points)";
+    cpInterpretation = "Well-compensated cirrhosis (1-year survival ~100%, 2-year survival ~85%, perioperative abdominal mortality ~10%)";
+  } else if (cpScore <= 9) {
+    cpClass = "Class B (7–9 points)";
+    cpInterpretation = "Significant functional compromise (1-year survival ~80%, 2-year survival ~60%, perioperative abdominal mortality ~30%)";
+  } else {
+    cpClass = "Class C (10–15 points)";
+    cpInterpretation = "Decompensated cirrhosis (1-year survival ~45%, 2-year survival ~35%, perioperative abdominal mortality ~70–80%)";
+  }
+}
+```
 ```
 
 ---

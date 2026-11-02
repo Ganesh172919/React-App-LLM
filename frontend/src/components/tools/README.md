@@ -188,6 +188,85 @@ $$\text{Child-Pugh Score} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{IN
   - **Class B ($7 - 9$ points)**: Significant functional compromise; 1-year survival $\approx 80\%$, 2-year survival $\approx 60\%$, perioperative abdominal mortality $\approx 30\%$.
   - **Class C ($10 - 15$ points)**: Decompensated cirrhosis; 1-year survival $\approx 45\%$, 2-year survival $\approx 35\%$, perioperative abdominal mortality $\approx 70 - 80\%$.
 
+### 3.11 Wells' Criteria for Pulmonary Embolism (PE)
+$$\text{Wells Score} = \sum \text{Points across 7 Clinical Criteria}$$
+- **Criteria & Points**:
+  - Clinical signs and symptoms of DVT: $+3.0$
+  - Alternative diagnosis is less likely than PE: $+3.0$
+  - Heart rate $> 100\text{ bpm}$: $+1.5$
+  - Immobilization ($\ge 3$ consecutive days) or surgery in previous 4 weeks: $+1.5$
+  - Previous documented DVT/PE: $+1.5$
+  - Hemoptysis: $+1.0$
+  - Malignancy (treatment within 6 months or palliative): $+1.0$
+- **Stratification**:
+  - Score $\le 4.0$: PE Unlikely ($\approx 12.1\%$ PE incidence; recommend high-sensitivity D-dimer).
+  - Score $> 4.0$: PE Likely ($\approx 37.1\%$ PE incidence; recommend CT Pulmonary Angiography).
+
+### 3.12 CURB-65 Pneumonia Severity Score
+$$\text{CURB-65 Score} = C + U + R + B + 65$$
+- **Criteria (1 point each)**:
+  - **C**onfusion (Abbreviated Mental Test score $\le 8$ or new disorientation)
+  - **U**rea $> 19\text{ mg/dL}$ ($> 7\text{ mmol/L}$)
+  - **R**espiratory Rate $\ge 30\text{ breaths/min}$
+  - **B**lood Pressure (Systolic $< 90\text{ mmHg}$ or Diastolic $\le 60\text{ mmHg}$)
+  - Age $\ge \mathbf{65}\text{ years}$
+- **30-Day Mortality Stratification**:
+  - Score $0 - 1$: Low risk ($< 3\%$ mortality; appropriate for outpatient management).
+  - Score $2$: Intermediate risk ($\approx 9\%$ mortality; recommend short in-hospital stay or close monitoring).
+  - Score $3 - 5$: High risk ($15 - 40\%$ mortality; recommend urgent hospital admission / ICU evaluation).
+
+### 3.13 Glasgow Coma Scale (GCS)
+$$\text{GCS Score} = \text{Eye (1–4)} + \text{Verbal (1–5)} + \text{Motor (1–6)}$$
+- **Components**:
+  - **Eye Opening ($E$)**: 4 = Spontaneous, 3 = To verbal command, 2 = To pain, 1 = None.
+  - **Verbal Response ($V$)**: 5 = Oriented, 4 = Confused speech, 3 = Inappropriate words, 2 = Incomprehensible sounds, 1 = None.
+  - **Motor Response ($M$)**: 6 = Obeys commands, 5 = Localizes to pain, 4 = Withdraws from pain, 3 = Flexion to pain (decorticate), 2 = Extension to pain (decerebrate), 1 = None.
+- **Stratification**:
+  - Score $13 - 15$: Mild traumatic brain injury / Alert.
+  - Score $9 - 12$: Moderate brain injury.
+  - Score $3 - 8$: Severe brain injury / Coma (loss of airway protective reflexes; prompt endotracheal intubation consideration).
+
+### 3.14 HAS-BLED Bleeding Risk Score
+$$\text{HAS-BLED Score} = H + A + S + B + L + E + D$$
+- **Components (0–9 points)**:
+  - **H**ypertension (Uncontrolled SBP $> 160\text{ mmHg}$): $+1$
+  - **A**bnormal Renal or Liver function: $+1$ or $+2$
+  - **S**troke history: $+1$
+  - **B**leeding history or predisposition: $+1$
+  - **L**abile INRs (time in therapeutic range $< 60\%$): $+1$
+  - **E**lderly (Age $> 65$): $+1$
+  - **D**rugs (antiplatelet agents/NSAIDs) or Alcohol excess: $+1$ or $+2$
+- **Stratification**:
+  - Score $0 - 1$: Low bleeding risk ($\approx 1.13\text{ bleeds / 100 pt-yrs}$).
+  - Score $2$: Moderate bleeding risk ($\approx 1.88\text{ bleeds / 100 pt-yrs}$).
+  - Score $\ge 3$: High bleeding risk ($\ge 3.74\text{ bleeds / 100 pt-yrs}$; indicates need for cautious anticoagulation monitoring and correction of modifiable risks).
+
+### 3.15 qSOFA Sepsis Screening (Quick Sepsis-Related Organ Failure Assessment)
+$$\text{qSOFA Score} = \text{Altered Mentation (1)} + \text{Tachypnea (1)} + \text{Hypotension (1)}$$
+- **Criteria (1 point each)**:
+  - Altered mental status ($\text{GCS} < 15$)
+  - Respiratory rate $\ge 22\text{ breaths/min}$
+  - Systolic blood pressure $\le 100\text{ mmHg}$
+- **Stratification**:
+  - Score $0 - 1$: Low risk of in-hospital mortality.
+  - Score $2 - 3$: High risk of poor outcome / in-hospital mortality ($\approx 3-14\times$ elevated risk); prompts immediate diagnostic workup for organ dysfunction, serum lactate measurement, blood cultures, and sepsis protocol activation.
+
+### 3.16 CHA₂DS₂-VASc Stroke Risk Score
+$$\text{CHA}_2\text{DS}_2\text{-VASc} = C + H + A_2 + D + S_2 + V + A + Sc$$
+- **Components (0–9 points)**:
+  - **C**ongestive heart failure: $+1$
+  - **H**ypertension: $+1$
+  - **A**ge $\ge 75\text{ years}$: $+2$
+  - **D**iabetes mellitus: $+1$
+  - **S**troke / TIA / thromboembolism history: $+2$
+  - **V**ascular disease (prior MI, PAD, aortic plaque): $+1$
+  - **A**ge $65 - 74\text{ years}$: $+1$
+  - **S**ex **c**ategory (Female): $+1$
+- **Stratification & Anticoagulation Guidelines**:
+  - Score $0$ (Men) / $1$ (Women): Low risk (no antithrombotic therapy recommended).
+  - Score $1$ (Men) / $2$ (Women): Moderate risk (oral anticoagulation should be considered based on clinical shared decision-making).
+  - Score $\ge 2$ (Men) / $\ge 3$ (Women): High risk (oral anticoagulation with DOAC or warfarin strongly recommended).
+
 ---
 
 ## 4. Developer Extensibility: Adding Calculator #19 (e.g., MELD-Na Score)

@@ -105,7 +105,7 @@ mindmap
 - [x] **Untrusted Conversation JSON Import Sandbox**: Client-side preview parser (`conversationImport.js`) with hard byte limit ($\le 512\text{ KB}$), max 100 Q&A pairs (200 messages), max 20,000 characters per text, alternating turn validation, anti-forgery metadata stripping (dropping all `verification`, `modelReview`, and `references` tags), synthetic IDs (`import-${index}`), composer submission lock, and zero network persistence.
 - [x] **Offline Data Quarantine**: Isolation of 1,437 ambiguous question groups and zero-leakage SHA-256 modulo 100 splitting.
 - [x] **Analytical LoRA Validation**: Closed-form estimation confirming $147,456$ trainable parameters ($0.281$ MB FP16 footprint).
-- [x] **Automated Verification Matrix**: All 71 backend tests across 9 suites, 55 Vitest component tests across 6 suites, 19 Python research tests, 7 build-serving checks, 21 Playwright core smoke workflows, and 33 dark mode/tools accessibility workflows (206 automated checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
+- [x] **Automated Verification Matrix**: All 71 backend tests across 9 suites, 55 Vitest component tests across 6 suites, 19 Python research tests, 7 build-serving checks, 21 Playwright core smoke workflows, and 35 dark mode/tools accessibility workflows (208 automated checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
 
 ### 3.2 Target Host Deployment Checklist (Pending Host Cutover)
 - [ ] **Docker Engine Verification**: Ensure Docker 24.0+ and Docker Compose v2.20+ are installed on the deployment host.
@@ -355,7 +355,7 @@ To transition from local staging to a hardened production host, the platform uti
                                      PRODUCTION HOST ZERO-DOWNTIME CUTOVER PIPELINE
 ========================================================================================================================
 
-    [ Staging Host Verification ] ──► node scripts/verify_project.cjs (206 Tests Green)
+    [ Staging Host Verification ] ──► node scripts/verify_project.cjs (208 Tests Green)
                                                 │
                                                 ▼
     [ Target Host Provisioning ]  ──► 1. Clone repository to /opt/medassist
@@ -459,7 +459,7 @@ To facilitate collaborative engineering and enable external contributors to buil
     │                                TIER 2: LOCAL REGRESSION & COMPONENT TESTS                                      │
     │  - Backend Tests: `node --test backend/tests/<name>.test.js`                                                   │
     │  - Frontend Vitest: `npm test --prefix frontend -- <name>.test.jsx`                                            │
-    │  - Master Verification: `node scripts/verify_project.cjs` (All 206 software checks must pass)                  │
+    │  - Master Verification: `node scripts/verify_project.cjs` (All 208 software checks must pass)                  │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                        │
                        │ 3. Automated Browser Smoke & Accessibility Run
@@ -468,7 +468,7 @@ To facilitate collaborative engineering and enable external contributors to buil
     │                                TIER 3: PLAYWRIGHT BROWSER AUTOMATION                                           │
     │  - Fixture Server: `node scripts/run_build_qa.cjs --fixtures`                                                  │
     │  - Smoke Workflows: `node scripts/browser_smoke.cjs` (21 workflows)                                            │
-    │  - Dark Theme & Tools: `node scripts/browser_verify_dark_and_tools.cjs` (33 workflows)                          │
+    │  - Dark Theme & Tools: `node scripts/browser_verify_dark_and_tools.cjs` (35 workflows)                          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                        │
                        │ 4. Pull Request & Continuous Integration

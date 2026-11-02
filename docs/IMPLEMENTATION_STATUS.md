@@ -45,8 +45,8 @@ This document details the engineering implementation status and test verificatio
     │                         HEADLESS BROWSER END-TO-END QA                              │
     │  - Engine: Playwright (Chromium Headless)                                           │
     │  - Smoke Suite: 21 Passed (Registration, Login, Chat, Save, History, Export)        │
-    │  - Dark Mode & Tools Suite: 33 Passed (Theme, 18 Calculators, Tabs, Interactions)   │
-    │  - Total Browser Workflow Checks: 54 Passed                                         │
+    │  - Dark Mode & Tools Suite: 35 Passed (Theme, 18 Calculators, Tabs, Interactions)   │
+    │  - Total Browser Workflow Checks: 56 Passed                                         │
     └─────────────────────────────────────────────────────────────────────────────────────┘
                                                │
                                                ▼
@@ -93,9 +93,9 @@ mindmap
       1,437 Ambiguous Groups Quarantined
       GPT-2 Parameter Formula Derivation
     (04 Browser End-to-End)
-      54 Headless Chromium Workflows
+      56 Headless Chromium Workflows
       21 Core Smoke Flows
-      33 Dark Mode & Tools Flows
+      35 Dark Mode & Tools Flows
       320px & 390px Mobile Viewport Validation
       Dark and light layouts reviewed; no full WCAG audit
       Zero Console Errors in Production Bundle
@@ -105,20 +105,20 @@ mindmap
 
 ## 3. Comprehensive Verification Summary Matrix
 
-The local verification runs reported 206 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
+The local verification runs reported 208 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
 
 | Test Suite / Quality Layer | Target Subsystem / Files | Assertion Count | Execution Environment | Status |
 | :--- | :--- | :---: | :--- | :---: |
 | **Backend Unit & Integration** | `backend/test/*.test.js` | **71** | Node 24 + In-Memory MongoDB | **PASSED** |
 | • `application.test.js` | Express middleware, CORS, rate limits, CSRF origin gate, session versioning | 24 | In-Memory MongoDB | **PASSED** |
-| • `safetyService.test.js` | Crisis, emergency, prompt injection, unsafe output, prompt reduction | 13 | Standalone Node.js | **PASSED** |
-| • `citationService.test.js`| Bracket extraction, valid/invalid sets, coverage math | 6 | Standalone Node.js | **PASSED** |
-| • `pubmedService.test.js` | E-Utilities query builder, XML parsing, retry backoff | 3 | Axios Mock Adapter | **PASSED** |
-| • `interactionService.test.js` | 19 medication-pair name matching rules | 18 | Standalone Node.js | **PASSED** |
+| • `interactionService.test.js` | 19 medication-pair name matching rules & safe non-interacting combos | 20 | Standalone Node.js | **PASSED** |
+| • `safetyService.test.js` | Crisis, emergency, prompt injection, unsafe output, prompt reduction | 7 | Standalone Node.js | **PASSED** |
+| • `providers.test.js` | PubMed numeric keys, MEDLINE XML abstract parsing, Gemini normalization | 6 | Standalone Node.js | **PASSED** |
+| • `citationService.test.js`| Bracket extraction, valid/invalid sets, coverage math | 4 | Standalone Node.js | **PASSED** |
 | • `modelProvider.test.js` | Multi-provider dispatch (Gemini, Groq, Together, Local) | 4 | Axios Mock Adapter | **PASSED** |
-| • `providers.test.js` | AES-256-GCM vault seal/open, credential CRUD | 4 | In-Memory MongoDB | **PASSED** |
+| • `pubmedService.test.js` | E-Utilities query builder, XML parsing, retry backoff | 3 | Axios Mock Adapter | **PASSED** |
+| • `historySearch.test.js` | Conversational context retrieval, relevance ranking by token overlap | 2 | Standalone Node.js | **PASSED** |
 | • `chatTitle.test.js` | Title generation, markdown stripping, length bounding | 1 | Standalone Node.js | **PASSED** |
-| • `providerGateway.test.js` | Provider payload normalization, fallback routing | 1 | Standalone Node.js | **PASSED** |
 | **Frontend Unit & Component** | `frontend/src/test/*.test.js*` | **55** | Vitest + jsdom | **PASSED** |
 | • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 5 | jsdom + Mock Fetch | **PASSED** |
 | • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 2 | jsdom Storage Mock | **PASSED** |
@@ -136,8 +136,8 @@ The local verification runs reported 206 passing checks or workflows across Node
 | • `test_release_lora.py` | Analytical parameter formula ($147,456$), config schema | 3 | Standard Library Only | **PASSED** |
 | **Production Build & Serving** | `scripts/check_build_serving.cjs` | **7** | Production Nginx / Express | **PASSED** |
 | **Playwright Browser Smoke** | `scripts/browser_smoke.cjs` | **21** | Headless Chromium (Built App) | **PASSED** |
-| **Playwright Dark & Tools** | `scripts/browser_verify_dark_and_tools.cjs`| **33** | Headless Chromium (Built App) | **PASSED** |
-| **Locally Observed Total** | **Separately run software checks** | **206** | **Isolated fixture environment** | **PASSED** |
+| **Playwright Dark & Tools** | `scripts/browser_verify_dark_and_tools.cjs`| **35** | Headless Chromium (Built App) | **PASSED** |
+| **Locally Observed Total** | **Separately run software checks** | **208** | **Isolated fixture environment** | **PASSED** |
 
 ---
 
@@ -309,12 +309,12 @@ When adding new microservices, database schemas, or clinical calculators to MedA
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                MASTER RUNNER DISPATCHER (scripts/verify_project.cjs)                           │
     │  - Step 1: Check required runtimes (Node.js >= 20, Python >= 3.10)                                             │
-    │  - Step 2: In-Memory Backend Suite (`npm test --prefix backend` -> 66 checks)                                  │
-    │  - Step 3: Frontend Component Suite (`npm test --prefix frontend` -> 49 checks)                                │
+    │  - Step 2: In-Memory Backend Suite (`npm test --prefix backend` -> 71 checks)                                  │
+    │  - Step 3: Frontend Component Suite (`npm test --prefix frontend` -> 55 checks)                                │
     │  - Step 4: Python Dataset & LoRA Suites (`python -m unittest ...` -> 19 checks)                                │
     │  - Step 5: Frontend Lint & Production Distribution Build (`npm run build` -> clean bundle)                     │
     │  - Step 6: Built Ingress Probes (`node scripts/check_build_serving.cjs` -> 7 checks)                           │
-    │  - Step 7: Headless Playwright Workflows (Smoke & Dark Theme -> 41 checks)                                     │
+    │  - Step 7: Headless Playwright Workflows (Smoke & Dark Theme -> 56 checks)                                     │
     │  - Step 8 [EXTENSIBLE]: Custom Clinical & Regulatory Validation Stage                                          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                               │

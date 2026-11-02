@@ -110,15 +110,27 @@ mindmap
 
 ### 3.3 `aiController.js` — Two-Phase Generation Coordinator
 - **Routes Covered**: `POST /api/ai/chat`.
-- **Security Invariant**: Generated responses are written to an ephemeral `Generation` document (24-hour TTL) rather than committed directly to conversation history.
+- **Security & Safety Invariants**:
+  - Generated responses are written to an ephemeral `Generation` document (24-hour TTL) rather than committed directly to conversation history.
+  - Intercepts acute emergency symptoms and self-harm intentions deterministically before invoking external AI providers.
+  - Preserves detected 19 FDA black-box drug-drug interaction cautions across both standard answers and emergency deflections.
+  - Audits numerical citations `[N]` against retrieved PubMed literature bounds, dropping ungrounded references.
 
-### 3.4 `chatController.js` — Authoritative Conversation Storage
+### 3.4 `medicalController.js` — Forced Biomedical Literature Grounding
+- **Routes Covered**: `POST /api/medical`.
+- **Invariants**: Forces query routing through the 3-stage NCBI Entrez E-Utilities harvester (`esearch` -> `esummary` -> `efetch` MEDLINE XML) regardless of client heuristic flags, ensuring peer-reviewed literature context is always attached.
+
+### 3.5 `chatController.js` — Authoritative Conversation Storage
 - **Routes Covered**: `POST /api/save`, `GET /api/history`, `GET /api/chats/:id`, `PATCH /api/chats/:id`, `DELETE /api/chats/:id`.
 - **Security Invariant**: Strict tenant isolation. All database lookups enforce `{ _id: chatId, owner: req.user._id }`.
 
-### 3.5 `settingsController.js` — Encrypted Key Vault Management
+### 3.6 `settingsController.js` — Encrypted Key Vault Management
 - **Routes Covered**: `GET /api/settings`, `PATCH /api/settings`, `PUT /api/settings/keys/:provider`, `DELETE /api/settings/keys/:provider`.
-- **Security Invariant**: User API keys are sealed using AES-256-GCM with unique 12-byte IVs; cleartext keys are never echoed back in API responses.
+- **Security Invariant**: User API keys are sealed using hardware-accelerated AES-256-GCM with unique 12-byte IVs and 16-byte authentication tags; cleartext keys are never echoed back in API responses.
+
+### 3.7 `analyticsController.js` — Operational Telemetry & Surveillance
+- **Routes Covered**: `GET /api/analytics/overview`.
+- **Invariants**: Computes daily UTC activity buckets over 7, 30, and 90-day intervals, tracking evidence attachment rates, citation distributions, and 19 FDA black-box interaction encounter counts scoped strictly to `owner: req.user._id`.
 
 ---
 

@@ -171,17 +171,37 @@ async function main() {
   await page.screenshot({ path: path.join(output, "apri-dark-modal.png") });
   console.log("PASS APRI liver fibrosis calculator verified and captured in dark styles");
 
-  // Test 3m: Arrow Key Navigation across tabs wrapping from last tab (APRI) to first tab (BMI)
-  const apriTab = page.getByRole("tab", { name: "APRI (Liver Fibrosis)" });
-  await apriTab.focus();
+  // Test 3m: Child-Pugh (Cirrhosis) Tab in Clinical Calculators
+  await page.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" }).click();
+  await page.getByText(/prognostic system for assessing the severity of cirrhosis/i).waitFor();
+  await page.getByText("Score: 5 points", { exact: true }).waitFor();
+  await page.getByText("Class A (5–6 points)", { exact: true }).waitFor();
+  await page.getByText(/Well-compensated cirrhosis/i).waitFor();
+
+  // Change to severe values -> Bilirubin 4.0, Albumin 2.5, INR 2.5, Ascites moderate, Encephalopathy grade3_4
+  await page.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }).fill("4.0");
+  await page.getByRole("spinbutton", { name: "Serum Albumin (g/dL)" }).fill("2.5");
+  await page.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }).fill("2.5");
+  await page.getByLabel("Ascites").selectOption("moderate");
+  await page.getByLabel("Hepatic Encephalopathy").selectOption("grade3_4");
+
+  await page.getByText("Score: 15 points", { exact: true }).waitFor();
+  await page.getByText("Class C (10–15 points)", { exact: true }).waitFor();
+  await page.getByText(/Decompensated cirrhosis/i).waitFor();
+  await page.screenshot({ path: path.join(output, "childpugh-dark-modal.png") });
+  console.log("PASS Child-Pugh cirrhosis mortality calculator verified and captured in dark styles");
+
+  // Test 3n: Arrow Key Navigation across tabs wrapping from last tab (Child-Pugh) to first tab (BMI)
+  const childpughTab = page.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" });
+  await childpughTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (APRI) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (Child-Pugh) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const apriSelected = await apriTab.getAttribute("aria-selected");
-  assert.equal(apriSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (APRI)");
+  const childpughSelected = await childpughTab.getAttribute("aria-selected");
+  assert.equal(childpughSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (Child-Pugh)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -294,6 +314,16 @@ async function main() {
   await page.getByText(/hyperkalemia/i).waitFor();
   await page.screenshot({ path: path.join(output, "bactrim-lisinopril-dark.png") });
   console.log("PASS Bactrim and ACE inhibitor hyperkalemia alert verified in dark mode");
+
+  // Test 5h: Theophylline + Ciprofloxacin CYP1A2 inhibition contraindication
+  await page.getByLabel("Your question", { exact: true }).fill("Can a COPD patient on theophylline take ciprofloxacin for a lung infection?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Theophylline + Fluoroquinolone (CYP1A2 Inhibition)").waitFor();
+  await page.getByText(/potently inhibits hepatic CYP1A2/i).waitFor();
+  await page.getByText(/seizures/i).waitFor();
+  await page.screenshot({ path: path.join(output, "theophylline-cipro-dark.png") });
+  console.log("PASS theophylline and ciprofloxacin CYP1A2 toxicity alert verified in dark mode");
 
   // Test 6: Dashboard in Dark Mode
   await page.getByRole("link", { name: "Dashboard", exact: true }).click();

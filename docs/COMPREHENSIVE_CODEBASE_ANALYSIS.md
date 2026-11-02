@@ -960,7 +960,7 @@ async function runBrowserSmoke() {
 
 ### 7.3 High-Risk Drug Interaction Unit Tests (`backend/test/interactionService.test.js`)
 - **File Path**: [`backend/test/interactionService.test.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/test/interactionService.test.js)
-- **Role**: Validates name matching for all 19 configured medication-pair cautions and negative non-interference on clean queries (18 passing tests). This is not clinical validation.
+- **Role**: Validates name matching for all 19 configured medication-pair cautions and negative non-interference on clean queries (20 passing tests). This is not clinical validation.
 
 ```javascript
 // Implementation Snippet: backend/test/interactionService.test.js
@@ -1032,7 +1032,8 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `Model and Dataset/lora/train_lora.py` | LoRA Training Script | Training Pipeline | Dry-run validation, SFT label masking (`-100`), adapter checkpointing |
 | `scripts/verify_project.cjs` | Master Test Runner | CI & Local Dev | Orchestrates all unit/integration test suites across Node, Python, Vite |
 | `scripts/browser_smoke.cjs` | Playwright Browser Smoke| CI & Local Dev | End-to-end headless browser regression verification (21 workflows) |
-| `scripts/browser_verify_dark_and_tools.cjs` | Playwright Tools & Theme| CI & Local Dev | Automated verification of dark mode and 18 clinical calculators (33 workflows) |
+| `scripts/browser_verify_dark_and_tools.cjs` | Playwright Tools & Theme| CI & Local Dev | Automated verification of dark mode and 18 clinical calculators (35 workflows) |
+| `scripts/generate_interview_mastery_pdf.py` | Architecture & PDF Engine | Automation & Docs | Compiles production architecture, interview mastery, and technical tradeoffs into PDF |
 
 ---
 
@@ -1043,11 +1044,12 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 3. **Multi-Byte IME Safety**: Composer input prevents premature message submission while character composition (`compositionstart` to `compositionend`) is active.
 4. **Zero Partition Leakage**: Training, validation, and test splits are partitioned strictly on SHA-256 hashes of normalized question keys, ensuring identical questions never appear across different evaluation partitions.
 5. **Full Suite Verification Status**: 100% of tests are passing in local and CI environments:
-   - **Backend**: 71 passed in-memory MongoDB tests (`node --test`)
+   - **Backend**: 71 passed in-memory MongoDB tests across 9 suites (`node --test`)
    - **Frontend**: 55 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
    - **Python Suites**: 19 passed unit tests (13 dataset + 6 LoRA)
    - **Built-Output Gateway**: 7 passed HTTP serving checks
-   - **Headless Browser Workflows**: 54 passed Playwright workflows (21 smoke + 33 dark mode/tools)
+   - **Headless Browser Workflows**: 56 passed Playwright workflows (21 smoke + 35 dark mode/tools)
+   - **Master Automated Total**: 208 passed software checks across all execution layers
    - **Production Dependencies**: 0 reported critical runtime vulnerabilities
 
 ---

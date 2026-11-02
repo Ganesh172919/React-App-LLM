@@ -1,5 +1,5 @@
 {
-  "completedAt": "2026-10-31T08:32:32.646Z",
+  "completedAt": "2026-11-02T02:06:54.762Z",
   "base": "http://127.0.0.1:4173",
   "mode": "Built-output QA gateway; does not execute Nginx or Docker",
   "results": [
@@ -12,11 +12,11 @@
       "passed": true
     },
     {
-      "name": "Missing JavaScript returns 404 instead of HTML",
+      "name": "API responses prohibit caching and MIME sniffing",
       "passed": true
     },
     {
-      "name": "API responses prohibit caching and MIME sniffing",
+      "name": "Missing JavaScript returns 404 instead of HTML",
       "passed": true
     },
     {
@@ -24,11 +24,11 @@
       "passed": true
     },
     {
-      "name": "JavaScript has correct MIME and immutable cache",
+      "name": "Deep link returns the SPA document",
       "passed": true
     },
     {
-      "name": "Deep link returns the SPA document",
+      "name": "JavaScript has correct MIME and immutable cache",
       "passed": true
     }
   ],

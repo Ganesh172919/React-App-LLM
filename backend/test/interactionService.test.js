@@ -150,6 +150,19 @@ test("detects bactrim and ACE inhibitor / ARB hyperkalemia risk", () => {
   assert.equal(arbResult[0].pair, "Trimethoprim-Sulfamethoxazole + ACE Inhibitor / ARB / K-Sparing Diuretic");
 });
 
+test("detects theophylline and ciprofloxacin CYP1A2 toxicity contraindication", () => {
+  const result = detectDrugInteractions("Can a COPD patient on theophylline take ciprofloxacin for a bacterial exacerbation?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Theophylline + Fluoroquinolone (CYP1A2 Inhibition)");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /CYP1A2/i);
+  assert.match(result[0].description, /seizures/i);
+
+  const brandResult = detectDrugInteractions("Prescribed Cipro while taking Theo-24 daily.");
+  assert.equal(brandResult.length, 1);
+  assert.equal(brandResult[0].pair, "Theophylline + Fluoroquinolone (CYP1A2 Inhibition)");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);
