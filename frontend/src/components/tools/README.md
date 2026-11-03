@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive Overview & Clinical Tools Topology
 
-The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 20 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
+The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 21 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
 
 > [!CAUTION]
 > **Educational & Learning Notice**: These tools are educational demonstrations. Numeric scores do not establish clinical diagnoses, treatment plans, or formal prognosis. Clinical decisions must always be guided by qualified healthcare providers and institutional protocols.
@@ -83,6 +83,9 @@ mindmap
       Mean Arterial Pressure (MAP)
         Formula: (2*DBP + SBP) / 3
         Target >= 65 mmHg in Sepsis
+      HEART Score for Chest Pain
+        MACE Risk Stratification (0 to 10)
+        Low (0-3), Moderate (4-6), High (7-10)
     (03 Acute Severity)
       Wells Criteria for PE
         Clinical Probability (0 to 12.5)
@@ -95,6 +98,8 @@ mindmap
         Points 0 to 9 (High Risk >= 3)
       qSOFA Sepsis Screen
         RR >= 22, Altered Mentation, SBP <= 100
+      Modified Centor (McIsaac)
+        Strep Pharyngitis Probability (-1 to 5)
       Maintenance Fluids (4-2-1)
         Hourly Rate (4 mL/kg + 2 mL/kg + 1 mL/kg)
     (04 Metabolic & Hepatic)
@@ -284,9 +289,22 @@ $$\text{Centor Score} = \text{Exudate (+1)} + \text{Tender Nodes (+1)} + \text{F
   - Score $3$: Moderate-to-high risk ($28 - 35\%$ probability; throat culture or RADT recommended; treat only if positive).
   - Score $\ge 4$: High risk ($51 - 53\%$ probability; RADT or throat culture recommended; consider empiric antibiotic per clinical judgment).
 
+### 3.18 HEART Score for Major Adverse Cardiac Events (MACE)
+$$\text{HEART Score} = H + E + A + R + T$$
+- **Five Clinical Categories (0–2 points each; total range 0–10)**:
+  - **H (History)**: Slightly suspicious ($0$), Moderately suspicious ($1$), Highly suspicious ($2$).
+  - **E (ECG)**: Normal ($0$), Non-specific repolarization disturbance ($1$), Significant ST deviation ($2$).
+  - **A (Age)**: $< 45\text{ years}$ ($0$), $45 - 64\text{ years}$ ($1$), $\ge 65\text{ years}$ ($2$).
+  - **R (Risk Factors)**: No known risk factors ($0$), $1 - 2$ risk factors ($1$), $\ge 3$ risk factors or history of atherosclerotic disease ($2$). *(Risk factors: hypertension, hypercholesterolemia, diabetes, smoking, family history of early CAD, obesity)*.
+  - **T (Troponin)**: Normal / $\le$ normal limit ($0$), $1 - 3\times$ normal limit ($1$), $> 3\times$ normal limit ($2$).
+- **6-Week MACE Risk Stratification**:
+  - **Low Risk ($0 - 3$ points)**: $\approx 0.9 - 1.7\%$ risk of 6-week MACE; candidate for early discharge or non-invasive outpatient evaluation.
+  - **Intermediate Risk ($4 - 6$ points)**: $\approx 12 - 16.6\%$ risk of 6-week MACE; observation unit admission, serial troponins, non-invasive cardiac testing.
+  - **High Risk ($7 - 10$ points)**: $\approx 50 - 65\%$ risk of 6-week MACE; urgent cardiology consultation, early invasive strategy (coronary angiography), aggressive medical stabilization.
+
 ---
 
-## 4. Developer Extensibility: Adding Calculator #21
+## 4. Developer Extensibility: Adding Calculator #22
 
 Follow this architectural guide to add a new calculator:
 
@@ -296,7 +314,7 @@ Follow this architectural guide to add a new calculator:
 const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
   "aniongap", "fena", "feurea", "fluids", "wells", "curb65",
-  "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor"
+  "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart"
 ];
 
 // Step 2: Implement deterministic formula with clamping in React state:
@@ -327,7 +345,7 @@ const tabList = [
 
 ## 5. Automated Verification Commands
 
-All 20 clinical calculators are verified by 18 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
+All 21 clinical calculators are verified by 19 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
 
 ```powershell
 # Run the clinical calculators test suite

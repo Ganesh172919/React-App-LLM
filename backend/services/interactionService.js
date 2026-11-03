@@ -412,6 +412,25 @@ const HIGH_RISK_INTERACTION_RULES = [
     ],
     description: "Major contraindication (FDA Warning): Potent CYP3A4 inhibition abruptly blocks carbamazepine hepatic metabolism, leading to rapid drug accumulation and acute neurotoxicity within 24 to 48 hours (severe ataxia, nystagmus, diplopia, stupor, respiratory depression, and cardiac conduction disturbances).",
   },
+  {
+    pair: "Linezolid + SSRI / SNRI (Serotonin Syndrome)",
+    drugA: "Linezolid (Zyvox)",
+    drugB: "SSRIs / SNRIs (e.g., Sertraline, Fluoxetine, Escitalopram, Citalopram, Paroxetine, Venlafaxine, Duloxetine)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\blinezolid\b/i, /\bzyvox\b/i,
+    ],
+    drugsB: [
+      /\bsertraline\b/i, /\bzoloft\b/i,
+      /\bfluoxetine\b/i, /\bprozac\b/i,
+      /\bescitalopram\b/i, /\blexapro\b/i,
+      /\bcitalopram\b/i, /\bcelexa\b/i,
+      /\bparoxetine\b/i, /\bpaxil\b/i,
+      /\bvenlafaxine\b/i, /\beffexor\b/i,
+      /\bduloxetine\b/i, /\bcymbalta\b/i,
+    ],
+    description: "FDA Boxed Warning / Major Contraindication: Linezolid is a reversible, non-selective monoamine oxidase inhibitor (MAOI). Co-administration with SSRIs or SNRIs precipitates severe, potentially fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, clonus, autonomic instability, delirium, and coma). Concurrent use is contraindicated unless under emergency conditions with intensive clinical monitoring.",
+  },
 ];
 
 /**

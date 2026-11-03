@@ -189,6 +189,19 @@ test("detects carbamazepine and strong CYP3A4 inhibitor neurotoxicity contraindi
   assert.equal(brandResult[0].pair, "Carbamazepine + Strong CYP3A4 Inhibitor");
 });
 
+test("detects linezolid and SSRI / SNRI serotonin syndrome contraindication", () => {
+  const result = detectDrugInteractions("Can a patient taking linezolid take sertraline for depression?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Linezolid + SSRI / SNRI (Serotonin Syndrome)");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /monoamine oxidase inhibitor/i);
+  assert.match(result[0].description, /Serotonin Syndrome/i);
+
+  const brandResult = detectDrugInteractions("Can a patient on Lexapro be prescribed Zyvox for an infection?");
+  assert.equal(brandResult.length, 1);
+  assert.equal(brandResult[0].pair, "Linezolid + SSRI / SNRI (Serotonin Syndrome)");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);

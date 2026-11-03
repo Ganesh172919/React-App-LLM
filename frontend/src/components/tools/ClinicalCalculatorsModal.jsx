@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -175,6 +175,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [centorFever, setCentorFever] = useState(false);
   const [centorNoCough, setCentorNoCough] = useState(false);
   const [centorAgeGroup, setCentorAgeGroup] = useState("15to44"); // 3to14 | 15to44 | 45plus
+
+  // HEART Score State
+  const [heartHistory, setHeartHistory] = useState("moderate"); // slightly (0) | moderate (1) | highly (2)
+  const [heartEcg, setHeartEcg] = useState("normal"); // normal (0) | nonspecific (1) | st_deviation (2)
+  const [heartAge, setHeartAge] = useState("45to64"); // under45 (0) | 45to64 (1) | 65plus (2)
+  const [heartRisk, setHeartRisk] = useState("one_two"); // none (0) | one_two (1) | three_plus (2)
+  const [heartTroponin, setHeartTroponin] = useState("normal"); // normal (0) | one_to_three (1) | greater_three (2)
 
   const titleId = useId();
 
@@ -573,6 +580,32 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     centorStratification = "High risk (51–53% probability; RADT or throat culture recommended; consider empiric antibiotic per clinical judgment)";
   }
 
+  // 21. HEART Score for Major Adverse Cardiac Events (MACE)
+  let heartScore = 0;
+  if (heartHistory === "moderate") heartScore += 1;
+  else if (heartHistory === "highly") heartScore += 2;
+
+  if (heartEcg === "nonspecific") heartScore += 1;
+  else if (heartEcg === "st_deviation") heartScore += 2;
+
+  if (heartAge === "45to64") heartScore += 1;
+  else if (heartAge === "65plus") heartScore += 2;
+
+  if (heartRisk === "one_two") heartScore += 1;
+  else if (heartRisk === "three_plus") heartScore += 2;
+
+  if (heartTroponin === "one_to_three") heartScore += 1;
+  else if (heartTroponin === "greater_three") heartScore += 2;
+
+  let heartStratification = "";
+  if (heartScore <= 3) {
+    heartStratification = "Low risk (~0.9–1.7% 6-week MACE risk; early discharge / outpatient workup candidate)";
+  } else if (heartScore <= 6) {
+    heartStratification = "Intermediate risk (~12–16.6% 6-week MACE risk; observation and serial troponins recommended)";
+  } else {
+    heartStratification = "High risk (~50–65% 6-week MACE risk; urgent admission, cardiology consult, and early invasive angiography)";
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -826,6 +859,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("centor")}
           >
             Centor (Strep Throat)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-heart"
+            aria-selected={activeTab === "heart"}
+            aria-controls="tabpanel-heart"
+            className={`calc-tab ${activeTab === "heart" ? "active" : ""}`}
+            onClick={() => setActiveTab("heart")}
+          >
+            HEART (Chest Pain)
           </button>
         </div>
 
@@ -2633,6 +2677,119 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onClick={() =>
                       handleCopy(
                         `Modified Centor (McIsaac) Strep Score: ${centorScore} points (${centorStratification}; educational estimate only; not diagnostic or treatment recommendation)`
+                      )
+                    }
+                  >
+                    {copied ? "Copied" : "Copy result"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 21: HEART Score for Major Adverse Cardiac Events */}
+          {activeTab === "heart" && (
+            <div id="tabpanel-heart" role="tabpanel" aria-labelledby="tab-heart" className="calc-pane">
+              <p className="small-text muted">
+                The HEART Score is an evidence-based clinical decision rule designed for emergency department and acute care settings to stratify 6-week risk of Major Adverse Cardiac Events (MACE: myocardial infarction, PCI, CABG, death) in adult patients presenting with acute chest pain suspicious for acute coronary syndrome.
+              </p>
+              <div className="settings-grid">
+                <label htmlFor="heart-history-select">
+                  History (anamnesis suspicion)
+                  <select
+                    id="heart-history-select"
+                    aria-label="History (anamnesis suspicion)"
+                    value={heartHistory}
+                    onChange={(e) => setHeartHistory(e.target.value)}
+                  >
+                    <option value="slightly">Slightly suspicious (0 points)</option>
+                    <option value="moderate">Moderately suspicious (+1 point)</option>
+                    <option value="highly">Highly suspicious (+2 points)</option>
+                  </select>
+                </label>
+                <label htmlFor="heart-ecg-select">
+                  ECG (electrocardiogram)
+                  <select
+                    id="heart-ecg-select"
+                    aria-label="ECG (electrocardiogram)"
+                    value={heartEcg}
+                    onChange={(e) => setHeartEcg(e.target.value)}
+                  >
+                    <option value="normal">Normal (0 points)</option>
+                    <option value="nonspecific">Non-specific repolarization / LBBB / PM (+1 point)</option>
+                    <option value="st_deviation">Significant ST depression or elevation (+2 points)</option>
+                  </select>
+                </label>
+                <label htmlFor="heart-age-select">
+                  Age
+                  <select
+                    id="heart-age-select"
+                    aria-label="Age"
+                    value={heartAge}
+                    onChange={(e) => setHeartAge(e.target.value)}
+                  >
+                    <option value="under45">&lt; 45 years old (0 points)</option>
+                    <option value="45to64">45 to 64 years old (+1 point)</option>
+                    <option value="65plus">&ge; 65 years old (+2 points)</option>
+                  </select>
+                </label>
+                <label htmlFor="heart-risk-select">
+                  Risk factors (HTN, hyperlipidemia, DM, smoking, family history, obesity)
+                  <select
+                    id="heart-risk-select"
+                    aria-label="Risk factors (HTN, hyperlipidemia, DM, smoking, family history, obesity)"
+                    value={heartRisk}
+                    onChange={(e) => setHeartRisk(e.target.value)}
+                  >
+                    <option value="none">No known risk factors (0 points)</option>
+                    <option value="one_two">1 or 2 risk factors (+1 point)</option>
+                    <option value="three_plus">&ge; 3 risk factors or atherosclerotic disease (+2 points)</option>
+                  </select>
+                </label>
+                <label htmlFor="heart-troponin-select">
+                  Initial Troponin
+                  <select
+                    id="heart-troponin-select"
+                    aria-label="Initial Troponin"
+                    value={heartTroponin}
+                    onChange={(e) => setHeartTroponin(e.target.value)}
+                  >
+                    <option value="normal">&le; Normal reference limit (0 points)</option>
+                    <option value="one_to_three">1 to 3&times; normal limit (+1 point)</option>
+                    <option value="greater_three">&gt; 3&times; normal limit (+2 points)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="calc-result" style={{ marginTop: "16px" }}>
+                <div className="calc-result-metric">
+                  <strong>Score: {heartScore} {heartScore === 1 ? "point" : "points"}</strong>
+                  <span className="badge">{heartStratification}</span>
+                </div>
+                <p className="small-text">
+                  Scores range from 0 to 10 points. Developed and validated to safely identify low-risk emergency patients who may be managed without urgent hospitalization, while identifying high-risk individuals requiring prompt coronary intervention.
+                </p>
+                <p className="small-text muted">
+                  Educational prognostic tool only. Any acute or crushing chest pain, diaphoresis, dyspnea, or suspected STEMI requires immediate emergency medical services (call 911). Never use this calculator to delay acute emergency care.
+                </p>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() =>
+                      insertAndClose(
+                        `For educational purposes, explain how a HEART Score of ${heartScore} points (${heartStratification}) is interpreted in emergency chest pain triage, what clinical pathways are recommended for each risk tier, and how serial high-sensitivity troponin assays have influenced the HEART pathway.`
+                      )
+                    }
+                  >
+                    Ask MedAssist about this HEART score
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    onClick={() =>
+                      handleCopy(
+                        `HEART Chest Pain MACE Score: ${heartScore} points (${heartStratification}; educational estimate only; not diagnostic or emergency triage advice)`
                       )
                     }
                   >

@@ -440,6 +440,45 @@ it("calculates Modified Centor / McIsaac score for pharyngitis across age groups
   expect(centorPrompt).toContain("Modified Centor / McIsaac score of 1 point");
 });
 
+it("calculates HEART score for chest pain MACE stratification across all 5 clinical categories", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+
+  fireEvent.click(screen.getByRole("tab", { name: "HEART (Chest Pain)" }));
+  expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
+  expect(screen.getByText(/HEART Score is an evidence-based clinical decision rule/)).toBeTruthy();
+
+  // Default values: moderate (1), normal (0), 45-64 (1), 1-2 risk (1), trop normal (0) -> 3 points, Low risk
+  expect(screen.getByText("Score: 3 points")).toBeTruthy();
+  expect(screen.getByText(/Low risk \(~0\.9–1\.7% 6-week MACE risk/)).toBeTruthy();
+
+  // Elevate to high risk: highly (+2), st_deviation (+2), 65plus (+2), three_plus (+2), greater_three (+2) -> 10 points
+  fireEvent.change(screen.getByLabelText(/History \(anamnesis suspicion\)/i), { target: { value: "highly" } });
+  fireEvent.change(screen.getByLabelText(/ECG \(electrocardiogram\)/i), { target: { value: "st_deviation" } });
+  fireEvent.change(screen.getByLabelText(/^Age$/i), { target: { value: "65plus" } });
+  fireEvent.change(screen.getByLabelText(/Risk factors/i), { target: { value: "three_plus" } });
+  fireEvent.change(screen.getByLabelText(/Initial Troponin/i), { target: { value: "greater_three" } });
+
+  expect(screen.getByText("Score: 10 points")).toBeTruthy();
+  expect(screen.getByText(/High risk \(~50–65% 6-week MACE risk/)).toBeTruthy();
+
+  // Intermediate risk check: moderate (1), nonspecific (1), 45to64 (1), one_two (1), one_to_three (1) -> 5 points
+  fireEvent.change(screen.getByLabelText(/History \(anamnesis suspicion\)/i), { target: { value: "moderate" } });
+  fireEvent.change(screen.getByLabelText(/ECG \(electrocardiogram\)/i), { target: { value: "nonspecific" } });
+  fireEvent.change(screen.getByLabelText(/^Age$/i), { target: { value: "45to64" } });
+  fireEvent.change(screen.getByLabelText(/Risk factors/i), { target: { value: "one_two" } });
+  fireEvent.change(screen.getByLabelText(/Initial Troponin/i), { target: { value: "one_to_three" } });
+
+  expect(screen.getByText("Score: 5 points")).toBeTruthy();
+  expect(screen.getByText(/Intermediate risk \(~12–16\.6% 6-week MACE risk/)).toBeTruthy();
+
+  // Prompt insertion test
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this HEART score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const heartPrompt = onInsertPrompt.mock.calls[0][0];
+  expect(heartPrompt).toContain("HEART Score of 5 points");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -450,11 +489,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (Centor) to first (BMI) and back
-  const centorTab = screen.getByRole("tab", { name: "Centor (Strep Throat)" });
-  centorTab.focus();
-  fireEvent.keyDown(centorTab, { key: "ArrowRight" });
+  // Wrapping from last tab (HEART) to first (BMI) and back
+  const heartTab = screen.getByRole("tab", { name: "HEART (Chest Pain)" });
+  heartTab.focus();
+  fireEvent.keyDown(heartTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(centorTab.getAttribute("aria-selected")).toBe("true");
+  expect(heartTab.getAttribute("aria-selected")).toBe("true");
 });

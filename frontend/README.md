@@ -41,7 +41,7 @@ The MedAssist AI client is an enterprise-grade, accessibility-audited single-pag
     │  - <AuthPage />         │                   │  - <Sidebar />          │                   │  - <AccountPage />      │
     │    (Login, Register,    │                   │    (History CRUD, filter│                   │    (Profile, data wipe) │
     │     Password Recovery)  │                   │  - <ClinicalCalculators>│                   │  - <AISettings />       │
-    │  - <VerifyEmail />      │                   │    (20 validated tools) │                   │    (Provider & Vault)   │
+    │  - <VerifyEmail />      │                   │    (21 validated tools) │                   │    (Provider & Vault)   │
     └─────────────────────────┘                   └─────────────────────────┘                   └─────────────────────────┘
                  │                                             │                                             │
                  └─────────────────────────────────────────────┼─────────────────────────────────────────────┘
@@ -92,7 +92,7 @@ mindmap
         History Loading State Lock
         Auto-Expanding Textarea
     (04 Clinical Calculators Modal)
-      20 Clinical Tools
+      21 Clinical Tools
         BMI Metric and Imperial
         eGFR CKD-EPI 2021 Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -113,6 +113,7 @@ mindmap
         Child-Pugh Cirrhosis Mortality Score
         MELD-Na Liver Disease Prognosis Score
         Modified Centor (McIsaac) Strep Score
+        HEART Score for Chest Pain MACE
       WAI-ARIA Accessibility
         role="tablist" & role="tabpanel"
         Keyboard Arrow-Key Cycling
@@ -165,7 +166,7 @@ frontend/
     │   │   └── ChatWorkspace.jsx        # Message list, composer, IME guard, citation chips
     │   │
     │   ├── tools/                       # Evidence-Based Clinical Utilities
-    │   │   └── ClinicalCalculatorsModal.jsx # 20 evidence-based calculators with strict input bounds & ARIA tabs
+    │   │   └── ClinicalCalculatorsModal.jsx # 21 evidence-based calculators with strict input bounds & ARIA tabs
     │   │
     │   ├── dashboard/                   # Telemetry & Research Analytics
     │   │   └── AnalyticsDashboard.jsx   # 7/30/90-day SVG trends, lifetime summary metrics
@@ -182,9 +183,9 @@ frontend/
     ├── utils/
     │   └── medicalDetector.js           # Client-side heuristic medical keyword classifier
     │
-    └── test/                            # Vitest Component & Unit Tests (57 Passing across 6 suites)
+    └── test/                            # Vitest Component & Unit Tests (58 Passing across 6 suites)
         ├── api.test.js                  # Web Locks refresh and fetch interceptor tests
-        ├── clinicalCalculators.test.jsx # 20 calculator math & accessibility tests (18 tests)
+        ├── clinicalCalculators.test.jsx # 21 calculator math & accessibility tests (19 tests)
         ├── conversationImport.test.js   # JSON import bounding and anti-spoofing tests
         ├── medicalDetector.test.js      # Medical entity & suggestion chip classification
         ├── tabStorage.test.js           # sessionStorage fallback & TTL cache tests
@@ -483,6 +484,9 @@ The `ClinicalCalculatorsModal.jsx` component implements 19 standardized clinical
 
     Centor (McIsaac) Strep     Exudate (+1) + Tender Nodes (+1) + Fever (+1) + No Cough (+1) Score: -1 to 5 points
                                Age 3-14 (+1), 15-44 (0), 45+ (-1)                        Risk: 1-10% to 51-53%
+
+    HEART Chest Pain Score     History (0-2) + ECG (0-2) + Age (0-2) + Risk (0-2) + Trop (0-2) Score: 0-10 points
+                               Low (0-3): 0.9-1.7%; Mod (4-6): 12-16.6%; High (7-10): 50-65% MACE Risk at 6 Weeks
 ========================================================================================================================
 ```
 
@@ -502,8 +506,8 @@ if (gcsScore <= 8) {
   gcsStratification = "Moderate brain injury (9–12)";
 }
 
-// Arrow key navigation across all 20 tabs
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor"];
+// Arrow key navigation across all 21 tabs
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart"];
 ```
 
 ---
@@ -520,7 +524,7 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (57 tests across 6 suites)
+# 3. Execute Vitest automated unit and component test suite (58 tests across 6 suites)
 npm test
 
 # 4. Compile optimized production distribution bundle

@@ -232,17 +232,35 @@ async function main() {
   await page.screenshot({ path: path.join(output, "centor-dark-modal.png") });
   console.log("PASS Centor (McIsaac) pharyngitis calculator verified and captured in dark styles");
 
-  // Test 3p: Arrow Key Navigation across tabs wrapping from last tab (Centor) to first tab (BMI)
-  const centorTab = page.getByRole("tab", { name: "Centor (Strep Throat)" });
-  await centorTab.focus();
+  // Test 3q: HEART (Chest Pain) Tab in Clinical Calculators
+  await page.getByRole("tab", { name: "HEART (Chest Pain)" }).click();
+  await page.getByText(/HEART Score is an evidence-based clinical decision rule/i).waitFor();
+  await page.getByText("Score: 3 points", { exact: true }).waitFor();
+  await page.getByText(/Low risk \(~0\.9–1\.7% 6-week MACE risk/i).waitFor();
+
+  // Change dropdowns to high risk: highly (+2), st_deviation (+2), 65plus (+2), three_plus (+2), greater_three (+2)
+  await page.getByLabel(/History \(anamnesis suspicion\)/i).selectOption("highly");
+  await page.getByLabel(/ECG \(electrocardiogram\)/i).selectOption("st_deviation");
+  await page.getByLabel(/^Age$/i).selectOption("65plus");
+  await page.getByLabel(/Risk factors/i).selectOption("three_plus");
+  await page.getByLabel(/Initial Troponin/i).selectOption("greater_three");
+
+  await page.getByText("Score: 10 points", { exact: true }).waitFor();
+  await page.getByText(/High risk \(~50–65% 6-week MACE risk/i).waitFor();
+  await page.screenshot({ path: path.join(output, "heart-dark-modal.png") });
+  console.log("PASS HEART score chest pain prognostic calculator verified and captured in dark styles");
+
+  // Test 3r: Arrow Key Navigation across tabs wrapping from last tab (HEART) to first tab (BMI)
+  const heartTab = page.getByRole("tab", { name: "HEART (Chest Pain)" });
+  await heartTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (Centor) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (HEART) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const centorSelected = await centorTab.getAttribute("aria-selected");
-  assert.equal(centorSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (Centor)");
+  const heartSelected = await heartTab.getAttribute("aria-selected");
+  assert.equal(heartSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (HEART)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -385,6 +403,16 @@ async function main() {
   await page.getByText(/ataxia/i).last().waitFor();
   await page.screenshot({ path: path.join(output, "carbamazepine-erythromycin-dark.png") });
   console.log("PASS carbamazepine (Tegretol) and erythromycin CYP3A4 neurotoxicity alert verified in dark mode");
+
+  // Test 5k: Linezolid + SSRI (Zoloft) Serotonin Syndrome contraindication
+  await page.getByLabel("Your question", { exact: true }).fill("Can a patient taking Zoloft be prescribed Zyvox for an MRSA wound?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Linezolid + SSRI / SNRI (Serotonin Syndrome)").waitFor();
+  await page.getByText(/monoamine oxidase inhibitor/i).waitFor();
+  await page.getByText(/Serotonin Syndrome/i).last().waitFor();
+  await page.screenshot({ path: path.join(output, "linezolid-zoloft-dark.png") });
+  console.log("PASS linezolid (Zyvox) and sertraline (Zoloft) Serotonin Syndrome contraindication alert verified in dark mode");
 
   // Test 6: Dashboard in Dark Mode
   await page.getByRole("link", { name: "Dashboard", exact: true }).click();

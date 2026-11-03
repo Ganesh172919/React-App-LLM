@@ -1,14 +1,10 @@
 {
-  "completedAt": "2026-11-03T23:33:41.201Z",
+  "completedAt": "2026-11-03T23:49:23.298Z",
   "base": "http://127.0.0.1:4173",
   "mode": "Built-output QA gateway; does not execute Nginx or Docker",
   "results": [
     {
       "name": "Built index uses hashed assets without Vite development runtime",
-      "passed": true
-    },
-    {
-      "name": "Missing JavaScript returns 404 instead of HTML",
       "passed": true
     },
     {
@@ -21,6 +17,10 @@
     },
     {
       "name": "Unknown API endpoint returns JSON 404",
+      "passed": true
+    },
+    {
+      "name": "Missing JavaScript returns 404 instead of HTML",
       "passed": true
     },
     {

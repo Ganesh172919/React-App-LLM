@@ -5,107 +5,107 @@
     {
       "name": "landing page has no horizontal overflow at desktop",
       "passed": true,
-      "durationMs": 1467
+      "durationMs": 1687
     },
     {
       "name": "invalid login reports an accessible error",
       "passed": true,
-      "durationMs": 637
+      "durationMs": 1362
     },
     {
       "name": "sign in and live connection",
       "passed": true,
-      "durationMs": 815
+      "durationMs": 1448
     },
     {
       "name": "health calculators show estimates without treatment conclusions",
       "passed": true,
-      "durationMs": 1296
+      "durationMs": 720
     },
     {
       "name": "send medical message, sources, save and navigation guard",
       "passed": true,
-      "durationMs": 1652
+      "durationMs": 1738
     },
     {
       "name": "rename, search, export, and reopen persisted history",
       "passed": true,
-      "durationMs": 741
+      "durationMs": 761
     },
     {
       "name": "JSON import is an unverified local preview with no forged citation links",
       "passed": true,
-      "durationMs": 597
+      "durationMs": 887
     },
     {
       "name": "save-only retry does not generate another answer",
       "passed": true,
-      "durationMs": 194
+      "durationMs": 293
     },
     {
       "name": "urgent response is deterministic and saved",
       "passed": true,
-      "durationMs": 142
+      "durationMs": 213
     },
     {
       "name": "harmful instructions and prompt injection receive safe responses",
       "passed": true,
-      "durationMs": 276
+      "durationMs": 399
     },
     {
       "name": "medication pair warning avoids treatment instructions",
       "passed": true,
-      "durationMs": 577
+      "durationMs": 365
     },
     {
       "name": "dashboard 7, 30, 90 days, accessible table and JSON export",
       "passed": true,
-      "durationMs": 888
+      "durationMs": 762
     },
     {
       "name": "mobile chat and history at 390px have no horizontal overflow",
       "passed": true,
-      "durationMs": 308
+      "durationMs": 241
     },
     {
       "name": "320px chat keeps suggestions and Send visible and restores drawer focus",
       "passed": true,
-      "durationMs": 331
+      "durationMs": 269
     },
     {
       "name": "320px calculators fit and avoid patient-specific risk cues",
       "passed": true,
-      "durationMs": 502
+      "durationMs": 570
     },
     {
       "name": "mobile delete dialog cancels and confirms the disposable test chat",
       "passed": true,
-      "durationMs": 376
+      "durationMs": 360
     },
     {
       "name": "encrypted personal key and memory preferences persist without exposing the key",
       "passed": true,
-      "durationMs": 1072
+      "durationMs": 924
     },
     {
       "name": "account privacy, signout, recovery forms, and narrow screens",
       "passed": true,
-      "durationMs": 982
+      "durationMs": 912
     },
     {
       "name": "registration confirms a password before sending account details",
       "passed": true,
-      "durationMs": 138
+      "durationMs": 116
     },
     {
       "name": "register, verify through the local inbox, and see a new account dashboard",
       "passed": true,
-      "durationMs": 1459
+      "durationMs": 2298
     },
     {
       "name": "browser has no uncaught application exceptions",
       "passed": true,
-      "durationMs": 11
+      "durationMs": 21
     }
   ],
   "uncaughtErrors": [],

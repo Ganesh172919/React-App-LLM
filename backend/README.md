@@ -50,7 +50,7 @@ The MedAssist AI backend is engineered as a high-throughput, security-hardened s
 |  ├── providerSelection.js: Resolves deployment defaults vs AES-256-GCM user-vault personal keys                     |
 |  ├── pubmedService.js: NCBI Entrez REST client (esearch, esummary, efetch) & fast-xml-parser flattener               |
 |  ├── citationService.js: Deterministic [N] numerical citation extraction & set partitioning auditor                  |
-|  ├── interactionService.js: Deterministic 21-pair FDA black-box drug interaction scanner                             |
+|  ├── interactionService.js: Deterministic 22-pair FDA black-box drug interaction scanner                             |
 |  ├── answerVerifier.js: Secondary LLM consensus reviewer (SUPPORTED vs UNSUPPORTED)                                 |
 |  ├── safetyService.js: Deterministic prompt & output screening for crisis, emergency, and harmful synthesis         |
 |  └── websocketService.js: 30s heartbeat watchdog ping-pong & 1MB backpressure drop protection                        |
@@ -104,7 +104,7 @@ mindmap
         Acute Emergency Interception
         Harmful Synthesis Rejection
         Prompt Injection Token Stripping
-      21 FDA Black-Box Drug Interaction Pairs
+      22 FDA Black-Box Drug Interaction Pairs
         Preserved in Emergency Redirects
     (05 Real-Time & Persistence)
       Two-Phase Ephemeral Generation
@@ -164,7 +164,7 @@ backend/
 │   ├── config.js                   # Startup environment variable validation & key checks
 │   ├── emailService.js             # Brevo transactional email dispatcher
 │   ├── historySearch.js            # Conversational turn relevance ranking via token overlap
-│   ├── interactionService.js       # Deterministic 21-pair FDA black-box drug interaction scanner
+│   ├── interactionService.js       # Deterministic 22-pair FDA black-box drug interaction scanner
 │   ├── modelProvider.js            # Multi-provider client (Gemini, Groq, Together, Local)
 │   ├── providerCredentials.js      # AES-256-GCM authenticated cipher vault (seal/open)
 │   ├── providerSelection.js        # Resolves operator deployment vs personal encrypted keys
@@ -174,12 +174,12 @@ backend/
 │   ├── validation.js               # Schema validators for UUIDs, email, allowed JSON keys
 │   └── websocketService.js         # WebSocket server on /ws with 30s heartbeat watchdog
 │
-└── test/                           # Automated Backend Test Suites (73 Passing Tests)
+└── test/                           # Automated Backend Test Suites (74 Passing Tests)
     ├── application.test.js         # Integration tests with in-memory MongoMemoryServer (24 tests)
     ├── chatTitle.test.js           # Conversation auto-titling and markdown stripping tests (1 test)
     ├── citationService.test.js     # Unit tests for citation parsing and coverage math (4 tests)
     ├── historySearch.test.js       # Auxiliary tests for conversational history selection (2 tests)
-    ├── interactionService.test.js  # Unit tests for 21 high-risk drug interaction pairs (22 tests)
+    ├── interactionService.test.js  # Unit tests for 22 high-risk drug interaction pairs (23 tests)
     ├── modelProvider.test.js       # Unit tests for multi-provider API resolution (4 tests)
     ├── providers.test.js           # Auxiliary tests for PubMed sorting, XML parsing, Gemini (6 tests)
     ├── pubmedService.test.js       # Unit tests for PubMed query string generation (3 tests)
@@ -426,7 +426,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 };
 ```
 
-### 4.7 Complete 21 FDA Black-Box Medication Interaction Inventory
+### 4.7 Complete 22 FDA Black-Box Medication Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Clinical Risk & Pharmacology |
 |:---|:---|:---|:---|:---:|:---|
@@ -451,6 +451,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 | **19** | Theophylline + Fluoroquinolone | Theophylline (Theo-24, Elixophyllin, Aminophylline) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication (FDA Warning): Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more. This precipitous accumulation drives serum theophylline into toxic ranges, causing refractory seizures, malignant cardiac arrhythmias, and sudden death. |
 | **20** | Colchicine + Strong CYP3A4 / P-gp Inhibitor | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | **CRITICAL** | FDA Black Box Warning / Major Contraindication: Dual potent inhibition of CYP3A4 and P-glycoprotein drastically reduces colchicine elimination, triggering life-threatening colchicine poisoning (severe rhabdomyolysis, bone marrow aplasia / pancytopenia, multi-organ failure, and death). |
 | **21** | Carbamazepine + Strong CYP3A4 Inhibitor | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole, Fluconazole | **CRITICAL** | Major contraindication (FDA Warning): Potent CYP3A4 inhibition abruptly blocks carbamazepine hepatic metabolism, leading to rapid drug accumulation and acute neurotoxicity within 24 to 48 hours (severe ataxia, nystagmus, diplopia, stupor, respiratory depression, and cardiac conduction disturbances). |
+| **22** | Linezolid + SSRIs / SNRIs | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Paroxetine, Venlafaxine, Duloxetine | **CRITICAL** | FDA Boxed Warning: Linezolid is a reversible, non-selective MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, autonomic collapse, delirium, coma). |
 
 ---
 
@@ -491,9 +492,9 @@ cd backend
 npm test
 ```
 
-### Complete Test Suite Breakdown (73 Tests across 9 Test Files in npm test):
+### Complete Test Suite Breakdown (74 Tests across 9 Test Files in npm test):
 1. `application.test.js` (24 Tests): Comprehensive HTTP and WebSocket integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, single-device `sessionVersion` invalidation, two-phase generation commitment (`/api/save`), cursor pagination, rate limiters, and WebSocket notifications.
-2. `interactionService.test.js` (22 Tests): Validates deterministic name matching across all 21 FDA black-box drug interaction rules (including Colchicine + Clarithromycin, Theophylline + Fluoroquinolones, and Carbamazepine + Strong CYP3A4 Inhibitors) and ensures benign/unrelated medications pass without false warnings.
+2. `interactionService.test.js` (23 Tests): Validates deterministic name matching across all 22 FDA black-box drug interaction rules (including Colchicine + Clarithromycin, Theophylline + Fluoroquinolones, Carbamazepine + Strong CYP3A4 Inhibitors, and Linezolid + SSRIs/SNRIs) and ensures benign/unrelated medications pass without false warnings.
 3. `safetyService.test.js` (7 Tests): Verifies 988 crisis deflection, acute emergency symptom interception, prompt injection containment, educational query handling, and output screening.
 4. `providers.test.js` (6 Tests): Unit tests for PubMed UID numerical sorting, MEDLINE XML abstract parsing, HTTP workflow, Gemini normalizations, and startup cookie validation.
 5. `citationService.test.js` (4 Tests): Validates numerical bracket parsing `[N]`, multi-citation ranges `[1-3]`, and valid vs invalid set partitioning.
@@ -537,7 +538,7 @@ The MedAssist AI backend is engineered as a decoupled, modular service runtime. 
     ┌─────────────────────────────────────────────────────────────────┐
     │ TIER 3: SERVICES & DETERMINISTIC GUARDS (services/*.js)         │
     │ ├── Deterministic Safety Screening (safetyService.js)           │
-    │ ├── 21 FDA High-Risk Drug Interaction Rules (interactionService)│
+    │ ├── 22 FDA High-Risk Drug Interaction Rules (interactionService)│
     │ ├── Multi-Provider AI Gateway (modelProvider.js)                │
     │ └── AES-256-GCM Authenticated Cryptographic Vault               │
     └─────────────────────────────────────────────────────────────────┘
