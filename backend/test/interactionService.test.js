@@ -163,6 +163,19 @@ test("detects theophylline and ciprofloxacin CYP1A2 toxicity contraindication", 
   assert.equal(brandResult[0].pair, "Theophylline + Fluoroquinolone (CYP1A2 Inhibition)");
 });
 
+test("detects colchicine and clarithromycin / P-gp inhibition toxicity contraindication", () => {
+  const result = detectDrugInteractions("Can I take colchicine for a gout flare while on clarithromycin for pneumonia?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Colchicine + Strong CYP3A4 / P-gp Inhibitor");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /P-glycoprotein/i);
+  assert.match(result[0].description, /rhabdomyolysis/i);
+
+  const brandResult = detectDrugInteractions("Patient taking Colcrys was prescribed Biaxin.");
+  assert.equal(brandResult.length, 1);
+  assert.equal(brandResult[0].pair, "Colchicine + Strong CYP3A4 / P-gp Inhibitor");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);

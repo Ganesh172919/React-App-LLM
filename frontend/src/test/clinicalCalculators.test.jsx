@@ -350,6 +350,46 @@ it("calculates Child-Pugh cirrhosis mortality score across risk classes and vali
   expect(promptCall).toContain("Class C");
 });
 
+it("calculates MELD-Na liver disease mortality score and supports dialysis status", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+
+  fireEvent.click(screen.getByRole("tab", { name: "MELD-Na (Liver Disease)" }));
+  expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
+  expect(screen.getByText(/OPTN 2016/)).toBeTruthy();
+
+  // Default values: Bili 1.5, Cr 1.2, INR 1.3, Na 135 -> 15 points, Intermediate risk
+  expect(screen.getByText("Score: 15 points")).toBeTruthy();
+  expect(screen.getByText("Intermediate risk (~6.0% 90-day mortality)")).toBeTruthy();
+
+  // Severe decompensation: Bili 4.0, Cr 3.5, INR 2.8, Na 128 -> 36 points, Very high risk
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "4.0" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Creatinine (mg/dL)" }), { target: { value: "3.5" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }), { target: { value: "2.8" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "128" } });
+  expect(screen.getByText("Score: 36 points")).toBeTruthy();
+  expect(screen.getByText("Very high risk (~52.6% 90-day mortality)")).toBeTruthy();
+
+  // Test dialysis: Dialysis checkbox sets Cr to 4.0 per UNOS
+  const dialysisCheckbox = screen.getByRole("checkbox", { name: /Dialysis history/i });
+  fireEvent.click(dialysisCheckbox);
+  expect(dialysisCheckbox.checked).toBe(true);
+  expect(screen.getByRole("spinbutton", { name: "Serum Creatinine (mg/dL)" }).disabled).toBe(true);
+  expect(screen.getByText("Score: 37 points")).toBeTruthy();
+
+  // Input out-of-bounds validation
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "80" } });
+  expect(screen.queryByText("Score: 37 points")).toBeNull();
+  expect(screen.getByText(/Please enter valid Bilirubin/)).toBeTruthy();
+
+  // Restore and test prompt insertion
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "128" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this MELD-Na score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const meldPrompt = onInsertPrompt.mock.calls[0][0];
+  expect(meldPrompt).toContain("MELD-Na score of 37 points");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -360,11 +400,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (Child-Pugh) to first (BMI) and back
-  const childpughTab = screen.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" });
-  childpughTab.focus();
-  fireEvent.keyDown(childpughTab, { key: "ArrowRight" });
+  // Wrapping from last tab (MELD-Na) to first (BMI) and back
+  const meldTab = screen.getByRole("tab", { name: "MELD-Na (Liver Disease)" });
+  meldTab.focus();
+  fireEvent.keyDown(meldTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(childpughTab.getAttribute("aria-selected")).toBe("true");
+  expect(meldTab.getAttribute("aria-selected")).toBe("true");
 });

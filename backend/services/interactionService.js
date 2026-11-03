@@ -380,6 +380,22 @@ const HIGH_RISK_INTERACTION_RULES = [
     ],
     description: "Major contraindication (FDA Warning): Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more. This precipitous accumulation drives serum theophylline into toxic ranges, causing refractory seizures, malignant cardiac arrhythmias, and sudden death.",
   },
+  {
+    pair: "Colchicine + Strong CYP3A4 / P-gp Inhibitor",
+    drugA: "Colchicine (Colcrys, Mitigare, Gloperba)",
+    drugB: "Strong CYP3A4 / P-gp Inhibitors (e.g., Clarithromycin, Erythromycin, Ketoconazole, Itraconazole)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bcolchicine\b/i, /\bcolcrys\b/i, /\bmitigare\b/i, /\bgloperba\b/i,
+    ],
+    drugsB: [
+      /\bclarithromycin\b/i, /\bbiaxin\b/i,
+      /\berythromycin\b/i, /\be\.e\.s\b/i, /\berythrocin\b/i,
+      /\bketoconazole\b/i, /\bnizoral\b/i,
+      /\bitraconazole\b/i, /\bsporanox\b/i,
+    ],
+    description: "FDA Black Box Warning / Major Contraindication: Dual potent inhibition of CYP3A4 and P-glycoprotein drastically reduces colchicine elimination. This leads to profound life-threatening colchicine poisoning (severe rhabdomyolysis, neuromuscular toxicity, bone marrow aplasia / pancytopenia, multi-organ failure, and death), especially in patients with any degree of renal or hepatic impairment.",
+  },
 ];
 
 /**

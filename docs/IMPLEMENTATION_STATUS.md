@@ -27,7 +27,7 @@ This document details the engineering implementation status and test verificatio
     │  - Framework: Node.js   │   │  - Framework: Vitest    │   │  - Framework: unittest  │
     │    test runner          │   │  - Environment: jsdom   │   │  - Zero GPU / stdlib    │
     │  - MongoMemoryServer    │   │  - React 19 Hooks       │   │  - Dataset & LoRA tests │
-    │  - 71 Unit/Integ Tests  │   │  - 55 Component Tests   │   │  - 19 Unit Tests        │
+    │  - 72 Unit/Integ Tests  │   │  - 56 Component Tests   │   │  - 19 Unit Tests        │
     └─────────────────────────┘   └─────────────────────────┘   └─────────────────────────┘
                  │                             │                             │
                  └─────────────────────────────┼─────────────────────────────┘
@@ -45,8 +45,8 @@ This document details the engineering implementation status and test verificatio
     │                         HEADLESS BROWSER END-TO-END QA                              │
     │  - Engine: Playwright (Chromium Headless)                                           │
     │  - Smoke Suite: 21 Passed (Registration, Login, Chat, Save, History, Export)        │
-    │  - Dark Mode & Tools Suite: 35 Passed (Theme, 18 Calculators, Tabs, Interactions)   │
-    │  - Total Browser Workflow Checks: 56 Passed                                         │
+    │  - Dark Mode & Tools Suite: 36 Passed (Theme, 19 Calculators, Tabs, Interactions)   │
+    │  - Total Browser Workflow Checks: 57 Passed                                         │
     └─────────────────────────────────────────────────────────────────────────────────────┘
                                                │
                                                ▼
@@ -76,14 +76,14 @@ mindmap
       AES-256-GCM Key Vault Encryption
       NCBI Entrez Fast-XML-Parser Extraction
       Deterministic Citation Bracket Auditor
-      19 High-Risk Drug Interaction Rules
+      20 High-Risk Drug Interaction Rules
     (02 Frontend Verification)
-      55 Passing Vitest Tests
+      56 Passing Vitest Tests
       Web Locks Single-Flight Refresh
       tabStorage Fault-Tolerant Cache
       IME Composition Guard
       Medical Detector Lexicon Matcher
-      18 Clinical Calculators Form Math
+      19 Clinical Calculators Form Math
       ARIA Tabpanel Keyboard Cycling
     (03 Python Data & ML)
       19 Passing Unittest Tests
@@ -93,9 +93,9 @@ mindmap
       1,437 Ambiguous Groups Quarantined
       GPT-2 Parameter Formula Derivation
     (04 Browser End-to-End)
-      56 Headless Chromium Workflows
+      57 Headless Chromium Workflows
       21 Core Smoke Flows
-      35 Dark Mode & Tools Flows
+      36 Dark Mode & Tools Flows
       320px & 390px Mobile Viewport Validation
       Dark and light layouts reviewed; no full WCAG audit
       Zero Console Errors in Production Bundle
@@ -105,13 +105,13 @@ mindmap
 
 ## 3. Comprehensive Verification Summary Matrix
 
-The local verification runs reported 208 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
+The local verification runs reported 210 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
 
 | Test Suite / Quality Layer | Target Subsystem / Files | Assertion Count | Execution Environment | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Backend Unit & Integration** | `backend/test/*.test.js` | **71** | Node 24 + In-Memory MongoDB | **PASSED** |
+| **Backend Unit & Integration** | `backend/test/*.test.js` | **72** | Node 24 + In-Memory MongoDB | **PASSED** |
 | • `application.test.js` | Express middleware, CORS, rate limits, CSRF origin gate, session versioning | 24 | In-Memory MongoDB | **PASSED** |
-| • `interactionService.test.js` | 19 medication-pair name matching rules & safe non-interacting combos | 20 | Standalone Node.js | **PASSED** |
+| • `interactionService.test.js` | 20 medication-pair name matching rules & safe non-interacting combos | 21 | Standalone Node.js | **PASSED** |
 | • `safetyService.test.js` | Crisis, emergency, prompt injection, unsafe output, prompt reduction | 7 | Standalone Node.js | **PASSED** |
 | • `providers.test.js` | PubMed numeric keys, MEDLINE XML abstract parsing, Gemini normalization | 6 | Standalone Node.js | **PASSED** |
 | • `citationService.test.js`| Bracket extraction, valid/invalid sets, coverage math | 4 | Standalone Node.js | **PASSED** |
@@ -119,11 +119,11 @@ The local verification runs reported 208 passing checks or workflows across Node
 | • `pubmedService.test.js` | E-Utilities query builder, XML parsing, retry backoff | 3 | Axios Mock Adapter | **PASSED** |
 | • `historySearch.test.js` | Conversational context retrieval, relevance ranking by token overlap | 2 | Standalone Node.js | **PASSED** |
 | • `chatTitle.test.js` | Title generation, markdown stripping, length bounding | 1 | Standalone Node.js | **PASSED** |
-| **Frontend Unit & Component** | `frontend/src/test/*.test.js*` | **55** | Vitest + jsdom | **PASSED** |
+| **Frontend Unit & Component** | `frontend/src/test/*.test.js*` | **56** | Vitest + jsdom | **PASSED** |
 | • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 5 | jsdom + Mock Fetch | **PASSED** |
 | • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 2 | jsdom Storage Mock | **PASSED** |
 | • `medicalDetector.test.js`| Lexicon match, prefixes, suggestion chip support | 5 | jsdom | **PASSED** |
-| • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh) | 16 | jsdom React Render | **PASSED** |
+| • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na) | 17 | jsdom React Render | **PASSED** |
 | • `conversationImport.test.js`| Sanitizes imported JSON, strips forged verification | 2 | jsdom Vitest | **PASSED** |
 | • `ui.test.jsx` | Auth, chat composer, copy button, ARIA tab cycling | 25 | jsdom React Render | **PASSED** |
 | **Python Dataset Suite** | `Model and Dataset/test_*.py` | **13** | Python 3.10+ `unittest` | **PASSED** |
@@ -174,7 +174,7 @@ The local verification runs reported 208 passing checks or workflows across Node
                                                                Partitions into valid vs invalid sets. Drops ungrounded
                                                                text if invalid numbers exist or coverage is zero.
 
-    Drug Interaction Checker   backend/services/interactionS.. Deterministic name matching for 19 FDA black-box warning
+    Drug Interaction Checker   backend/services/interactionS.. Deterministic name matching for 20 FDA black-box warning
                                                                medication pair cautions. Preserved during emergency safety redirects.
 
     Web Locks Refresh          frontend/src/lib/api.js         Uses navigator.locks.request("medassist-session-refresh")
@@ -186,8 +186,8 @@ The local verification runs reported 208 passing checks or workflows across Node
     Import Preview Sandbox     frontend/src/lib/conversationI.. Strips forged verification/citations from external JSON.
                                                                Local preview only; sending disabled to prevent injection.
 
-    Clinical Calculators       frontend/src/components/tools/  18 clinical calculators with strict input bounding, Payne
-                               ClinicalCalculatorsModal.jsx    calcium, Wells PE, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, ARIA tabs.
+    Clinical Calculators       frontend/src/components/tools/  19 clinical calculators with strict input bounding, Payne
+                               ClinicalCalculatorsModal.jsx    calcium, Wells PE, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na, ARIA tabs.
 
     Theme & Accessibility      frontend/src/index.css          Dark/light layouts with keyboard checks. Automatic system
                                frontend/src/components/*       prefers-color-scheme detection with manual override.

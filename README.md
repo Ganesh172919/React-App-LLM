@@ -12,8 +12,8 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 ### Core System Capabilities
 1. **Biomedical Evidence Grounding**: Live 3-stage NCBI Entrez E-Utilities harvesting (`esearch`, `esummary`, `efetch`) extracting structured MEDLINE XML abstracts.
 2. **Deterministic Citation Auditing**: Set-partitioning mathematical verifier analyzing `[N]` bracketed assertions against retrieved literature bounds.
-3. **Medication Interaction Screener**: Heuristic name matching for 19 selected high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
-4. **Educational Clinical Calculators**: 18 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
+3. **Medication Interaction Screener**: Heuristic name matching for 20 selected high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
+4. **Educational Clinical Calculators**: 19 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
 5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer followed by an automatic `/api/save` request after an answer is generated.
 6. **Multi-Tab Web Locks Synchronization**: Single-flight token renewal across concurrent browser tabs (`navigator.locks.request`).
 7. **Offline Machine Learning & LoRA Suite**: 1,437 ambiguous question groups quarantined; deterministic SHA-256 modulo 100 hash splits; closed-form LoRA parameter calculations.
@@ -22,7 +22,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 > **Clinical Disclaimer**: MedAssist AI provides health and medical information strictly for educational and research purposes. It does not provide clinical diagnoses, medical advice, or treatment plans. Acute emergency symptoms require immediate contact with local emergency medical services.
 
 > [!TIP]
-> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult the dedicated [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators (18+ tools), medication interaction rules (19+ rules), backend REST models, and custom LoRA datasets.
+> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult the dedicated [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators (19+ tools), medication interaction rules (20+ rules), backend REST models, and custom LoRA datasets.
 
 **Conversation JSON preview:** The chat sidebar can open a previously exported JSON conversation locally. The file is limited to 512 KB and 100 complete question-and-answer pairs. Imported answer text is marked unverified; citation, verification, provider, and identity metadata are discarded. The preview is not saved to the account or sent as model context. Its Markdown and JSON exports are labeled unverified. Conversation text in Markdown exports is fenced as literal text so imported links and images cannot load when the report is viewed. Start a new conversation to ask another question.
 
@@ -40,7 +40,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      ├── Web Locks API Single-Flight Token Refresh (frontend/src/lib/api.js)
      ├── Resilient Draft & Pending Answer Cache (frontend/src/lib/tabStorage.js)
      ├── IME Composition Safety Guard for East Asian Language Typing
-     └── 18 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
+     └── 19 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
                   │
                   │ HTTP (Port 8080) / Secure WebSocket (/ws)
                   │ (External TLS 1.3 Ingress Required in Production)
@@ -66,7 +66,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 19 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
+     │  - 20 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -111,7 +111,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      19 Heuristic Medication Interaction Patterns
+      20 Heuristic Medication Interaction Patterns
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -160,7 +160,7 @@ mindmap
 
 ## 4. Evidence-Based Clinical Calculators Suite
 
-The platform includes a comprehensive 18-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
+The platform includes a comprehensive 19-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
 
 | Tool Name | Clinical Formula / Scoring Model | Input Parameters | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -182,12 +182,13 @@ The platform includes a comprehensive 18-calculator clinical suite implemented i
 | **Body Surface Area (BSA - Mosteller)** | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height (cm/in), Weight (kg/lbs) | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Adult reference norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
 | **Child-Pugh Cirrhosis Score** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant functional compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated cirrhosis (~45% 1-yr survival). |
+| **MELD-Na Liver Disease Prognosis** | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bilirubin, Creatinine, INR, Sodium, Dialysis | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
 
 ---
 
 ## 5. Pharmacological Drug Interaction Screening & Preserved Context
 
-Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 19 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
+Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 20 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
 |:---|:---|:---|:---:|:---|
@@ -210,6 +211,7 @@ Implemented in `backend/services/interactionService.js`, this subsystem scans us
 | **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent 5-HT1 receptor agonist triptans with serotonergic antidepressants elevates central serotonin, precipitating Serotonin Syndrome. |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone | `CRITICAL` | Trimethoprim blocks distal nephron ENaC channels identically to amiloride. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | **Theophylline + Fluoroquinolone** | Theophylline, Theo-24, Aminophylline | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more, causing toxic accumulation, refractory seizures, malignant arrhythmias, and death. |
+| **Colchicine + Strong CYP3A4 / P-gp Inhibitor** | Colchicine (Colcrys, Mitigare) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | `CRITICAL` | FDA Black Box Warning: Potent dual CYP3A4 & P-gp inhibition blocks colchicine elimination, triggering severe fatal multi-organ toxicity, rhabdomyolysis, and pancytopenia. |
 
 ### Preserved Context Invariant
 ```

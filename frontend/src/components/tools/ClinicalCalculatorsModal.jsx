@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -161,6 +161,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [cpInr, setCpInr] = useState("1.1");
   const [cpAscites, setCpAscites] = useState("none"); // none | mild | moderate
   const [cpEncephalopathy, setCpEncephalopathy] = useState("none"); // none | grade1_2 | grade3_4
+
+  // MELD-Na Score State
+  const [meldBilirubin, setMeldBilirubin] = useState("1.5"); // mg/dL
+  const [meldCreatinine, setMeldCreatinine] = useState("1.2"); // mg/dL
+  const [meldInr, setMeldInr] = useState("1.3");
+  const [meldSodium, setMeldSodium] = useState("135"); // mEq/L
+  const [meldDialysis, setMeldDialysis] = useState(false); // Dialysis >= 2 times in prior 7 days
 
   const titleId = useId();
 
@@ -496,6 +503,49 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     }
   }
 
+  // 19. MELD-Na Score for End-Stage Liver Disease (OPTN/UNOS)
+  let meldScore = null;
+  let meldMortality = "";
+  const meldBiliNum = parseFloat(meldBilirubin);
+  const meldCrNum = parseFloat(meldCreatinine);
+  const meldInrNum = parseFloat(meldInr);
+  const meldNaNum = parseFloat(meldSodium);
+
+  if (
+    !isNaN(meldBiliNum) && meldBiliNum >= 0.1 && meldBiliNum <= 50.0 &&
+    (meldDialysis || (!isNaN(meldCrNum) && meldCrNum >= 0.1 && meldCrNum <= 15.0)) &&
+    !isNaN(meldInrNum) && meldInrNum >= 0.5 && meldInrNum <= 10.0 &&
+    !isNaN(meldNaNum) && meldNaNum >= 100 && meldNaNum <= 160
+  ) {
+    const crCalc = meldDialysis ? 4.0 : Math.max(1.0, Math.min(4.0, meldCrNum));
+    const biliCalc = Math.max(1.0, meldBiliNum);
+    const inrCalc = Math.max(1.0, meldInrNum);
+
+    const meldInitial = 9.57 * Math.log(crCalc) + 3.78 * Math.log(biliCalc) + 11.2 * Math.log(inrCalc) + 6.43;
+    const meldInitialRound = Math.round(meldInitial);
+
+    let calculatedMeld = meldInitialRound;
+    if (meldInitialRound > 11) {
+      const naCalc = Math.max(125, Math.min(137, meldNaNum));
+      const meldNa = meldInitialRound + 1.32 * (137 - naCalc) - (0.033 * meldInitialRound * (137 - naCalc));
+      calculatedMeld = Math.round(meldNa);
+    }
+
+    meldScore = Math.max(6, Math.min(40, calculatedMeld));
+
+    if (meldScore <= 9) {
+      meldMortality = "Low risk (~1.9% 90-day mortality)";
+    } else if (meldScore <= 19) {
+      meldMortality = "Intermediate risk (~6.0% 90-day mortality)";
+    } else if (meldScore <= 29) {
+      meldMortality = "High risk (~19.6% 90-day mortality)";
+    } else if (meldScore <= 39) {
+      meldMortality = "Very high risk (~52.6% 90-day mortality)";
+    } else {
+      meldMortality = "Critical risk (~71.3% 90-day mortality)";
+    }
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -727,6 +777,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("childpugh")}
           >
             Child-Pugh (Cirrhosis)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-meld"
+            aria-selected={activeTab === "meld"}
+            aria-controls="tabpanel-meld"
+            className={`calc-tab ${activeTab === "meld" ? "active" : ""}`}
+            onClick={() => setActiveTab("meld")}
+          >
+            MELD-Na (Liver Disease)
           </button>
         </div>
 
@@ -2329,6 +2390,120 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
               ) : (
                 <p className="muted small-text" style={{ marginTop: "12px" }}>
                   Please enter valid Bilirubin (0.1–50 mg/dL), Albumin (0.5–6.0 g/dL), and INR (0.5–10.0).
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* TAB 19: MELD-Na (Model for End-Stage Liver Disease) */}
+          {activeTab === "meld" && (
+            <div id="tabpanel-meld" role="tabpanel" aria-labelledby="tab-meld" className="calc-pane">
+              <p className="small-text muted">
+                The Model for End-Stage Liver Disease with Sodium (MELD-Na / OPTN 2016) is the standard objective prognostic score used for liver transplant allocation and estimating 90-day pre-transplant mortality in adult patients with end-stage chronic liver disease.
+              </p>
+              <div className="settings-grid">
+                <label htmlFor="meld-bilirubin">
+                  Total Bilirubin (mg/dL)
+                  <input
+                    id="meld-bilirubin"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="50"
+                    value={meldBilirubin}
+                    onChange={(e) => setMeldBilirubin(e.target.value)}
+                  />
+                </label>
+                <label htmlFor="meld-creatinine">
+                  Serum Creatinine (mg/dL)
+                  <input
+                    id="meld-creatinine"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="15.0"
+                    value={meldCreatinine}
+                    disabled={meldDialysis}
+                    onChange={(e) => setMeldCreatinine(e.target.value)}
+                  />
+                </label>
+                <label htmlFor="meld-inr">
+                  INR (Prothrombin Time / INR)
+                  <input
+                    id="meld-inr"
+                    type="number"
+                    step="0.1"
+                    min="0.5"
+                    max="10.0"
+                    value={meldInr}
+                    onChange={(e) => setMeldInr(e.target.value)}
+                  />
+                </label>
+                <label htmlFor="meld-sodium">
+                  Serum Sodium (mEq/L)
+                  <input
+                    id="meld-sodium"
+                    type="number"
+                    step="1"
+                    min="100"
+                    max="160"
+                    value={meldSodium}
+                    onChange={(e) => setMeldSodium(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div style={{ marginTop: "12px", marginBottom: "8px" }}>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={meldDialysis}
+                    onChange={(e) => setMeldDialysis(e.target.checked)}
+                  />
+                  <span>Dialysis history: 2 or more dialysis treatments in the past 7 days (sets creatinine to 4.0 mg/dL per UNOS policy)</span>
+                </label>
+              </div>
+
+              {meldScore !== null ? (
+                <div className="calc-result">
+                  <div className="calc-result-metric">
+                    <strong>Score: {meldScore} points</strong>
+                    <span className="badge">{meldMortality}</span>
+                  </div>
+                  <p className="small-text">
+                    Calculated using standard UNOS/OPTN MELD-Na equation (scores 6 to 40). Lower serum sodium reflects refractory ascites and hypervolemic hyponatremia, elevating estimated mortality risk when initial MELD &gt; 11.
+                  </p>
+                  <p className="small-text muted">
+                    Educational prognostic estimate only. Organ allocation priority and MELD exception points (e.g. for hepatocellular carcinoma, hepatopulmonary syndrome, or refractory encephalopathy) are governed strictly by the OPTN/UNOS review board and require formal clinical listing.
+                  </p>
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="button small"
+                      onClick={() =>
+                        insertAndClose(
+                          `For educational purposes, explain how a MELD-Na score of ${meldScore} points (${meldMortality}) is interpreted in end-stage liver disease prognosis, how UNOS/OPTN utilizes MELD-Na for liver transplant waitlist prioritization, and why serum sodium was incorporated into the classic MELD score.`
+                        )
+                      }
+                    >
+                      Ask MedAssist about this MELD-Na score
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary small"
+                      onClick={() =>
+                        handleCopy(
+                          `MELD-Na Liver Disease Prognosis Score: ${meldScore} points (${meldMortality}; UNOS/OPTN educational estimate; not clinical transplant listing guidance)`
+                        )
+                      }
+                    >
+                      {copied ? "Copied" : "Copy result"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="muted small-text" style={{ marginTop: "12px" }}>
+                  Please enter valid Bilirubin (0.1–50 mg/dL), Creatinine (0.1–15 mg/dL), INR (0.5–10.0), and Sodium (100–160 mEq/L).
                 </p>
               )}
             </div>

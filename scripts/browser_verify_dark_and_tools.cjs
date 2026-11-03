@@ -191,17 +191,38 @@ async function main() {
   await page.screenshot({ path: path.join(output, "childpugh-dark-modal.png") });
   console.log("PASS Child-Pugh cirrhosis mortality calculator verified and captured in dark styles");
 
-  // Test 3n: Arrow Key Navigation across tabs wrapping from last tab (Child-Pugh) to first tab (BMI)
-  const childpughTab = page.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" });
-  await childpughTab.focus();
+  // Test 3n: MELD-Na (Liver Disease) Tab in Clinical Calculators
+  await page.getByRole("tab", { name: "MELD-Na (Liver Disease)" }).click();
+  await page.getByText(/OPTN 2016/i).waitFor();
+  await page.getByText("Score: 15 points", { exact: true }).waitFor();
+  await page.getByText("Intermediate risk (~6.0% 90-day mortality)", { exact: true }).waitFor();
+
+  // Severe values -> Bilirubin 4.0, Creatinine 3.5, INR 2.8, Sodium 128
+  await page.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }).fill("4.0");
+  await page.getByRole("spinbutton", { name: "Serum Creatinine (mg/dL)" }).fill("3.5");
+  await page.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }).fill("2.8");
+  await page.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }).fill("128");
+
+  await page.getByText("Score: 36 points", { exact: true }).waitFor();
+  await page.getByText("Very high risk (~52.6% 90-day mortality)", { exact: true }).waitFor();
+
+  // Check dialysis checkbox
+  await page.getByLabel(/Dialysis history/i).check();
+  await page.getByText("Score: 37 points", { exact: true }).waitFor();
+  await page.screenshot({ path: path.join(output, "meld-dark-modal.png") });
+  console.log("PASS MELD-Na liver disease prognostic calculator verified and captured in dark styles");
+
+  // Test 3o: Arrow Key Navigation across tabs wrapping from last tab (MELD-Na) to first tab (BMI)
+  const meldTab = page.getByRole("tab", { name: "MELD-Na (Liver Disease)" });
+  await meldTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (Child-Pugh) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (MELD-Na) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const childpughSelected = await childpughTab.getAttribute("aria-selected");
-  assert.equal(childpughSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (Child-Pugh)");
+  const meldSelected = await meldTab.getAttribute("aria-selected");
+  assert.equal(meldSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (MELD-Na)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -324,6 +345,16 @@ async function main() {
   await page.getByText(/seizures/i).waitFor();
   await page.screenshot({ path: path.join(output, "theophylline-cipro-dark.png") });
   console.log("PASS theophylline and ciprofloxacin CYP1A2 toxicity alert verified in dark mode");
+
+  // Test 5i: Colchicine + Clarithromycin P-gp/CYP3A4 toxicity contraindication
+  await page.getByLabel("Your question", { exact: true }).fill("Can I take colchicine for a gout flare while taking Biaxin?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Colchicine + Strong CYP3A4 / P-gp Inhibitor").waitFor();
+  await page.getByText(/P-glycoprotein/i).waitFor();
+  await page.getByText(/bone marrow aplasia/i).waitFor();
+  await page.screenshot({ path: path.join(output, "colchicine-clarithromycin-dark.png") });
+  console.log("PASS colchicine and clarithromycin (Biaxin) contraindication alert verified in dark mode");
 
   // Test 6: Dashboard in Dark Mode
   await page.getByRole("link", { name: "Dashboard", exact: true }).click();

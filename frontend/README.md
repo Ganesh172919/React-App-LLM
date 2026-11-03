@@ -41,7 +41,7 @@ The MedAssist AI client is an enterprise-grade, accessibility-audited single-pag
     │  - <AuthPage />         │                   │  - <Sidebar />          │                   │  - <AccountPage />      │
     │    (Login, Register,    │                   │    (History CRUD, filter│                   │    (Profile, data wipe) │
     │     Password Recovery)  │                   │  - <ClinicalCalculators>│                   │  - <AISettings />       │
-    │  - <VerifyEmail />      │                   │    (18 validated tools) │                   │    (Provider & Vault)   │
+    │  - <VerifyEmail />      │                   │    (19 validated tools) │                   │    (Provider & Vault)   │
     └─────────────────────────┘                   └─────────────────────────┘                   └─────────────────────────┘
                  │                                             │                                             │
                  └─────────────────────────────────────────────┼─────────────────────────────────────────────┘
@@ -92,7 +92,7 @@ mindmap
         History Loading State Lock
         Auto-Expanding Textarea
     (04 Clinical Calculators Modal)
-      18 Clinical Tools
+      19 Clinical Tools
         BMI Metric and Imperial
         eGFR CKD-EPI 2021 Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -111,6 +111,7 @@ mindmap
         Mosteller Body Surface Area BSA
         APRI Liver Fibrosis and Cirrhosis
         Child-Pugh Cirrhosis Mortality Score
+        MELD-Na Liver Disease Prognosis Score
       WAI-ARIA Accessibility
         role="tablist" & role="tabpanel"
         Keyboard Arrow-Key Cycling
@@ -163,7 +164,7 @@ frontend/
     │   │   └── ChatWorkspace.jsx        # Message list, composer, IME guard, citation chips
     │   │
     │   ├── tools/                       # Evidence-Based Clinical Utilities
-    │   │   └── ClinicalCalculatorsModal.jsx # 18 evidence-based calculators with strict input bounds & ARIA tabs
+    │   │   └── ClinicalCalculatorsModal.jsx # 19 evidence-based calculators with strict input bounds & ARIA tabs
     │   │
     │   ├── dashboard/                   # Telemetry & Research Analytics
     │   │   └── AnalyticsDashboard.jsx   # 7/30/90-day SVG trends, lifetime summary metrics
@@ -180,9 +181,9 @@ frontend/
     ├── utils/
     │   └── medicalDetector.js           # Client-side heuristic medical keyword classifier
     │
-    └── test/                            # Vitest Component & Unit Tests (55 Passing across 6 suites)
+    └── test/                            # Vitest Component & Unit Tests (56 Passing across 6 suites)
         ├── api.test.js                  # Web Locks refresh and fetch interceptor tests
-        ├── clinicalCalculators.test.jsx # 18 calculator math & accessibility tests
+        ├── clinicalCalculators.test.jsx # 19 calculator math & accessibility tests
         ├── conversationImport.test.js   # JSON import bounding and anti-spoofing tests
         ├── medicalDetector.test.js      # Medical entity & suggestion chip classification
         ├── tabStorage.test.js           # sessionStorage fallback & TTL cache tests
@@ -408,7 +409,7 @@ export function parseConversationImport(jsonText) {
 
 ## 5. Educational Clinical Calculators Implementation
 
-The `ClinicalCalculatorsModal.jsx` component implements 18 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
+The `ClinicalCalculatorsModal.jsx` component implements 19 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -475,6 +476,9 @@ The `ClinicalCalculatorsModal.jsx` component implements 18 standardized clinical
     Child-Pugh Score (Liver)   Score = Bilirubin (1-3) + Albumin (1-3) + INR (1-3)       Score: 5-15 points
                                + Ascites (1-3) + Encephalopathy (1-3)                   Class A: 5-6 (Compensated)
                                Class B: 7-9 (Moderate); Class C: 10-15 (Decompensated)  Mortality: 10% / 30% / 70-80%
+
+    MELD-Na Liver Prognosis    MELD(i) = 9.57*ln(Cr) + 3.78*ln(Bili) + 11.2*ln(INR)+6.43 Score: 6-40 points
+                               If MELD(i)>11: MELD-Na = MELD + 1.32(137-Na)-0.033*MELD*(137-Na) 90d Mortality: 1.9% to 71.3%
 ========================================================================================================================
 ```
 
@@ -494,8 +498,8 @@ if (gcsScore <= 8) {
   gcsStratification = "Moderate brain injury (9–12)";
 }
 
-// Arrow key navigation across all 18 tabs
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
+// Arrow key navigation across all 19 tabs
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld"];
 ```
 
 ---

@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive Overview & Clinical Tools Topology
 
-The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 18 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
+The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 19 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
 
 > [!CAUTION]
 > **Educational & Learning Notice**: These tools are educational demonstrations. Numeric scores do not establish clinical diagnoses, treatment plans, or formal prognosis. Clinical decisions must always be guided by qualified healthcare providers and institutional protocols.
@@ -323,7 +323,7 @@ function calculateMeldScore(creatinine, bilirubin, inr, sodium) {
 
 ## 5. Automated Verification Commands
 
-All 18 clinical calculators are verified by 16 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
+All 19 clinical calculators are verified by 17 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
 
 ```powershell
 # Run the clinical calculators test suite
