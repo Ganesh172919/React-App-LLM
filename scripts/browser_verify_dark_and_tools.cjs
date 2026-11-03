@@ -212,17 +212,37 @@ async function main() {
   await page.screenshot({ path: path.join(output, "meld-dark-modal.png") });
   console.log("PASS MELD-Na liver disease prognostic calculator verified and captured in dark styles");
 
-  // Test 3o: Arrow Key Navigation across tabs wrapping from last tab (MELD-Na) to first tab (BMI)
-  const meldTab = page.getByRole("tab", { name: "MELD-Na (Liver Disease)" });
-  await meldTab.focus();
+  // Test 3o: Centor (Strep Throat) Tab in Clinical Calculators
+  await page.getByRole("tab", { name: "Centor (Strep Throat)" }).click();
+  await page.getByText(/The Modified Centor Score/i).waitFor();
+  await page.getByText("Score: 0 points", { exact: true }).waitFor();
+  await page.getByText(/Low risk \(1–10% streptococcal probability/i).waitFor();
+
+  // Check symptoms: tonsils (+1), nodes (+1), fever (+1), no cough (+1)
+  await page.getByLabel(/Tonsillar exudate or swelling/i).check();
+  await page.getByLabel(/Tender or swollen anterior cervical lymph nodes/i).check();
+  await page.getByLabel(/History of fever/i).check();
+  await page.getByLabel(/Absence of cough/i).check();
+  await page.getByText("Score: 4 points", { exact: true }).waitFor();
+  await page.getByText(/High risk \(51–53% probability/i).waitFor();
+
+  // Change age group to 3 to 14 years old (+1) -> Score: 5 points
+  await page.getByLabel(/Age group \(McIsaac criteria\)/i).selectOption("3to14");
+  await page.getByText("Score: 5 points", { exact: true }).waitFor();
+  await page.screenshot({ path: path.join(output, "centor-dark-modal.png") });
+  console.log("PASS Centor (McIsaac) pharyngitis calculator verified and captured in dark styles");
+
+  // Test 3p: Arrow Key Navigation across tabs wrapping from last tab (Centor) to first tab (BMI)
+  const centorTab = page.getByRole("tab", { name: "Centor (Strep Throat)" });
+  await centorTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (MELD-Na) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (Centor) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const meldSelected = await meldTab.getAttribute("aria-selected");
-  assert.equal(meldSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (MELD-Na)");
+  const centorSelected = await centorTab.getAttribute("aria-selected");
+  assert.equal(centorSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (Centor)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
@@ -355,6 +375,16 @@ async function main() {
   await page.getByText(/bone marrow aplasia/i).waitFor();
   await page.screenshot({ path: path.join(output, "colchicine-clarithromycin-dark.png") });
   console.log("PASS colchicine and clarithromycin (Biaxin) contraindication alert verified in dark mode");
+
+  // Test 5j: Carbamazepine + Strong CYP3A4 Inhibitor (Erythromycin) neurotoxicity contraindication
+  await page.getByLabel("Your question", { exact: true }).fill("Can an epileptic patient taking Tegretol take erythromycin for a respiratory infection?");
+  await page.getByRole("button", { name: "Send question" }).click();
+  await page.getByText("Conversation saved", { exact: true }).waitFor();
+  await page.getByText("Carbamazepine + Strong CYP3A4 Inhibitor").waitFor();
+  await page.getByText(/CYP3A4/i).last().waitFor();
+  await page.getByText(/ataxia/i).last().waitFor();
+  await page.screenshot({ path: path.join(output, "carbamazepine-erythromycin-dark.png") });
+  console.log("PASS carbamazepine (Tegretol) and erythromycin CYP3A4 neurotoxicity alert verified in dark mode");
 
   // Test 6: Dashboard in Dark Mode
   await page.getByRole("link", { name: "Dashboard", exact: true }).click();

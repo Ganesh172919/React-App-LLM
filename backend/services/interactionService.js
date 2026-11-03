@@ -396,6 +396,22 @@ const HIGH_RISK_INTERACTION_RULES = [
     ],
     description: "FDA Black Box Warning / Major Contraindication: Dual potent inhibition of CYP3A4 and P-glycoprotein drastically reduces colchicine elimination. This leads to profound life-threatening colchicine poisoning (severe rhabdomyolysis, neuromuscular toxicity, bone marrow aplasia / pancytopenia, multi-organ failure, and death), especially in patients with any degree of renal or hepatic impairment.",
   },
+  {
+    pair: "Carbamazepine + Strong CYP3A4 Inhibitor",
+    drugA: "Carbamazepine (Tegretol, Carbatrol, Epitol, Equetro)",
+    drugB: "Strong CYP3A4 Inhibitors (e.g., Clarithromycin, Erythromycin, Ketoconazole, Fluconazole)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bcarbamazepine\b/i, /\btegretol\b/i, /\bcarbatrol\b/i, /\bepitol\b/i, /\bequetro\b/i,
+    ],
+    drugsB: [
+      /\bclarithromycin\b/i, /\bbiaxin\b/i,
+      /\berythromycin\b/i, /\be\.e\.s\b/i, /\berythrocin\b/i,
+      /\bketoconazole\b/i, /\bnizoral\b/i,
+      /\bfluconazole\b/i, /\bdiflucan\b/i,
+    ],
+    description: "Major contraindication (FDA Warning): Potent CYP3A4 inhibition abruptly blocks carbamazepine hepatic metabolism, leading to rapid drug accumulation and acute neurotoxicity within 24 to 48 hours (severe ataxia, nystagmus, diplopia, stupor, respiratory depression, and cardiac conduction disturbances).",
+  },
 ];
 
 /**

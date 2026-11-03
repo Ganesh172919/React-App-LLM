@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -168,6 +168,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [meldInr, setMeldInr] = useState("1.3");
   const [meldSodium, setMeldSodium] = useState("135"); // mEq/L
   const [meldDialysis, setMeldDialysis] = useState(false); // Dialysis >= 2 times in prior 7 days
+
+  // Modified Centor / McIsaac Score State
+  const [centorTonsils, setCentorTonsils] = useState(false);
+  const [centorNodes, setCentorNodes] = useState(false);
+  const [centorFever, setCentorFever] = useState(false);
+  const [centorNoCough, setCentorNoCough] = useState(false);
+  const [centorAgeGroup, setCentorAgeGroup] = useState("15to44"); // 3to14 | 15to44 | 45plus
 
   const titleId = useId();
 
@@ -546,6 +553,26 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     }
   }
 
+  // 20. Modified Centor (McIsaac) Score for Pharyngitis
+  let centorScore = 0;
+  if (centorTonsils) centorScore += 1;
+  if (centorNodes) centorScore += 1;
+  if (centorFever) centorScore += 1;
+  if (centorNoCough) centorScore += 1;
+  if (centorAgeGroup === "3to14") centorScore += 1;
+  else if (centorAgeGroup === "45plus") centorScore -= 1;
+
+  let centorStratification = "";
+  if (centorScore <= 1) {
+    centorStratification = "Low risk (1–10% streptococcal probability; throat culture or antibiotic typically not indicated)";
+  } else if (centorScore === 2) {
+    centorStratification = "Intermediate risk (11–17% probability; throat culture or rapid antigen test [RADT] recommended; treat only if positive)";
+  } else if (centorScore === 3) {
+    centorStratification = "Moderate to high risk (28–35% probability; throat culture or RADT recommended; treat only if positive)";
+  } else {
+    centorStratification = "High risk (51–53% probability; RADT or throat culture recommended; consider empiric antibiotic per clinical judgment)";
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -788,6 +815,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("meld")}
           >
             MELD-Na (Liver Disease)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-centor"
+            aria-selected={activeTab === "centor"}
+            aria-controls="tabpanel-centor"
+            className={`calc-tab ${activeTab === "centor" ? "active" : ""}`}
+            onClick={() => setActiveTab("centor")}
+          >
+            Centor (Strep Throat)
           </button>
         </div>
 
@@ -2506,6 +2544,102 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   Please enter valid Bilirubin (0.1–50 mg/dL), Creatinine (0.1–15 mg/dL), INR (0.5–10.0), and Sodium (100–160 mEq/L).
                 </p>
               )}
+            </div>
+          )}
+
+          {/* TAB 20: Modified Centor (McIsaac) Score */}
+          {activeTab === "centor" && (
+            <div id="tabpanel-centor" role="tabpanel" aria-labelledby="tab-centor" className="calc-pane">
+              <p className="small-text muted">
+                The Modified Centor Score (McIsaac Criteria) stratifies the probability of Group A Streptococcal (GAS) pharyngitis in patients presenting with acute sore throat, helping guide decision-making on rapid antigen detection testing (RADT) or throat culture and reducing unnecessary antibiotic use.
+              </p>
+              <div className="checkbox-grid" style={{ marginBottom: "16px" }}>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={centorTonsils}
+                    onChange={(e) => setCentorTonsils(e.target.checked)}
+                  />
+                  <span>Tonsillar exudate or swelling (+1)</span>
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={centorNodes}
+                    onChange={(e) => setCentorNodes(e.target.checked)}
+                  />
+                  <span>Tender or swollen anterior cervical lymph nodes (+1)</span>
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={centorFever}
+                    onChange={(e) => setCentorFever(e.target.checked)}
+                  />
+                  <span>History of fever &gt; 38°C (100.4°F) (+1)</span>
+                </label>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={centorNoCough}
+                    onChange={(e) => setCentorNoCough(e.target.checked)}
+                  />
+                  <span>Absence of cough (+1)</span>
+                </label>
+              </div>
+
+              <div style={{ marginBottom: "16px" }}>
+                <label htmlFor="centor-age-select" style={{ display: "block", marginBottom: "6px", fontWeight: "bold" }}>
+                  Age group (McIsaac criteria)
+                  <select
+                    id="centor-age-select"
+                    aria-label="Age group (McIsaac criteria)"
+                    value={centorAgeGroup}
+                    onChange={(e) => setCentorAgeGroup(e.target.value)}
+                  >
+                    <option value="3to14">3 to 14 years old (+1)</option>
+                    <option value="15to44">15 to 44 years old (0)</option>
+                    <option value="45plus">45 years and older (-1)</option>
+                  </select>
+                </label>
+              </div>
+
+              <div className="calc-result">
+                <div className="calc-result-metric">
+                  <strong>Score: {centorScore} {centorScore === 1 ? "point" : "points"}</strong>
+                  <span className="badge">{centorStratification}</span>
+                </div>
+                <p className="small-text">
+                  Scores range from -1 to 5. Antibiotic stewardship guidelines (IDSA / CDC) recommend microbiological confirmation (RADT or throat culture) before antibiotic therapy for scores &ge; 2, and no testing or antibiotic treatment for scores &le; 1 (viral etiology predominant).
+                </p>
+                <p className="small-text muted">
+                  Educational guidance only. Does not substitute for clinical examination or microbiological swab results. Patients younger than 3 years have low incidence of GAS pharyngitis and rheumatic fever, so criteria are validated for ages 3 and above.
+                </p>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() =>
+                      insertAndClose(
+                        `For educational purposes, explain how a Modified Centor / McIsaac score of ${centorScore} points (${centorStratification}) is applied in the evaluation of acute pharyngitis, what the IDSA guidelines recommend regarding rapid antigen testing vs throat culture, and how antibiotic stewardship helps prevent overtreatment of viral pharyngitis.`
+                      )
+                    }
+                  >
+                    Ask MedAssist about this Centor score
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    onClick={() =>
+                      handleCopy(
+                        `Modified Centor (McIsaac) Strep Score: ${centorScore} points (${centorStratification}; educational estimate only; not diagnostic or treatment recommendation)`
+                      )
+                    }
+                  >
+                    {copied ? "Copied" : "Copy result"}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

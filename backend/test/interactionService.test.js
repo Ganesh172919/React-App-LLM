@@ -176,6 +176,19 @@ test("detects colchicine and clarithromycin / P-gp inhibition toxicity contraind
   assert.equal(brandResult[0].pair, "Colchicine + Strong CYP3A4 / P-gp Inhibitor");
 });
 
+test("detects carbamazepine and strong CYP3A4 inhibitor neurotoxicity contraindication", () => {
+  const result = detectDrugInteractions("Can an epileptic patient on carbamazepine take erythromycin for bronchitis?");
+  assert.equal(result.length, 1);
+  assert.equal(result[0].pair, "Carbamazepine + Strong CYP3A4 Inhibitor");
+  assert.equal(result[0].severity, "CRITICAL");
+  assert.match(result[0].description, /CYP3A4/i);
+  assert.match(result[0].description, /ataxia/i);
+
+  const brandResult = detectDrugInteractions("Patient on Tegretol prescribed Diflucan for fungal infection.");
+  assert.equal(brandResult.length, 1);
+  assert.equal(brandResult[0].pair, "Carbamazepine + Strong CYP3A4 Inhibitor");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);

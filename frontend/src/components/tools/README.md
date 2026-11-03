@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive Overview & Clinical Tools Topology
 
-The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 19 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
+The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 20 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
 
 > [!CAUTION]
 > **Educational & Learning Notice**: These tools are educational demonstrations. Numeric scores do not establish clinical diagnoses, treatment plans, or formal prognosis. Clinical decisions must always be guided by qualified healthcare providers and institutional protocols.
@@ -267,53 +267,57 @@ $$\text{CHA}_2\text{DS}_2\text{-VASc} = C + H + A_2 + D + S_2 + V + A + Sc$$
   - Score $1$ (Men) / $2$ (Women): Moderate risk (oral anticoagulation should be considered based on clinical shared decision-making).
   - Score $\ge 2$ (Men) / $\ge 3$ (Women): High risk (oral anticoagulation with DOAC or warfarin strongly recommended).
 
+### 3.17 Modified Centor (McIsaac) Score for Strep Pharyngitis
+$$\text{Centor Score} = \text{Exudate (+1)} + \text{Tender Nodes (+1)} + \text{Fever (+1)} + \text{No Cough (+1)} + \text{Age Group (+1, 0, -1)}$$
+- **Clinical Criteria (1 point each)**:
+  - Tonsillar exudate or swelling: $+1$
+  - Tender or swollen anterior cervical lymph nodes: $+1$
+  - History of fever $> 38^\circ\text{C}$ ($100.4^\circ\text{F}$): $+1$
+  - Absence of cough: $+1$
+  - Age group (McIsaac criteria):
+    - $3 - 14\text{ years}$: $+1$
+    - $15 - 44\text{ years}$: $0$
+    - $\ge 45\text{ years}$: $-1$
+- **Stratification & Stewardship Guidance (IDSA/CDC)**:
+  - Score $\le 1$: Low risk ($1 - 10\%$ streptococcal probability; throat culture or antibiotic typically not indicated).
+  - Score $2$: Intermediate risk ($11 - 17\%$ probability; throat culture or rapid antigen test [RADT] recommended; treat only if positive).
+  - Score $3$: Moderate-to-high risk ($28 - 35\%$ probability; throat culture or RADT recommended; treat only if positive).
+  - Score $\ge 4$: High risk ($51 - 53\%$ probability; RADT or throat culture recommended; consider empiric antibiotic per clinical judgment).
+
 ---
 
-## 4. Developer Extensibility: Adding Calculator #19 (e.g., MELD-Na Score)
+## 4. Developer Extensibility: Adding Calculator #21
 
-Follow this architectural guide to add calculator #19:
+Follow this architectural guide to add a new calculator:
 
 ```jsx
 // Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx
 // Step 1: Add tab key to tabList array:
 const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
-  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"
+  "aniongap", "fena", "feurea", "fluids", "wells", "curb65",
+  "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor"
 ];
 
-// Step 2: Implement deterministic formula with clamping:
-function calculateMeldScore(creatinine, bilirubin, inr, sodium) {
-  const safeCr = Math.min(4.0, Math.max(1.0, creatinine));
-  const safeBili = Math.max(1.0, bilirubin);
-  const safeInr = Math.max(1.0, inr);
-  const safeNa = Math.min(135, Math.max(125, sodium));
-
-  let meld = 9.57 * Math.log(safeCr) + 3.78 * Math.log(safeBili) + 11.2 * Math.log(safeInr) + 6.43;
-  meld = Math.min(40, Math.max(6, Math.round(meld)));
-
-  if (meld > 11) {
-    meld = meld + 1.32 * (137 - safeNa) - (0.033 * meld * (137 - safeNa));
-    meld = Math.min(40, Math.max(6, Math.round(meld)));
-  }
-  return meld;
-}
+// Step 2: Implement deterministic formula with clamping in React state:
+// ...
 
 // Step 3: Add WAI-ARIA tab button and tabpanel in JSX:
 <button
   role="tab"
-  id="tab-meld"
-  aria-selected={activeTab === "meld"}
-  aria-controls="panel-meld"
-  onClick={() => setActiveTab("meld")}
+  id="tab-newtool"
+  aria-selected={activeTab === "newtool"}
+  aria-controls="panel-newtool"
+  onClick={() => setActiveTab("newtool")}
 >
-  MELD-Na
+  New Clinical Tool
 </button>
 
 <div
   role="tabpanel"
-  id="panel-meld"
-  aria-labelledby="tab-meld"
-  hidden={activeTab !== "meld"}
+  id="panel-newtool"
+  aria-labelledby="tab-newtool"
+  hidden={activeTab !== "newtool"}
 >
   {/* Form inputs with physiological min/max bounds */}
 </div>
@@ -323,7 +327,7 @@ function calculateMeldScore(creatinine, bilirubin, inr, sodium) {
 
 ## 5. Automated Verification Commands
 
-All 19 clinical calculators are verified by 17 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
+All 20 clinical calculators are verified by 18 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
 
 ```powershell
 # Run the clinical calculators test suite

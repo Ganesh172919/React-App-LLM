@@ -1,25 +1,25 @@
 {
-  "exportedAt": "2026-11-03T23:12:32.232Z",
-  "id": "41d5c840-ec88-4b0f-8b57-2fe8f8550d32",
-  "sessionId": "41d5c840-ec88-4b0f-8b57-2fe8f8550d32",
-  "title": "Browser smoke 1793747552082",
+  "exportedAt": "2026-11-03T23:33:53.942Z",
+  "id": "ac43cc5e-46db-4727-9fa8-dd1fffbebdd9",
+  "sessionId": "ac43cc5e-46db-4727-9fa8-dd1fffbebdd9",
+  "title": "Browser smoke 1793748833775",
   "isMedical": true,
   "isPinned": false,
-  "timestamp": "2026-11-03T23:12:32.134Z",
-  "createdAt": "2026-11-03T23:12:31.824Z",
+  "timestamp": "2026-11-03T23:33:53.845Z",
+  "createdAt": "2026-11-03T23:33:53.484Z",
   "messages": [
     {
-      "id": "ccc52d8a-593c-4de0-af74-a0870205554c-user",
+      "id": "36f28ae7-cfd0-48c5-afeb-246f2ebc1ce4-user",
       "text": "What are migraine triggers? slow response [unreviewed](https://example.invalid/track) ![pixel](https://example.invalid/pixel)",
       "isUser": true,
-      "timestamp": "2026-11-03T23:12:31.808Z",
+      "timestamp": "2026-11-03T23:33:53.452Z",
       "isMedical": true
     },
     {
-      "id": "ccc52d8a-593c-4de0-af74-a0870205554c-assistant",
+      "id": "36f28ae7-cfd0-48c5-afeb-246f2ebc1ce4-assistant",
       "text": "This is a synthetic educational test answer [1]. Review the linked source with a qualified clinician. This checks the chat workflow, not clinical accuracy.",
       "isUser": false,
-      "timestamp": "2026-11-03T23:12:31.808Z",
+      "timestamp": "2026-11-03T23:33:53.452Z",
       "isMedical": true,
       "references": [
         {

@@ -390,6 +390,56 @@ it("calculates MELD-Na liver disease mortality score and supports dialysis statu
   expect(meldPrompt).toContain("MELD-Na score of 37 points");
 });
 
+it("calculates Modified Centor / McIsaac score for pharyngitis across age groups and clinical criteria", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+
+  fireEvent.click(screen.getByRole("tab", { name: "Centor (Strep Throat)" }));
+  expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
+  expect(screen.getByText(/McIsaac Criteria/)).toBeTruthy();
+
+  // Default values: no symptoms checked, age 15-44 -> Score 0 points, Low risk
+  expect(screen.getByText("Score: 0 points")).toBeTruthy();
+  expect(screen.getByText(/Low risk \(1–10% streptococcal probability/)).toBeTruthy();
+
+  // Select all 4 symptoms: tonsils (+1), nodes (+1), fever (+1), no cough (+1)
+  const tonsilsCb = screen.getByLabelText(/Tonsillar exudate or swelling/i);
+  const nodesCb = screen.getByLabelText(/Tender or swollen anterior cervical lymph nodes/i);
+  const feverCb = screen.getByLabelText(/History of fever/i);
+  const noCoughCb = screen.getByLabelText(/Absence of cough/i);
+
+  fireEvent.click(tonsilsCb);
+  fireEvent.click(nodesCb);
+  fireEvent.click(feverCb);
+  fireEvent.click(noCoughCb);
+
+  // 4 symptoms + age 15-44 (0) = 4 points, High risk
+  expect(screen.getByText("Score: 4 points")).toBeTruthy();
+  expect(screen.getByText(/High risk \(51–53% probability/)).toBeTruthy();
+
+  // Change age group to 3 to 14 years (+1) -> 5 points
+  const ageSelect = screen.getByLabelText(/Age group \(McIsaac criteria\)/i);
+  fireEvent.change(ageSelect, { target: { value: "3to14" } });
+  expect(screen.getByText("Score: 5 points")).toBeTruthy();
+
+  // Change age group to 45 years and older (-1) -> 3 points, Moderate to high risk
+  fireEvent.change(ageSelect, { target: { value: "45plus" } });
+  expect(screen.getByText("Score: 3 points")).toBeTruthy();
+  expect(screen.getByText(/Moderate to high risk \(28–35% probability/)).toBeTruthy();
+
+  // Uncheck fever and tonsils -> 1 point (nodes + no cough - 1 age = 1 point)
+  fireEvent.click(feverCb);
+  fireEvent.click(tonsilsCb);
+  expect(screen.getByText("Score: 1 point")).toBeTruthy();
+  expect(screen.getByText(/Low risk \(1–10% streptococcal probability/)).toBeTruthy();
+
+  // Prompt insertion test
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this Centor score" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const centorPrompt = onInsertPrompt.mock.calls[0][0];
+  expect(centorPrompt).toContain("Modified Centor / McIsaac score of 1 point");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -400,11 +450,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (MELD-Na) to first (BMI) and back
-  const meldTab = screen.getByRole("tab", { name: "MELD-Na (Liver Disease)" });
-  meldTab.focus();
-  fireEvent.keyDown(meldTab, { key: "ArrowRight" });
+  // Wrapping from last tab (Centor) to first (BMI) and back
+  const centorTab = screen.getByRole("tab", { name: "Centor (Strep Throat)" });
+  centorTab.focus();
+  fireEvent.keyDown(centorTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(meldTab.getAttribute("aria-selected")).toBe("true");
+  expect(centorTab.getAttribute("aria-selected")).toBe("true");
 });

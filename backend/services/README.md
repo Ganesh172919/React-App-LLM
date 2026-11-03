@@ -28,7 +28,7 @@ The MedAssist AI backend service layer (`backend/services/`) encapsulates pure d
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                    DETERMINISTIC CLINICAL SAFETY GATES                                         │
     │  - safetyService.js: Deterministic Pre/Post-Generation Screener (Self-Harm, Acute Emergency, Injection Defense)│
-    │  - interactionService.js: 20 FDA Black-Box Drug-Drug Interaction Rules (Preserved across Deflections)          │
+    │  - interactionService.js: 21 FDA Black-Box Drug-Drug Interaction Rules (Preserved across Deflections)          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -73,7 +73,7 @@ mindmap
         Emergency Deflections (Chest Pain, Stroke)
         Prompt Injection Token Stripping
       interactionService.js
-        20 High-Risk Drug Caution Pairs
+        21 High-Risk Drug Caution Pairs
         Bidirectional Regex Matchers
         Preservation Across Deflections
       citationService.js
@@ -142,10 +142,10 @@ mindmap
 - **Invariants**: Any citation referencing an index $> \text{sourceCount}$ triggers an `invalid_citations` state, suppressing ungrounded model claims.
 
 ### 3.4 `interactionService.js` — Drug-Drug Interaction Screener
-- **Role**: Scans clinical queries and responses for 20 high-risk medication pairs based on FDA black-box warnings.
+- **Role**: Scans clinical queries and responses for 21 high-risk medication pairs based on FDA black-box warnings.
 - **Exported Symbols**:
-  - `detectDrugInteractions(text)`: Scans input text using bidirectional regular expressions covering generic and brand names (e.g., Warfarin + Aspirin, Nitroglycerin + Sildenafil, Tramadol + Sertraline, SSRI/SNRI + Triptan, Bactrim + ACEi/ARB, Theophylline + Ciprofloxacin, Colchicine + Clarithromycin).
-  - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 20 rule definitions with risk severity (`CRITICAL`, `HIGH`).
+  - `detectDrugInteractions(text)`: Scans input text using bidirectional regular expressions covering generic and brand names (e.g., Warfarin + Aspirin, Nitroglycerin + Sildenafil, Tramadol + Sertraline, SSRI/SNRI + Triptan, Bactrim + ACEi/ARB, Theophylline + Ciprofloxacin, Colchicine + Clarithromycin, Carbamazepine + Erythromycin).
+  - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 21 rule definitions with risk severity (`CRITICAL`, `HIGH`).
 - **Invariants**: Detected interaction warnings are preserved even if a query is deflected by emergency screening.
 
 ```
@@ -156,7 +156,7 @@ mindmap
     [ User Question Text ] ──► detectDrugInteractions(text)
                                      │
                                      ├── Lowercase normalization & word-boundary tokenization
-                                     ├── Iterate canonical HIGH_RISK_INTERACTION_RULES (20 Rules)
+                                     ├── Iterate canonical HIGH_RISK_INTERACTION_RULES (21 Rules)
                                      │     ├── rule.drugsA.some(pattern.test(text))  ──► Matches Drug Group A
                                      │     └── rule.drugsB.some(pattern.test(text))  ──► Matches Interacting Partner
                                      │
@@ -175,7 +175,7 @@ mindmap
     [ Injected into API response ] ──► Retained even across emergency 911 redirects
 ```
 
-#### 20 High-Risk Drug-Drug Interaction Rules Inventory:
+#### 21 High-Risk Drug-Drug Interaction Rules Inventory:
 
 | # | Pair | Severity | Mechanism & Clinical Hazard |
 |:---:|:---|:---:|:---|
@@ -199,6 +199,7 @@ mindmap
 | 18 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | `CRITICAL` | ENaC channel blockade combined with RAAS inhibition causes refractory hyperkalemia. |
 | 19 | **Theophylline + Fluoroquinolones** | `CRITICAL` | Potent hepatic CYP1A2 inhibition reduces clearance by 50–70%, triggering fatal seizures and arrhythmias. |
 | 20 | **Colchicine + Strong CYP3A4 / P-gp Inhibitor** | `CRITICAL` | Dual CYP3A4 & P-gp inhibition blocks colchicine elimination, triggering severe fatal toxicity, rhabdomyolysis, and pancytopenia. |
+| 21 | **Carbamazepine + Strong CYP3A4 Inhibitor** | `CRITICAL` | Abrupt CYP3A4 inhibition blocks carbamazepine hepatic elimination, precipitating acute neurotoxicity within 24–48 hours (ataxia, nystagmus, diplopia, stupor, respiratory arrest). |
 
 ### 3.5 `providerCredentials.js` — AES-256-GCM Personal Key Vault
 - **Role**: Secures user-supplied API keys for Google Gemini, Groq, and Together AI.
