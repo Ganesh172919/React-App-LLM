@@ -14,7 +14,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart"];
+      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart", "perc"];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -182,6 +182,16 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [heartAge, setHeartAge] = useState("45to64"); // under45 (0) | 45to64 (1) | 65plus (2)
   const [heartRisk, setHeartRisk] = useState("one_two"); // none (0) | one_two (1) | three_plus (2)
   const [heartTroponin, setHeartTroponin] = useState("normal"); // normal (0) | one_to_three (1) | greater_three (2)
+
+  // PERC Rule State (8 criteria)
+  const [percAge50, setPercAge50] = useState(false);
+  const [percHr100, setPercHr100] = useState(false);
+  const [percO2Sat, setPercO2Sat] = useState(false);
+  const [percPriorDvtPe, setPercPriorDvtPe] = useState(false);
+  const [percTraumaSurgery, setPercTraumaSurgery] = useState(false);
+  const [percHemoptysis, setPercHemoptysis] = useState(false);
+  const [percEstrogen, setPercEstrogen] = useState(false);
+  const [percLegSwelling, setPercLegSwelling] = useState(false);
 
   const titleId = useId();
 
@@ -606,6 +616,24 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     heartStratification = "High risk (~50–65% 6-week MACE risk; urgent admission, cardiology consult, and early invasive angiography)";
   }
 
+  // 22. PERC Rule for Pulmonary Embolism Rule-out
+  let percScore = 0;
+  if (percAge50) percScore += 1;
+  if (percHr100) percScore += 1;
+  if (percO2Sat) percScore += 1;
+  if (percPriorDvtPe) percScore += 1;
+  if (percTraumaSurgery) percScore += 1;
+  if (percHemoptysis) percScore += 1;
+  if (percEstrogen) percScore += 1;
+  if (percLegSwelling) percScore += 1;
+
+  let percStratification = "";
+  if (percScore === 0) {
+    percStratification = "PERC Negative (0 criteria; PE ruled out in low-risk patients)";
+  } else {
+    percStratification = `PERC Positive (${percScore} ${percScore === 1 ? "criterion" : "criteria"} present; rule fails)`;
+  }
+
   // Handlers
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -870,6 +898,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             onClick={() => setActiveTab("heart")}
           >
             HEART (Chest Pain)
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-perc"
+            aria-selected={activeTab === "perc"}
+            aria-controls="tabpanel-perc"
+            className={`calc-tab ${activeTab === "perc" ? "active" : ""}`}
+            onClick={() => setActiveTab("perc")}
+          >
+            PERC (PE Rule-Out)
           </button>
         </div>
 
@@ -2790,6 +2829,128 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onClick={() =>
                       handleCopy(
                         `HEART Chest Pain MACE Score: ${heartScore} points (${heartStratification}; educational estimate only; not diagnostic or emergency triage advice)`
+                      )
+                    }
+                  >
+                    {copied ? "Copied" : "Copy result"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 22: PERC Rule for Pulmonary Embolism Rule-out */}
+          {activeTab === "perc" && (
+            <div id="tabpanel-perc" role="tabpanel" aria-labelledby="tab-perc" className="calc-pane">
+              <p className="small-text muted">
+                The PERC (Pulmonary Embolism Rule-out Criteria) rule is an evidence-based clinical decision tool used ONLY in patients with a low pre-test clinical probability of pulmonary embolism (e.g., Wells score &le; 4 or clinical gestalt &lt; 15%). If all 8 criteria are negative (0 criteria present), PE is safely ruled out without blood testing (D-dimer) or CT pulmonary angiography (risk of PE &lt; 1.8%).
+              </p>
+              <div className="checkbox-list">
+                <label className="checkbox-item" htmlFor="perc-age-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-age-cb"
+                    checked={percAge50}
+                    onChange={(e) => setPercAge50(e.target.checked)}
+                  />
+                  <span>Age &ge; 50 years</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-hr-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-hr-cb"
+                    checked={percHr100}
+                    onChange={(e) => setPercHr100(e.target.checked)}
+                  />
+                  <span>Heart rate &ge; 100 bpm</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-o2-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-o2-cb"
+                    checked={percO2Sat}
+                    onChange={(e) => setPercO2Sat(e.target.checked)}
+                  />
+                  <span>Pulse oximetry SaO₂ &lt; 95% on room air</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-prior-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-prior-cb"
+                    checked={percPriorDvtPe}
+                    onChange={(e) => setPercPriorDvtPe(e.target.checked)}
+                  />
+                  <span>Previous documented DVT or PE</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-trauma-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-trauma-cb"
+                    checked={percTraumaSurgery}
+                    onChange={(e) => setPercTraumaSurgery(e.target.checked)}
+                  />
+                  <span>Recent trauma or surgery (past 4 weeks requiring hospitalization / general anesthesia)</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-hemoptysis-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-hemoptysis-cb"
+                    checked={percHemoptysis}
+                    onChange={(e) => setPercHemoptysis(e.target.checked)}
+                  />
+                  <span>Hemoptysis (coughing up blood)</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-estrogen-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-estrogen-cb"
+                    checked={percEstrogen}
+                    onChange={(e) => setPercEstrogen(e.target.checked)}
+                  />
+                  <span>Exogenous estrogen use (oral contraceptives, hormone replacement, estrogen therapy)</span>
+                </label>
+                <label className="checkbox-item" htmlFor="perc-leg-cb">
+                  <input
+                    type="checkbox"
+                    id="perc-leg-cb"
+                    checked={percLegSwelling}
+                    onChange={(e) => setPercLegSwelling(e.target.checked)}
+                  />
+                  <span>Unilateral leg swelling (clinically asymmetrical edema)</span>
+                </label>
+              </div>
+
+              <div className="calc-result" style={{ marginTop: "16px" }}>
+                <div className="calc-result-metric">
+                  <strong>Score: {percScore} {percScore === 1 ? "criterion" : "criteria"} present</strong>
+                  <span className="badge">{percStratification}</span>
+                </div>
+                <p className="small-text">
+                  {percScore === 0
+                    ? "All 8 PERC criteria are absent. In patients with low clinical probability of PE (e.g., Wells score \u2264 4), the risk of PE is < 1.8%, which is below the testing threshold. Neither D-dimer testing nor CT pulmonary angiography is indicated."
+                    : `Patient has ${percScore} risk ${percScore === 1 ? "criterion" : "criteria"} present. The PERC rule cannot be used to rule out PE. In patients with low pre-test probability, proceed with high-sensitivity D-dimer testing. If intermediate or high risk, proceed directly to diagnostic imaging (CTPA or V/Q scan).`}
+                </p>
+                <p className="small-text muted">
+                  Educational guidance only. PERC must NEVER be applied in patients with intermediate or high pre-test probability, severe respiratory distress, or hemodynamic instability.
+                </p>
+                <div className="actions">
+                  <button
+                    type="button"
+                    className="button small"
+                    onClick={() =>
+                      insertAndClose(
+                        `For educational purposes, explain how the PERC Rule (Pulmonary Embolism Rule-out Criteria) with ${percScore} criteria present (${percStratification}) is applied in low-risk emergency department patients, why it must only be used when pre-test probability is low, and when D-dimer vs CT pulmonary angiography is indicated.`
+                      )
+                    }
+                  >
+                    Ask MedAssist about this PERC rule
+                  </button>
+                  <button
+                    type="button"
+                    className="button secondary small"
+                    onClick={() =>
+                      handleCopy(
+                        `PERC Pulmonary Embolism Rule: ${percScore} criteria present (${percStratification}; educational estimate only; not diagnostic or emergency triage advice)`
                       )
                     }
                   >

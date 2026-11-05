@@ -16,7 +16,7 @@ const publicSettings = async (userId) => {
     answerStyle: user.answerStyle || "balanced",
     audienceProfile: user.audienceProfile || "general",
     usePastChats: Boolean(user.usePastChats),
-    keyStorageAvailable: Boolean(process.env.USER_API_KEY_ENCRYPTION_KEY),
+    keyStorageAvailable: Boolean(process.env.USER_API_KEY_ENCRYPTION_KEY || process.env.USER_API_KEY_ENCRYPTION_KEYS),
     personalKeys: credentials.map(({ provider, lastFour, updatedAt }) => ({ provider, lastFour, updatedAt })),
     providerChoices: listChoices(credentials),
   };

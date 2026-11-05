@@ -202,6 +202,18 @@ test("detects linezolid and SSRI / SNRI serotonin syndrome contraindication", ()
   assert.equal(brandResult[0].pair, "Linezolid + SSRI / SNRI (Serotonin Syndrome)");
 });
 
+test("detects Warfarin + Amiodarone (CYP2C9 & CYP3A4 Inhibition) critical interaction", () => {
+  const genericResult = detectDrugInteractions("The patient is on warfarin for a mechanical heart valve and amiodarone for ventricular tachycardia.");
+  assert.equal(genericResult.length, 1);
+  assert.equal(genericResult[0].pair, "Warfarin + Amiodarone (CYP2C9 & CYP3A4 Inhibition)");
+  assert.equal(genericResult[0].severity, "CRITICAL");
+  assert.match(genericResult[0].description, /CYP2C9 and CYP3A4/);
+
+  const brandResult = detectDrugInteractions("Can a patient taking Coumadin also receive Cordarone for atrial fibrillation rhythm control?");
+  assert.equal(brandResult.length, 1);
+  assert.equal(brandResult[0].pair, "Warfarin + Amiodarone (CYP2C9 & CYP3A4 Inhibition)");
+});
+
 test("returns empty array when only one drug or safe combination is mentioned", () => {
   assert.deepEqual(detectDrugInteractions("Can I take warfarin with acetaminophen?"), []);
   assert.deepEqual(detectDrugInteractions("What is the dose for amoxicillin?"), []);

@@ -23,6 +23,11 @@ async function main() {
     check("API responses prohibit caching and MIME sniffing", async () => { const response = await get("/api/health"); assert.equal(response.status, 200); assert.equal(response.headers.get("cache-control"), "no-store"); assert.equal(response.headers.get("x-content-type-options"), "nosniff"); }),
     check("Unknown API endpoint returns JSON 404", async () => { const response = await get("/api/qa-missing-endpoint"); assert.equal(response.status, 404); assert.equal((await response.json()).code, "NOT_FOUND"); }),
   ]);
+  await check("Nginx configuration defines CSP and HSTS for TLS ingress", async () => {
+    const nginx = fs.readFileSync(path.resolve(__dirname, "../frontend/nginx.conf"), "utf8");
+    assert.match(nginx, /Content-Security-Policy/);
+    assert.match(nginx, /Strict-Transport-Security/);
+  });
   const output = path.resolve(__dirname, "../output/qa/build-serving-results.json");
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, JSON.stringify({ completedAt: new Date().toISOString(), base, mode: "Built-output QA gateway; does not execute Nginx or Docker", results, passed: results.every((item) => item.passed) }, null, 2));

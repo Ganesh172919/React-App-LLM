@@ -218,6 +218,7 @@ async function main() {
       await page.getByLabel("Email", { exact: true }).fill("registration-check@example.test");
       await page.getByLabel(/^Password/).fill("Student-demo-123");
       await page.getByLabel("Confirm password", { exact: true }).fill("Student-demo-456");
+      await page.getByRole("checkbox").check();
       await click("Create an account");
       await page.getByRole("alert").filter({ hasText: "The passwords do not match." }).waitFor();
       assert.equal(new URL(page.url()).pathname, "/register");
@@ -226,6 +227,7 @@ async function main() {
       const email = "browser-" + Date.now() + "@example.test";
       await page.getByLabel("Email", { exact: true }).fill(email);
       await page.getByLabel("Confirm password", { exact: true }).fill("Student-demo-123");
+      await page.getByRole("checkbox").check();
       await click("Create an account");
       await page.getByRole("heading", { name: "Verify your email" }).waitFor();
       await page.goto(base + "/_test/mailbox");

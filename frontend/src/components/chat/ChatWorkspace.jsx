@@ -1,11 +1,11 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useContext, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { AuthContext } from "../../context/AuthContext";
 import { apiRequest, downloadJson, downloadText, formatChatAsMarkdown, getWebSocketUrl, refreshSession } from "../../lib/api";
 import { readTab, writeTab, readPending } from "../../lib/tabStorage";
 import { MAX_IMPORT_BYTES, parseConversationImport } from "../../lib/conversationImport";
 import { isMedicalQuery } from "../../utils/medicalDetector";
-import ClinicalCalculatorsModal from "../tools/ClinicalCalculatorsModal";
+const ClinicalCalculatorsModal = lazy(() => import("../tools/ClinicalCalculatorsModal"));
 const labels = { citation_checked: "Citation numbers checked", references_only: "References only", generated: "AI generated", safety_redirect: "Safety response", insufficient_evidence: "Insufficient evidence", provider_unavailable: "Literature unavailable", invalid_citations: "Citation issue", sources_supplied: "Sources supplied" };
 // Chat text is untrusted. Only server-selected PubMed records below may open a URL.
 const safeMessageComponents = {
@@ -483,7 +483,7 @@ Educational guidance only. This consultation does not establish a doctor-patient
           <div className="row-between">
             <h2>{importPreview ? "Local preview · " : ""}{activeTitle}</h2>
             <div className="actions" style={{ margin: 0 }}>
-              <button type="button" className="text-button small-text" onClick={() => setCalcModalOpen(true)} title="Open clinical reference calculators (21 educational tools: BMI, eGFR, CHA₂DS₂-VASc, MAP, CrCl, Ca, Anion Gap, FeNa, FeUrea, Fluids, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na, Centor, HEART) (Alt+C)" aria-keyshortcuts="Alt+C">Clinical tools</button>
+              <button type="button" className="text-button small-text" onClick={() => setCalcModalOpen(true)} title="Open clinical reference calculators (22 educational tools: BMI, eGFR, CHA₂DS₂-VASc, MAP, CrCl, Ca, Anion Gap, FeNa, FeUrea, Fluids, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na, Centor, HEART, PERC) (Alt+C)" aria-keyshortcuts="Alt+C">Clinical tools</button>
               {messages.length > 0 && (
                 <>
                   <button className="text-button small-text" onClick={exportActiveMarkdown} title={importPreview ? "Export an unverified local preview as Markdown" : "Export as structured Markdown document"}>{importPreview ? "Export preview Markdown" : "Export Markdown"}</button>
@@ -573,6 +573,6 @@ Educational guidance only. This consultation does not establish a doctor-patient
     </div>
     <dialog ref={deleteDialog} aria-labelledby="delete-chat-title" onCancel={() => setDeleting(null)}><h2 id="delete-chat-title">Delete this conversation?</h2><p>{deleting?.title}</p><p>This permanently removes the conversation from your account. Export it first if you need a copy.</p><div className="actions"><button className="button danger" onClick={remove} disabled={deletingBusy}>{deletingBusy ? "Deleting..." : "Delete conversation"}</button><button className="button secondary" disabled={deletingBusy} onClick={() => { deleteDialog.current.close(); setDeleting(null); }}>Keep conversation</button></div></dialog>
     <dialog ref={clearAllDialog} aria-labelledby="clear-all-title" onCancel={() => {}}><h2 id="clear-all-title">Clear all conversations?</h2><p>This permanently deletes all saved conversation history from your account. This action cannot be undone.</p><div className="actions"><button className="button danger" onClick={clearAll} disabled={deletingBusy}>{deletingBusy ? "Clearing..." : "Delete all history"}</button><button className="button secondary" disabled={deletingBusy} onClick={() => clearAllDialog.current?.close()}>Cancel</button></div></dialog>
-    <ClinicalCalculatorsModal isOpen={calcModalOpen} onClose={() => setCalcModalOpen(false)} onInsertPrompt={(text) => { if (importPreview) newChat(); setPrompt(text); composerInput.current?.focus(); }} />
+    <Suspense fallback={null}><ClinicalCalculatorsModal isOpen={calcModalOpen} onClose={() => setCalcModalOpen(false)} onInsertPrompt={(text) => { if (importPreview) newChat(); setPrompt(text); composerInput.current?.focus(); }} /></Suspense>
   </main>;
 }

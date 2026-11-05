@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const schema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
   provider: { type: String, enum: ["gemini", "groq", "together"], required: true },
+  keyVersion: { type: String, default: "legacy" },
   iv: { type: String, required: true, select: false },
   tag: { type: String, required: true, select: false },
   ciphertext: { type: String, required: true, select: false },

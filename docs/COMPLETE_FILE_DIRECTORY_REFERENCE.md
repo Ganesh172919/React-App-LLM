@@ -13,6 +13,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 ├── .env.docker.example                      # Production environment template for Docker Compose
 ├── .gitattributes                           # Line ending normalization (LF for scripts, auto for text)
 ├── .gitignore                               # Git ignore list (node_modules, logs, tmp, prepared data)
+├── CODEBASE_AUDIT_2026-11-04.md             # Engineering compliance audit & risk register
 ├── CONTRIBUTING.md                          # Comprehensive developer contribution & extensibility manual
 ├── docker-compose.yml                       # Multi-container orchestration (mongo, backend, frontend)
 ├── IMPROVEMENT_PLAN.md                      # Release checklist, roadmap, and milestone tracking
@@ -20,8 +21,10 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 ├── README.md                                # Root platform manual, quickstarts, and run instructions
 │
 ├── .github/
+│   ├── dependabot.yml                       # Automated dependency security scanning
 │   └── workflows/
-│       └── ci.yml                           # 5-job GitHub Actions workflow (test, lint, build, audit)
+│       ├── ci.yml                           # 5-job GitHub Actions workflow (test, lint, build, audit)
+│       └── codeql.yml                       # GitHub CodeQL static analysis workflow
 │
 ├── backend/                                 # Express 4 + Node 24 + MongoDB REST & WebSocket Service
 │   ├── .dockerignore                        # Backend Docker context exclusions
@@ -71,9 +74,10 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── config.js                        # Environment variable validation on startup
 │   │   ├── emailService.js                  # Brevo (Sendinblue) transactional email dispatcher
 │   │   ├── historySearch.js                 # Conversational context turn relevance ranker
-│   │   ├── interactionService.js            # 19 FDA black-box drug-drug interaction warning rules
+│   │   ├── interactionService.js            # 23 FDA black-box drug-drug interaction warning rules
 │   │   ├── modelProvider.js                 # Multi-provider client (Gemini, Groq, Together, Local)
-│   │   ├── providerCredentials.js           # AES-256-GCM authenticated cipher vault (seal/open)
+│   │   ├── privacyService.js                # Sensitive identifier redaction (emails, phones, IDs) & consent gate
+│   │   ├── providerCredentials.js           # AES-256-GCM authenticated cipher vault (keyring rotation)
 │   │   ├── providerSelection.js             # Multi-provider routing and key resolution logic
 │   │   ├── pubmedService.js                 # NCBI Entrez client (esearch, esummary, efetch) & XML parser
 │   │   ├── README.md                        # Backend services architecture & reference manual
@@ -82,28 +86,31 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── validation.js                    # Schema validators for UUIDs, email, allowed JSON keys
 │   │   └── websocketService.js              # WebSocket server on /ws with 30s heartbeat watchdog
 │   │
-│   └── test/                                # Automated Backend Test Suites
+│   └── test/                                # Automated Backend Test Suites (77 Passing Tests)
 │       ├── application.test.js              # Integration suite with MongoMemoryServer
 │       ├── chatTitle.test.js                # Auto-titling sanitization tests
 │       ├── citationService.test.js          # Unit tests for numerical citation verification
 │       ├── historySearch.test.js            # Unit tests for conversation token overlap selection
 │       ├── interactionService.test.js       # Unit tests for pharmacological drug interaction screening
 │       ├── modelProvider.test.js            # Unit tests for multi-provider API resolution
+│       ├── providerCredentials.test.js      # Keyring rotation and legacy key decryption tests
 │       ├── providers.test.js                # Unit tests for PubMed UID sorting & XML parsing
 │       ├── pubmedService.test.js            # Unit tests for PubMed query string generation
 │       ├── README.md                        # Backend testing architecture & verification manual
 │       └── safetyService.test.js            # Unit tests for crisis, emergency, and harm screening
 │
 ├── deploy/                                  # Deployment & Infrastructure Automation
+│   ├── backup-mongo.sh                      # Automated MongoDB backup and archiving script
 │   ├── create_env.cjs                       # Generates production .env with random 32-byte hex secrets
 │   ├── mongo-init.js                        # Mongo container bootstrap script (creates app user)
 │   └── README.md                            # Comprehensive deployment & infrastructure operations manual
 │
-├── docs/                                    # Technical Documentation Suite (Volumes 01–15)
+├── docs/                                    # Technical Documentation Suite (Volumes 00–17)
 │   ├── AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md # Concise AI grounding & multi-provider summary
 │   ├── AI_FINE_TUNING_AND_LORA_GUIDE.md     # Concise LoRA fine-tuning guide & hyperparameters
 │   ├── COMPLETE_FILE_DIRECTORY_REFERENCE.md # Complete repository inventory & symbol reference
 │   ├── COMPREHENSIVE_CODEBASE_ANALYSIS.md   # Architectural codebase breakdown & pattern audit
+│   ├── CURRENT_CAPABILITIES_AND_RELEASE_GATES.md # Implemented operational controls vs open release gates
 │   ├── CURRENT_IMPLEMENTATION.md            # Detailed runtime specification & API schemas
 │   ├── DEEP_DIVE_AI_WORKING_PRINCIPLES.md   # Mathematical RAG treatise & E-Utilities deep dive
 │   ├── DEEP_DIVE_LORA_AND_FINE_TUNING.md    # LoRA mathematical derivations & SFT backprop
@@ -112,6 +119,8 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   ├── EVALUATION_AND_INTEGRATION.md        # Ablation benchmark scoring & document retrieval
 │   ├── IMPLEMENTATION_STATUS.md             # Verification test evidence & audit matrix
 │   ├── ISSUES_AND_RISKS.md                  # STRIDE threat model, risk register & mitigations
+│   ├── Medical_LLM_System_Architecture_and_Interview_Mastery.pdf # Production Architecture PDF
+│   ├── PRODUCTION_DEVELOPER_BUILD_GUIDE.md  # Master production engineering manual, recipes & invariants
 │   ├── README.md                            # Documentation suite master index & mindmap
 │   ├── SECURITY_AND_MESSAGE_POLICY.md       # Trust boundaries, AES-256-GCM vault, OWASP defenses
 │   └── SYSTEM_ARCHITECTURE_DEEP_DIVE.md     # Comprehensive distributed system deep dive
@@ -160,7 +169,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   ├── header/Header.jsx            # Top navigation bar with auth status
 │       │   ├── home/Home.jsx                # Public landing page with system notices
 │       │   └── tools/                       # Evidence-Based Clinical Tools
-│       │       ├── ClinicalCalculatorsModal.jsx # 18-calculator educational suite with WAI-ARIA tabs
+│       │       ├── ClinicalCalculatorsModal.jsx # 22-calculator educational suite with WAI-ARIA tabs
 │       │       └── README.md                # Clinical calculators architecture & reference manual
 │       │
 │       ├── context/                         # React State Contexts
@@ -174,9 +183,9 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │       │   ├── README.md                    # Frontend utilities architecture & client state reference
 │       │   └── tabStorage.js                # Resilient draft and pending job recovery
 │       │
-│       ├── test/                            # Frontend Automated Test Suites
+│       ├── test/                            # Frontend Automated Test Suites (59 Passing Tests)
 │       │   ├── api.test.js                  # Web Locks concurrent token renewal tests
-│       │   ├── clinicalCalculators.test.jsx # Unit tests for 18 clinical calculators & bounds
+│       │   ├── clinicalCalculators.test.jsx # Unit tests for 22 clinical calculators & bounds
 │       │   ├── conversationImport.test.js   # Unit tests for conversation import security & stripping
 │       │   ├── medicalDetector.test.js      # Heuristic clinical prompt detection tests
 │       │   ├── README.md                    # Frontend testing architecture & verification manual
@@ -188,6 +197,7 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │           └── README.md                    # Client heuristic query classifier reference
 │
 ├── Model and Dataset/                       # Dataset Engineering & Offline LoRA Pipeline
+│   ├── DATASET_CARD.md                      # Dataset card: provenance, split distribution, and quarantine
 │   ├── Final data set... (1).csv            # Raw medical Q&A dataset (16,412 rows)
 │   ├── Fine-tunned model.py                 # Historical reference fine-tuning script
 │   ├── README.md                            # Comprehensive dataset engineering manual

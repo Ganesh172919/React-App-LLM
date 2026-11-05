@@ -127,6 +127,7 @@ const verificationSchema = new mongoose.Schema(
     safetyCategory: String,
     evidenceLevel: String,
     fallbackReason: String,
+    privacyRedactions: Number,
     drugInteractions: [drugInteractionSchema],
   },
   { _id: false }

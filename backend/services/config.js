@@ -6,6 +6,10 @@ const validateConfig = () => {
   if (process.env.AI_PROVIDER && !["gemini", "groq", "together", "local"].includes(process.env.AI_PROVIDER)) throw new Error("AI_PROVIDER must be gemini, groq, together, or local.");
   if (process.env.USER_API_KEY_ENCRYPTION_KEY && !/^[0-9a-f]{64}$/i.test(process.env.USER_API_KEY_ENCRYPTION_KEY)) throw new Error("USER_API_KEY_ENCRYPTION_KEY must be 64 hexadecimal characters.");
   if (process.env.USER_API_KEY_ENCRYPTION_KEY && secrets.includes(process.env.USER_API_KEY_ENCRYPTION_KEY)) throw new Error("USER_API_KEY_ENCRYPTION_KEY must be distinct from JWT secrets.");
+  if (process.env.USER_API_KEY_ENCRYPTION_KEYS || process.env.USER_API_KEY_ENCRYPTION_KEY_VERSION) {
+    try { require("./providerCredentials").validateKeyConfiguration(); }
+    catch { throw new Error("Personal API-key encryption key ring is invalid."); }
+  }
   if (process.env.GEMINI_VERIFY_ANSWERS === "true" && !process.env.GEMINI_API_KEY) throw new Error("GEMINI_VERIFY_ANSWERS requires GEMINI_API_KEY.");
   for (const origin of process.env.CLIENT_ORIGIN.split(",")) {
     const url = new URL(origin.trim());

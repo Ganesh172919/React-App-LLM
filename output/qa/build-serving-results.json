@@ -1,5 +1,5 @@
 {
-  "completedAt": "2026-11-03T23:49:23.298Z",
+  "completedAt": "2026-11-04T07:25:11.800Z",
   "base": "http://127.0.0.1:4173",
   "mode": "Built-output QA gateway; does not execute Nginx or Docker",
   "results": [
@@ -12,6 +12,10 @@
       "passed": true
     },
     {
+      "name": "Missing JavaScript returns 404 instead of HTML",
+      "passed": true
+    },
+    {
       "name": "API responses prohibit caching and MIME sniffing",
       "passed": true
     },
@@ -20,15 +24,15 @@
       "passed": true
     },
     {
-      "name": "Missing JavaScript returns 404 instead of HTML",
-      "passed": true
-    },
-    {
       "name": "JavaScript has correct MIME and immutable cache",
       "passed": true
     },
     {
       "name": "Deep link returns the SPA document",
+      "passed": true
+    },
+    {
+      "name": "Nginx configuration defines CSP and HSTS for TLS ingress",
       "passed": true
     }
   ],

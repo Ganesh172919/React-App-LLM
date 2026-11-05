@@ -32,6 +32,7 @@ describe("account UI", () => {
     await input.type(screen.getByLabelText("Email"), user.email);
     await input.type(screen.getByLabelText(/^Password/), "Student-demo-123");
     await input.type(screen.getByLabelText("Confirm password"), "Student-demo-456");
+    await input.click(screen.getByRole("checkbox"));
     await input.click(screen.getByRole("button", { name: "Create an account" }));
     expect(screen.getByRole("alert").textContent).toContain("passwords do not match");
     expect(apiRequest.mock.calls.some(([path]) => path === "/auth/register")).toBe(false);
@@ -39,6 +40,8 @@ describe("account UI", () => {
     await input.type(screen.getByLabelText("Confirm password"), "Student-demo-123");
     await input.click(screen.getByRole("button", { name: "Create an account" }));
     await waitFor(() => expect(apiRequest.mock.calls.some(([path]) => path === "/auth/register")).toBe(true));
+    const registration = apiRequest.mock.calls.find(([path]) => path === "/auth/register");
+    expect(JSON.parse(registration[1].body).dataProcessingConsent).toBe(true);
   });
   it("shows Google sign-in only when the provider is configured", async () => {
     apiRequest.mockImplementation(async (path) => path === "/auth/providers" ? { google: true } : {});

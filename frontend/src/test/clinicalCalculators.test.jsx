@@ -479,6 +479,54 @@ it("calculates HEART score for chest pain MACE stratification across all 5 clini
   expect(heartPrompt).toContain("HEART Score of 5 points");
 });
 
+it("calculates PERC rule for pulmonary embolism rule-out across all 8 criteria", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+
+  fireEvent.click(screen.getByRole("tab", { name: "PERC (PE Rule-Out)" }));
+  expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
+  expect(screen.getByText(/The PERC \(Pulmonary Embolism Rule-out Criteria\) rule/)).toBeTruthy();
+
+  // Initially 0 criteria checked -> PERC Negative (0 criteria; PE ruled out in low-risk patients)
+  expect(screen.getByText("Score: 0 criteria present")).toBeTruthy();
+  expect(screen.getByText(/PERC Negative \(0 criteria; PE ruled out in low-risk patients\)/)).toBeTruthy();
+  expect(screen.getByText(/All 8 PERC criteria are absent/)).toBeTruthy();
+
+  // Check Age >= 50
+  const ageCb = screen.getByLabelText(/Age \u2265 50 years/i);
+  fireEvent.click(ageCb);
+  expect(screen.getByText("Score: 1 criterion present")).toBeTruthy();
+  expect(screen.getByText(/PERC Positive \(1 criterion present; rule fails\)/)).toBeTruthy();
+  expect(screen.getByText(/The PERC rule cannot be used to rule out PE/)).toBeTruthy();
+
+  // Check HR >= 100, SaO2 < 95%, Unilateral leg swelling
+  const hrCb = screen.getByLabelText(/Heart rate \u2265 100 bpm/i);
+  const o2Cb = screen.getByLabelText(/Pulse oximetry SaO₂ < 95% on room air/i);
+  const legCb = screen.getByLabelText(/Unilateral leg swelling/i);
+
+  fireEvent.click(hrCb);
+  fireEvent.click(o2Cb);
+  fireEvent.click(legCb);
+
+  expect(screen.getByText("Score: 4 criteria present")).toBeTruthy();
+  expect(screen.getByText(/PERC Positive \(4 criteria present; rule fails\)/)).toBeTruthy();
+
+  // Uncheck all 4 -> returns to PERC Negative
+  fireEvent.click(ageCb);
+  fireEvent.click(hrCb);
+  fireEvent.click(o2Cb);
+  fireEvent.click(legCb);
+  expect(screen.getByText("Score: 0 criteria present")).toBeTruthy();
+  expect(screen.getByText(/PERC Negative/)).toBeTruthy();
+
+  // Re-check one criterion and test prompt insertion
+  fireEvent.click(ageCb);
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this PERC rule" }));
+  expect(onInsertPrompt).toHaveBeenCalled();
+  const percPrompt = onInsertPrompt.mock.calls[0][0];
+  expect(percPrompt).toContain("PERC Rule (Pulmonary Embolism Rule-out Criteria) with 1 criteria present");
+});
+
 it("supports arrow key navigation across calculator tabs", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   const bmiTab = screen.getByRole("tab", { name: "BMI" });
@@ -489,11 +537,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   fireEvent.keyDown(egfrTab, { key: "ArrowLeft" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
 
-  // Wrapping from last tab (HEART) to first (BMI) and back
-  const heartTab = screen.getByRole("tab", { name: "HEART (Chest Pain)" });
-  heartTab.focus();
-  fireEvent.keyDown(heartTab, { key: "ArrowRight" });
+  // Wrapping from last tab (PERC) to first (BMI) and back
+  const percTab = screen.getByRole("tab", { name: "PERC (PE Rule-Out)" });
+  percTab.focus();
+  fireEvent.keyDown(percTab, { key: "ArrowRight" });
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
-  expect(heartTab.getAttribute("aria-selected")).toBe("true");
+  expect(percTab.getAttribute("aria-selected")).toBe("true");
 });

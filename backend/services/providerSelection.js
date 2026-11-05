@@ -1,6 +1,6 @@
 const User = require("../models/userModel");
 const ProviderCredential = require("../models/providerCredentialModel");
-const { open } = require("./providerCredentials");
+const { openWithMetadata, seal } = require("./providerCredentials");
 const { fail } = require("./validation");
 
 const personalProviders = ["gemini", "groq", "together"];
@@ -40,7 +40,11 @@ const resolveProviderSelection = async (userId) => {
   if (personal) {
     const stored = await ProviderCredential.findOne({ userId, provider }).select("+iv +tag +ciphertext").lean();
     if (!stored) throw fail("Your selected API key is missing. Choose another provider in Account.", 503, "AI_NOT_CONFIGURED");
-    apiKey = open(stored);
+    const revealed = openWithMetadata(stored);
+    apiKey = revealed.apiKey;
+    if (revealed.requiresRotation) {
+      await ProviderCredential.updateOne({ _id: stored._id, userId, provider }, { $set: seal(apiKey) });
+    }
   } else {
     if (!configured(provider)) throw fail("The selected deployment provider is not configured.", 503, "AI_NOT_CONFIGURED");
     apiKey = deploymentKey(provider);

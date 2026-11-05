@@ -9,12 +9,15 @@ Developed by **J Ganesh kumar reddy**
 
 MedAssist AI is an educational health information application and biomedical AI research project. It combines PubMed retrieval with configurable Gemini, Groq, Together AI, or local model serving. The app has session controls, numeric citation checks, a limited medication-name caution list, educational calculators, and AES-256-GCM encryption for stored personal provider keys. None of these features establishes clinical accuracy or production readiness.
 
+Read [CURRENT_CAPABILITIES_AND_RELEASE_GATES.md](CURRENT_CAPABILITIES_AND_RELEASE_GATES.md) before relying on any historical architecture or deployment guide; it is the authoritative statement of implemented controls and outstanding release gates.
+
 This comprehensive technical documentation suite provides deep engineering specifications, mathematical formulations, architectural diagrams, security invariants, and operational runbooks.
 
 ```
 ========================================================================================================================
                                      MEDASSIST AI — PRODUCTION DOCUMENTATION SUITE
 ========================================================================================================================
+  [00] CURRENT_CAPABILITIES_AND_RELEASE_GATES.md ──► Implemented Controls vs Open Production Release Gates
   [01] SYSTEM_ARCHITECTURE_DEEP_DIVE.md       ──► Multi-Tier Infrastructure, Ingress, & Network Flow
   [02] CURRENT_IMPLEMENTATION.md              ──► Complete Runtime State, API Specs, & Developer Extension Guide
   [03] DEEP_DIVE_AI_WORKING_PRINCIPLES.md     ──► Biomedical RAG Math, PubMed E-Utilities, & Verifiers
@@ -43,7 +46,7 @@ This comprehensive technical documentation suite provides deep engineering speci
 +==================================================================================================+
 |                                    CLIENT TIER (Web Browser)                                     |
 |  React 19 SPA | Vite 6 | Tailwind CSS 4 | Web Locks API | tabStorage (Resilient Session Recovery) |
-|  18 Validated Clinical Calculators (BMI, eGFR, CHA2DS2-VASc, MAP, CrCl, Wells PE, Payne, etc.)    |
+|  22 Validated Clinical Calculators (BMI, eGFR, CHA2DS2, MAP, CrCl, Wells, Payne, HEART, PERC)    |
 +==================================================================================================+
                                            │              ▲
                HTTP (Port 8080; external HTTPS required) │   WebSocket (/ws)
@@ -62,16 +65,17 @@ This comprehensive technical documentation suite provides deep engineering speci
 |  [Express Pipeline]                                                                              |
 |    ├── Request Tracing (UUIDv4 x-request-id)   ├── CORS Whitelist & Origin Match Gate            |
 |    ├── Body Parser (Strict 32KB Limit)        ├── Rate Limiters (Auth: 30/15m, AI: 20/m, Set: 12)|
+|    ├── Privacy & Consent Filter (privacyService.js: redaction & versioned data processing consent)|
 |    └── Auth Middleware (JWT Cookie Validation & Monotonic sessionVersion Enforcement)             |
 |                                                                                                  |
 |  [Core Controllers & Services]                                                                   |
 |    ├── authController.js     <--> sessionService.js (Rotating SHA-256 Refresh Tokens)            |
 |    ├── oauthController.js    <--> PKCE S256 Flow & Google OpenID Connect Verification            |
-|    ├── settingsController.js <--> providerCredentials.js (AES-256-GCM User API Key Vault)       |
+|    ├── settingsController.js <--> providerCredentials.js (AES-256-GCM User API Key Vault Ring)  |
 |    ├── aiController.js       <--> answerService.js (Two-Phase Idempotent Generation)             |
 |    ├── medicalController.js  <--> pubmedService.js (NCBI E-Utilities: esearch, esummary, efetch)  |
 |    ├── citationService.js    <--> Deterministic Numerical Set Partitioning [N] Audit             |
-|    ├── interactionService.js <--> 19 FDA black-box drug-drug interaction warning checker         |
+|    ├── interactionService.js <--> 23 FDA black-box drug-drug interaction warning checker         |
 |    ├── answerVerifier.js     <--> Secondary LLM Draft Consensus Review                          |
 |    └── websocketService.js   <--> 30s Heartbeat Watchdog & 1MB Backpressure Protection           |
 +==================================================================================================+
@@ -105,14 +109,15 @@ mindmap
       Web Locks Single-Flight Refresh
       Resilient tabStorage Recovery
       IME Composition Guard
-      18 Clinical Calculators
+      22 Clinical Calculators
     (02 Ingress & Security)
       Nginx Reverse Proxy
       Origin Verification Gate
       Strict-Transport-Security
       X-Content-Type-Options nosniff
       X-Frame-Options DENY
-      AES-256-GCM Personal Key Vault
+      AES-256-GCM Named Key Vault Ring
+      Privacy Consent & Pre-Flight Redaction
       Monotonic sessionVersion Invalidation
       SHA-256 Token Rotation
     (03 Biomedical Grounding)

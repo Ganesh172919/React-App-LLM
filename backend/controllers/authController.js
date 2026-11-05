@@ -7,6 +7,7 @@ const bcrypt = require("bcryptjs");
 const { randomUUID } = require("crypto");
 const emailService = require("../services/emailService");
 const { hashToken, makeTokens, setCookies, clearCookies } = require("../services/sessionService");
+const { DATA_PROCESSING_CONSENT_VERSION, consentCurrent } = require("../services/privacyService");
 const emailFrom = (req) => typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
 const validEmail = (email) => email.length <= 254 && /^\S+@\S+\.\S+$/.test(email);
 const validPassword = (value) => typeof value === "string" && value.length >= 8 && Buffer.byteLength(value) <= 72;
@@ -14,14 +15,15 @@ const bad = (res, message) => res.status(400).json({ code: "INVALID_INPUT", mess
 const mail = (req) => req.app.locals.services.email || emailService;
 const closeSockets = (req, id) => req.app.locals.closeUserSockets?.(String(id));
 const failed = (req, res, operation) => res.status(500).json({ code: "AUTH_UNAVAILABLE", message: "Unable to " + operation + ". Please try again.", requestId: req.requestId });
-const publicUser = (user) => ({ id: String(user._id), email: user.email });
+const publicUser = (user) => ({ id: String(user._id), email: user.email, dataProcessingConsentRequired: !consentCurrent(user) });
 exports.register = async (req, res) => {
   const email = emailFrom(req);
   if (!validEmail(email) || !validPassword(req.body.password)) return bad(res, "Enter a valid email and a password of at least 8 characters (maximum 72 UTF-8 bytes).");
+  if (req.body.dataProcessingConsent !== true) return bad(res, "Accept the data-processing notice before creating an account.");
   try {
     if (await User.exists({ email })) return bad(res, "An account with this email already exists. Try signing in or resetting your password.");
     const token = jwt.sign({ email }, process.env.JWT_VERIFICATION_TOKEN, { expiresIn: "24h", jwtid: randomUUID() });
-    await User.create({ email, password: req.body.password, verificationToken: hashToken(token), verificationTokenExpiry: Date.now() + 86400000 });
+    await User.create({ email, password: req.body.password, verificationToken: hashToken(token), verificationTokenExpiry: Date.now() + 86400000, dataProcessingConsentAt: new Date(), dataProcessingConsentVersion: DATA_PROCESSING_CONSENT_VERSION });
     let delivery = "sent";
     try { await mail(req).sendVerificationEmail(email, token); } catch { delivery = "failed"; }
     return res.status(201).json({ delivery, message: delivery === "sent" ? "Account created. Check your inbox to verify your email." : "Account created, but email delivery failed. Use Resend verification to try again." });
@@ -43,6 +45,14 @@ exports.login = async (req, res) => {
   } catch { return failed(req, res, "sign in"); }
 };
 exports.checkAuth = (req, res) => res.json({ user: publicUser(req.authUser) });
+exports.acceptDataProcessing = async (req, res) => {
+  if (req.body.accepted !== true) return bad(res, "Accept the data-processing notice to continue.");
+  try {
+    const user = await User.findByIdAndUpdate(req.user.id, { $set: { dataProcessingConsentAt: new Date(), dataProcessingConsentVersion: DATA_PROCESSING_CONSENT_VERSION } }, { new: true });
+    if (!user) return bad(res, "Account not found.");
+    return res.json({ user: publicUser(user), message: "Data-processing preference saved." });
+  } catch { return failed(req, res, "save data-processing preferences"); }
+};
 exports.logout = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
@@ -120,7 +130,7 @@ exports.resendVerification = async (req, res) => {
 exports.exportData = async (req, res) => {
   try {
     const [user, chats] = await Promise.all([
-      User.findById(req.user.id).select("email providerChoice answerStyle audienceProfile usePastChats createdAt").lean(),
+      User.findById(req.user.id).select("email providerChoice answerStyle audienceProfile usePastChats createdAt dataProcessingConsentAt dataProcessingConsentVersion").lean(),
       Chat.find({ userId: req.user.id }).lean(),
     ]);
     if (!user) return bad(res, "Account not found.");
@@ -132,7 +142,9 @@ exports.exportData = async (req, res) => {
         answerStyle: user.answerStyle,
         audienceProfile: user.audienceProfile,
         usePastChats: user.usePastChats,
-        createdAt: user.createdAt,
+        createdAt: user.createdAt || null,
+        dataProcessingConsentAt: user.dataProcessingConsentAt || null,
+        dataProcessingConsentVersion: user.dataProcessingConsentVersion || null,
       },
       conversations: chats.map((c) => ({
         sessionId: c.sessionId,

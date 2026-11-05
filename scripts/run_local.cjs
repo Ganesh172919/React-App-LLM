@@ -16,7 +16,7 @@ async function main() {
   await mongoose.connect(mongo.getUri());
   const User = requireBackend("./models/userModel"); const Chat = requireBackend("./models/chatModel"); const Generation = requireBackend("./models/generationModel");
   await Promise.all([User.init(), Chat.init(), Generation.init(), requireBackend("./models/providerCredentialModel").init()]);
-  await User.create({ email: "student@example.test", password: "Student-demo-123", isVerified: true });
+  await User.create({ email: "student@example.test", password: "Student-demo-123", isVerified: true, dataProcessingConsentAt: new Date(), dataProcessingConsentVersion: "2026-11-04" });
   const services = fixture ? {
     email: { sendVerificationEmail: async () => {}, sendPasswordResetEmail: async () => {} },
     generate: async ({ prompt }) => {

@@ -17,7 +17,7 @@ This guide provides developers with a step-by-step engineering blueprint to exte
 5. **Client Concurrency & Resilience**: Working with the Web Locks API, storage fault tolerance, and IME composition safety.
 6. **ML Research & LoRA SFT**: Training adapters, compiling instruction datasets, and running parameter audits.
 7. **Production Deployment & Operations**: Multi-container Docker orchestration, TLS termination, CSP headers, and health monitoring.
-8. **Automated Quality Assurance**: Executing and adding to the 208 automated software verification suites.
+8. **Automated Quality Assurance**: Executing and adding to the 223 automated software verification suites.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
@@ -27,7 +27,7 @@ mindmap
     (01 Safety Engine)
       ::icon(fa fa-shield-virus)
       High-Risk DDI Screening
-        19 Production Rules
+        23 Production Rules
         Safe Regex Regex-Safe Matching
         CRITICAL & HIGH Tiers
       Deterministic Emergency Deflection
@@ -37,11 +37,12 @@ mindmap
         Non-Diagnostic Safeguards
     (02 Clinical Calculators)
       ::icon(fa fa-calculator)
-      18 Evidence-Based Tools
+      22 Evidence-Based Tools
         Renal eGFR CrCl FeNa FeUrea
-        Cardiovascular CHA2DS2-VASc MAP Wells HAS-BLED
+        Cardiovascular CHA2DS2-VASc MAP Wells HAS-BLED HEART PERC
         Critical Care GCS qSOFA CURB-65 Fluids
-        Hepatic APRI Child-Pugh Score
+        Hepatic APRI Child-Pugh MELD-Na
+        Infectious Modified Centor McIsaac
       WAI-ARIA Accessibility
         role tablist tab tabpanel
         Arrow Key & Home-End Cycling
@@ -85,12 +86,12 @@ mindmap
         PyTorch PEFT Rank 8
     (07 Master QA Suite)
       ::icon(fa fa-check-double)
-      208 Automated Checks
-        71 Backend Tests
-        55 Frontend Vitest Tests
+      223 Automated Checks
+        75 Backend Tests
+        59 Frontend Vitest Tests
         19 Python ML Tests
         7 Gateway Assertions
-        56 Playwright Browser Flows
+        63 Playwright Browser Flows
 ```
 
 ---
@@ -102,7 +103,7 @@ mindmap
 ```
 +==================================================================================================+
 |                         CLIENT WORKSPACE (Vite 6 + React 19 + Tailwind CSS 4)                    |
-|  - WAI-ARIA 18-Tool Clinical Calculators Modal       - Chat Composer with IME Composition Guard  |
+|  - WAI-ARIA 22-Tool Clinical Calculators Modal       - Chat Composer with IME Composition Guard  |
 |  - Web Locks Single-Flight Token Refresh Coordinator - Resilient tabStorage In-Memory Fallback   |
 |  - Medical Query Heuristic Classifier                - Real-Time WebSocket Telemetry Receiver    |
 +==================================================================================================+
@@ -272,7 +273,7 @@ Add the new rule object to the `HIGH_RISK_INTERACTION_RULES` array. Always speci
 7. `description`: Objective clinical mechanism explaining why the combination is hazardous.
 
 ```javascript
-// Example: Adding Rule 20 in backend/services/interactionService.js
+// Example: Adding Rule 24 in backend/services/interactionService.js
 {
   pair: "Simvastatin + Amlodipine (CYP3A4 Rhabdomyolysis Risk)",
   drugA: "High-Dose Simvastatin (e.g., Simvastatin, Zocor)",
@@ -329,7 +330,7 @@ node backend/test/interactionService.test.js
 
 ## 5. How to Add a New Evidence-Based Clinical Calculator
 
-MedAssist AI houses 18 clinical tools inside `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`. All calculators implement strict WAI-ARIA tab semantics, numeric bounds validation, unit toggles, and clinical guidance disclaimers.
+MedAssist AI houses 22 clinical tools inside `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` (BMI, eGFR, CHA₂DS₂-VASc, MAP, CrCl, Corrected Calcium, Anion Gap, FeNa, FeUrea, Maintenance Fluids, Wells PE, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na, Centor Pharyngitis, HEART Score, and PERC PE Rule-Out). All calculators implement strict WAI-ARIA tab semantics, numeric bounds validation, unit toggles, and clinical guidance disclaimers.
 
 ### 5.1 Calculator Architecture & WAI-ARIA Lifecycle
 
@@ -337,21 +338,14 @@ MedAssist AI houses 18 clinical tools inside `frontend/src/components/tools/Clin
 [ ClinicalCalculatorsModal.jsx ]
    │
    ├─► role="tablist" (aria-orientation="horizontal")
-   │     ├─► role="tab" id="tab-meld" aria-selected={activeTab === 'meld'} aria-controls="tabpanel-meld"
-   │     └─► ArrowRight / ArrowLeft / Home / End Keyboard Cycling
+   │     ├─► role="tab" id="tab-timi" aria-selected={activeTab === 'timi'} aria-controls="tabpanel-timi"
+   │     └─► ArrowRight / ArrowLeft / Home / End Keyboard Cycling across 22+ tabs
    │
-   ├─► State Management:
-   │     const [meldBilirubin, setMeldBilirubin] = useState("1.2");
-   │     const [meldInr, setMeldInr] = useState("1.1");
-   │     const [meldCreatinine, setMeldCreatinine] = useState("1.0");
-   │     const [meldSodium, setMeldSodium] = useState("138");
-   │     const [meldDialysis, setMeldDialysis] = useState(false);
+   ├─► State Management & Physiological Validation
    │
-   ├─► Mathematical Execution Engine:
-   │     MELD = 9.57 * ln(Cr) + 3.78 * ln(Bili) + 11.2 * ln(INR) + 6.43
-   │     Clamp lower bounds to 1.0; cap Cr at 4.0 mg/dL if dialysis twice in past 7 days.
+   ├─► Mathematical Execution Engine & Clamping
    │
-   └─► role="tabpanel" id="tabpanel-meld" aria-labelledby="tab-meld"
+   └─► role="tabpanel" id="tabpanel-timi" aria-labelledby="tab-timi"
          ├─► Form inputs with aria-describedby for units and clinical bounds
          ├─► Result card with stratified risk tier badge
          └─► "Ask MedAssist about this score" action button -> injects into Chat Composer
@@ -369,7 +363,8 @@ const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
   "aniongap", "fena", "feurea", "fluids", "wells",
   "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri",
-  "childpugh", "meld" // <--- Add new tab identifier
+  "childpugh", "meld", "centor", "heart", "perc",
+  "timi" // <--- Add new 23rd tab identifier
 ];
 ```
 
@@ -1047,14 +1042,14 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
 
 ```
 ========================================================================================================================
-                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (208 CHECKS)
+                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (223 CHECKS)
 ========================================================================================================================
 
     SUITE / SUBSYSTEM                   HARNESS / RUNNER                TEST COUNT        STATUS
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    1. Backend API & Services           Node 24 Test Runner             71 Tests          100% PASSED
+    1. Backend API & Services           Node 24 Test Runner             75 Tests          100% PASSED
        - application.test.js            Supertest + MongoMemoryServer   24 Tests          PASSED
-       - interactionService.test.js     19 DDI Rules & Safe Combos      20 Tests          PASSED
+       - interactionService.test.js     23 DDI Rules & Safe Combos      24 Tests          PASSED
        - safetyService.test.js          Emergency Regex & Deflection     7 Tests          PASSED
        - providers.test.js              PubMed XML & Gemini Parse        6 Tests          PASSED
        - citationService.test.js        Numeric Bracket Verifiers        4 Tests          PASSED
@@ -1063,9 +1058,9 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
        - historySearch.test.js          Token Overlap Relevance Check    2 Tests          PASSED
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
 
-    2. Frontend React Components        Vitest + jsdom                  55 Tests          100% PASSED
+    2. Frontend React Components        Vitest + jsdom                  59 Tests          100% PASSED
        - ui.test.jsx                    Workspace, Modals, Forms        25 Tests          PASSED
-       - clinicalCalculators.test.jsx   18 Calculator Logic & ARIA      16 Tests          PASSED
+       - clinicalCalculators.test.jsx   22 Calculator Logic & ARIA      20 Tests          PASSED
        - api.test.js                    Web Locks & Token Refresh        5 Tests          PASSED
        - medicalDetector.test.js        Client Query Classifier          5 Tests          PASSED
        - conversationImport.test.js     Untrusted JSON Import Contract   2 Tests          PASSED
@@ -1082,12 +1077,12 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
     4. Built-Output HTTP Gateway        check_build_serving.cjs          7 Tests          100% PASSED
        - Cache headers, CSP, SPA routing, /api/* reverse proxying        7 Tests          PASSED
 
-    5. Playwright Headless Browser      Chromium Headless               56 Tests          100% PASSED
+    5. Playwright Headless Browser      Chromium Headless               63 Tests          100% PASSED
        - browser_smoke.cjs              E2E Auth, Chat, Save, Export    21 Tests          PASSED
-       - browser_verify_dark_and_tools  WCAG Dark Mode, 18 Tools, DDI   35 Tests          PASSED
+       - browser_verify_dark_and_tools  WCAG Dark Mode, 22 Tools, DDI   42 Tests          PASSED
 
     =================================================================================================================
-    MASTER AUTOMATED VERIFICATION TOTAL                                208 CHECKS         100% PASSED
+    MASTER AUTOMATED VERIFICATION TOTAL                                223 CHECKS         100% PASSED
 ========================================================================================================================
 ```
 

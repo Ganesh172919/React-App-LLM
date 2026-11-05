@@ -1,5 +1,7 @@
 # MedAssist AI — Deployment, Infrastructure & Operations Guide
 
+> **Important:** This document includes target-state examples. The checked-in Compose stack serves HTTP only and does not itself supply a public TLS terminator, HSTS enforcement, ingress rate limits, backups, monitoring, or a restore drill. Treat [../docs/CURRENT_CAPABILITIES_AND_RELEASE_GATES.md](../docs/CURRENT_CAPABILITIES_AND_RELEASE_GATES.md) as the release authority.
+
 Developed by **J Ganesh kumar reddy**  
 *Full-Stack Educational Health Assistance, Biomedical Evidence Grounding, & Machine Learning Research Platform*
 

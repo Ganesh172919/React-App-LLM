@@ -6,7 +6,7 @@ const titles = { login: "Sign in", register: "Create an account", "forgot-passwo
 export default function AuthPage({ mode }) {
   const [params] = useSearchParams(); const navigate = useNavigate(); const { setUser } = useContext(AuthContext);
   const location = useLocation();
-  const [email, setEmail] = useState(params.get("email") || ""); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState("");
+  const [email, setEmail] = useState(params.get("email") || ""); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState(""); const [dataProcessingConsent, setDataProcessingConsent] = useState(false);
   const [status, setStatus] = useState("idle"); const [message, setMessage] = useState(location.state?.message || (params.get("oauth") === "failed" ? "Google sign-in was not completed. Try again or use your existing account." : "")); const [needsVerification, setNeedsVerification] = useState(false);
   const [googleAvailable, setGoogleAvailable] = useState(false);
   const token = params.get("token");
@@ -32,7 +32,7 @@ export default function AuthPage({ mode }) {
     setStatus("pending"); setMessage(""); setNeedsVerification(false);
     try {
       const endpoint = mode === "verification-pending" ? "resend-verification" : mode;
-      const body = ["register", "login"].includes(mode) ? { email, password } : mode === "reset-password" ? { token, newPassword: password } : { email };
+      const body = mode === "register" ? { email, password, dataProcessingConsent } : mode === "login" ? { email, password } : mode === "reset-password" ? { token, newPassword: password } : { email };
       const data = await apiRequest("/auth/" + endpoint, { method: "POST", body: JSON.stringify(body) });
       if (mode === "login") { setUser(data.user); navigate("/chat"); return; }
       if (mode === "register") { navigate("/verification-pending?email=" + encodeURIComponent(email), { state: { message: data.message } }); return; }
@@ -53,6 +53,7 @@ export default function AuthPage({ mode }) {
       {showPassword && <label>Password<input name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} maxLength={72} value={password} onChange={(e) => setPassword(e.target.value)} disabled={status === "pending"} /><span className="muted small-text">At least 8 characters, up to 72 UTF-8 bytes.</span></label>}
       {mode === "register" && password.length > 0 && <p className="small-text muted password-meter" style={{ marginTop: "-12px", marginBottom: "14px" }}>Password strength: <strong>{password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) ? "Strong" : password.length >= 8 ? "Fair" : "Too short"}</strong></p>}
       {["register", "reset-password"].includes(mode) && <label>Confirm password<input type="password" autoComplete="new-password" required minLength={8} maxLength={72} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} disabled={status === "pending"} /></label>}
+      {mode === "register" && <label className="checkbox-label"><input type="checkbox" checked={dataProcessingConsent} onChange={(e) => setDataProcessingConsent(e.target.checked)} disabled={status === "pending"} required />I understand that saved questions stay in this service and that questions may be sent to the selected AI provider and, for medical searches, to PubMed. I will not submit identifying or emergency information.</label>}
       <button className="button" type="submit" disabled={status === "pending" || (mode === "reset-password" && !token)}>{status === "pending" ? "Please wait..." : mode === "verification-pending" ? "Resend verification" : mode === "forgot-password" ? "Request reset link" : mode === "reset-password" ? "Update password" : titles[mode]}</button>
     </form>}
     {googleAvailable && <p><a className="button secondary" href={API_BASE_URL + "/auth/google"}>Continue with Google</a></p>}

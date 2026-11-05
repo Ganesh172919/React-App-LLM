@@ -40,7 +40,11 @@ export default function App() {
     setTheme((t) => (t === "dark" ? "light" : "dark"));
   };
   if (isAuthLoading) return <div className="page"><p role="status">Restoring your session...</p></div>;
-  const protect = (element) => user ? element : <Navigate to="/login" replace />;
+  const protect = (element, requiresExternalProcessing = false) => {
+    if (!user) return <Navigate to="/login" replace />;
+    if (requiresExternalProcessing && user.dataProcessingConsentRequired) return <Navigate to="/account?consent=required" replace />;
+    return element;
+  };
   return <BrowserRouter>
     <PagePosition />
     <header className="site-header"><nav aria-label="Main navigation">
@@ -56,7 +60,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       {["login", "register", "forgot-password", "reset-password", "verify-email", "verification-pending"].map((mode) => <Route key={mode} path={"/" + mode} element={<AuthPage key={mode} mode={mode} />} />)}
-      <Route path="/chat" element={protect(<ChatWorkspace key={user?.id} />)} />
+      <Route path="/chat" element={protect(<ChatWorkspace key={user?.id} />, true)} />
       <Route path="/dashboard" element={protect(<AnalyticsDashboard />)} />
       <Route path="/account" element={protect(<AccountPage />)} />
       <Route path="*" element={<main className="page"><h1>Page not found</h1><Link to="/">Return home</Link></main>} />

@@ -431,6 +431,19 @@ const HIGH_RISK_INTERACTION_RULES = [
     ],
     description: "FDA Boxed Warning / Major Contraindication: Linezolid is a reversible, non-selective monoamine oxidase inhibitor (MAOI). Co-administration with SSRIs or SNRIs precipitates severe, potentially fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, clonus, autonomic instability, delirium, and coma). Concurrent use is contraindicated unless under emergency conditions with intensive clinical monitoring.",
   },
+  {
+    pair: "Warfarin + Amiodarone (CYP2C9 & CYP3A4 Inhibition)",
+    drugA: "Warfarin (Coumadin, Jantoven)",
+    drugB: "Amiodarone (Cordarone, Pacerone, Nexterone)",
+    severity: "CRITICAL",
+    drugsA: [
+      /\bwarfarin\b/i, /\bcoumadin\b/i, /\bjantoven\b/i,
+    ],
+    drugsB: [
+      /\bamiodarone\b/i, /\bcordarone\b/i, /\bpacerone\b/i, /\bnexterone\b/i,
+    ],
+    description: "Major contraindication / FDA Warning: Amiodarone potently inhibits CYP2C9 and CYP3A4, substantially impairing clearance of active S-warfarin and R-warfarin enantiomers. Given amiodarone's prolonged elimination half-life (30 to 60 days), concurrent initiation routinely causes dramatic INR elevations (doubling or tripling), precipitating life-threatening major bleeding, intracranial hemorrhage, and retroperitoneal hematomas unless warfarin dosage is empirically reduced by 33% to 50% with strict weekly INR monitoring.",
+  },
 ];
 
 /**

@@ -34,7 +34,9 @@ MedAssist AI runs as a web application with a **React 19 Single Page Application
       | - Origin Whitelist & Cross-Site Fetch Metadata Screening                |
       | - Strict Body Size Bounds (32KB JSON Ceiling)                           |
       | - Cookie-Based JWT Auth with Monotonic sessionVersion Invalidation      |
-      | - AES-256-GCM Authenticated Personal API Key Vault                      |
+      | - Multi-Version AES-256-GCM Vault & Keyring Rotation (Named/Legacy)     |
+      | - Data Minimization & Consent Enforcement (Consent v2026-11-04)         |
+      | - 23 High-Risk FDA Black-Box Drug-Drug Interaction Safety Rules         |
       | - Google OAuth 2.0 with PKCE S256 Verification                          |
       | - Multi-Provider Engine (Gemini 2.5, Groq, Together AI, Local vLLM)    |
       | - Real-time NCBI Entrez PubMed Grounding (esearch, esummary, efetch)    |
@@ -46,7 +48,7 @@ MedAssist AI runs as a web application with a **React 19 Single Page Application
                                            ▼
       +-------------------------------------------------------------------------+
       |                       PERSISTENCE LAYER (MongoDB 7)                     |
-      | - Users: Credentials, Bcrypt Hashes, sessionVersion, Provider Choice    |
+      | - Users: Credentials, Bcrypt Hashes, sessionVersion, Consent Version    |
       | - ProviderCredentials: AES-256-GCM Encrypted User Keys (IV, Tag, Data)  |
       | - Chats: Authoritative Message Threads, PubMed PMIDs, Citation Audits   |
       | - Generations: Ephemeral In-Flight Buffers with 24-Hour TTL Expiration  |
@@ -74,9 +76,12 @@ mindmap
       Groq Fast LLM Inference
       Together AI Cloud API
       Local OpenAI-Compatible Server
-      AES-256-GCM Encrypted Key Vault
-    (03 Biomedical Grounding Engine)
+      AES-256-GCM Multi-Key Vault
+    (03 Biomedical Grounding & Safety)
       Heuristic Query Classifier
+      Data Minimization Redaction
+      Consent Enforcement 2026-11-04
+      23 High-Risk DDI Rules
       NCBI Entrez REST Pipeline
         esearch Top 3 PMIDs
         esummary Bibliographic Metadata
@@ -85,13 +90,19 @@ mindmap
         Numerical Bracket Regex
         Source Range Partitioning
       Consensus Review Verifier
-    (04 State & Resilience)
+    (04 Interactive Clinical Tools)
+      22 Evidence-Based Calculators
+      WAI-ARIA Tabpanel System
+      Arrow-Key Accessible Navigation
+      Physiological Input Bounding
+      Non-Diagnostic Prompt Insertion
+    (05 State & Resilience)
       Two-Phase Ephemeral Generation
       Authoritative /api/save Push
       Web Locks Single-Flight Refresh
       Resilient Tab Storage Recovery
       WebSocket Heartbeat Watchdog
-    (05 Ops & Telemetry)
+    (06 Ops & Telemetry)
       Liveness Probe /api/health
       Readiness Probe /api/ready
       UTC Analytics Trends 7 30 90
@@ -170,6 +181,8 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  dataProcessingConsentAt: Date,
+  dataProcessingConsentVersion: String,
 }, { timestamps: true });
 
 userSchema.pre("save", async function (next) {
@@ -183,7 +196,7 @@ module.exports = mongoose.model("User", userSchema);
 
 ### 3.2 Provider Credential Model (`backend/models/providerCredentialModel.js`)
 
-Stores user-provided API keys encrypted via **AES-256-GCM**. Raw keys are never stored in plaintext:
+Stores user-provided API keys encrypted via **AES-256-GCM** with multi-version keyring tracking. Raw keys are never stored in plaintext:
 
 ```javascript
 // backend/models/providerCredentialModel.js
@@ -201,6 +214,7 @@ const providerCredentialSchema = new mongoose.Schema({
     required: true,
     enum: ["gemini", "groq", "together"],
   },
+  keyVersion: { type: String, default: "legacy" },            // Keyring version identifier
   iv: { type: String, required: true, select: false },        // Base64 12-byte initialization vector
   tag: { type: String, required: true, select: false },       // Base64 16-byte authentication tag
   ciphertext: { type: String, required: true, select: false },// Base64 ciphertext
@@ -822,7 +836,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 
 ### 7.3 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 
-Performs deterministic regular-expression scanning across user queries for 19 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
+Performs deterministic regular-expression scanning across user queries for 23 major FDA black-box warning drug interaction pairs. Warnings are preserved across emergency redirects:
 
 | Interacting Pair | Severity | Drug A Class & Examples | Drug B Class & Examples | Clinical Risk Description |
 | :--- | :---: | :--- | :--- | :--- |
@@ -845,12 +859,94 @@ Performs deterministic regular-expression scanning across user queries for 19 ma
 | **SSRI / SNRI / MAOI + Triptan** | **CRITICAL** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | **CRITICAL** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Enalapril, Losartan, Spironolactone | Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur |
 | **Theophylline + Fluoroquinolones** | **CRITICAL** | Theophylline, Theo-24, Aminophylline, Elixophyllin | Ciprofloxacin, Enoxacin | Potent hepatic CYP1A2 inhibition reduces theophylline metabolic clearance by 30-50%, precipitating life-threatening theophylline toxicity, intractable seizures, and malignant cardiac arrhythmias (FDA Warning) |
+| **Colchicine + Strong CYP3A4 / P-gp Inhibitors** | **CRITICAL** | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin, Erythromycin, Ketoconazole, Itraconazole | Dual CYP3A4 & P-gp inhibition drastically blocks colchicine elimination, triggering multi-organ failure, bone marrow aplasia, rhabdomyolysis, and death (FDA Boxed Warning) |
+| **Carbamazepine + Strong CYP3A4 Inhibitors** | **CRITICAL** | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin, Erythromycin, Ketoconazole, Fluconazole | Abrupt CYP3A4 inhibition blocks carbamazepine clearance, causing severe acute neurotoxicity, ataxia, diplopia, and respiratory depression within 24-48 hours (FDA Warning) |
+| **Linezolid + SSRIs / SNRIs** | **CRITICAL** | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Duloxetine | Linezolid is a reversible non-selective MAOI; co-administration precipitates malignant hyperthermia, delirium, and fatal Serotonin Syndrome (FDA Boxed Warning) |
+| **Warfarin + Amiodarone** | **CRITICAL** | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | Potent CYP2C9 and CYP3A4 inhibition with 30-60 day half-life routinely doubles/triples INR, causing fatal hemorrhages unless warfarin dose is empirically reduced by 33%-50% |
+
+---
+
+### 7.4 Data Minimization & Privacy Protection Layer (`backend/services/privacyService.js`)
+
+To enforce data minimization principles before prompt transmission to external literature (NCBI) or model providers (Gemini, Groq, Together AI), MedAssist AI executes pre-flight identifier redaction and consent verification:
+
+```
+========================================================================================================================
+                          DATA MINIMIZATION & REGEX IDENTIFIER REDACTION PIPELINE
+========================================================================================================================
+
+    [ User Question Prompt ]
+               │
+               ├── 1. requireCurrentConsent(user) Check
+               │      └── Validates user.dataProcessingConsentVersion === "2026-11-04"
+               │      └── Rejects with HTTP 403 (PRIVACY_CONSENT_REQUIRED) if unaccepted
+               │
+               ▼
+    [ redactSensitiveText(prompt) ]
+               │
+               ├── Email Pattern: [A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,} ──► [email removed]
+               ├── Phone Pattern: (?:+?\d{1,3}[ .-]?)?(?:\(?\d{2,4}\)?[ .-]?)?\d{3,4}[ .-]\d{3,4} ──► [phone number removed]
+               ├── Government IDs: SSN, Aadhaar, National ID, Patient ID, MRN prefix + [A-Z0-9-]{4,} ──► [identifier removed]
+               └── Formatted Numbers: \d{3}-\d{2}-\d{4} (SSN) or 16-digit Aadhaar / card sequences ──► [identifier removed]
+               │
+               ▼
+    [ Redacted Sanitized String ] ──► Handed off to pubmedService.js & modelProvider.js
+========================================================================================================================
+```
+
+```javascript
+// Excerpt from backend/services/privacyService.js:
+const DATA_PROCESSING_CONSENT_VERSION = "2026-11-04";
+
+function redactSensitiveText(value) {
+  let text = String(value || "");
+  let redactionCount = 0;
+  for (const [pattern, replacement] of REDACTION_RULES) {
+    text = text.replace(pattern, () => { redactionCount += 1; return replacement; });
+  }
+  return { text, redactionCount };
+}
+
+function requireCurrentConsent(user) {
+  if (!user?.dataProcessingConsentAt || user.dataProcessingConsentVersion !== DATA_PROCESSING_CONSENT_VERSION) {
+    throw fail("Review and accept the data-processing notice in Account before sending questions.", 403, "PRIVACY_CONSENT_REQUIRED");
+  }
+}
+```
+
+---
+
+### 7.5 Multi-Version AES-256-GCM Keyring Rotation & Vault Management (`backend/services/providerCredentials.js`)
+
+User-provided LLM credentials (Gemini, Groq, Together AI) are encrypted with AES-256-GCM using authenticated 12-byte initialization vectors and 16-byte authentication tags. To allow zero-downtime key rotation, the vault supports named keys via `USER_API_KEY_ENCRYPTION_KEYS` alongside backward-compatible `legacy` keys:
+
+```
+========================================================================================================================
+                          AES-256-GCM KEYRING ROTATION & LAZY MIGRATION ARCHITECTURE
+========================================================================================================================
+
+    [ Storage Request ] ──► seal(apiKey)
+                                │
+                                ├── Resolves active key via USER_API_KEY_ENCRYPTION_KEY_VERSION (e.g., "v2")
+                                ├── Generates crypto.randomBytes(12) IV
+                                ├── Computes AES-256-GCM Ciphertext + 16-byte Auth Tag
+                                └── Persists { keyVersion: "v2", iv, tag, ciphertext, lastFour }
+
+    [ Retrieval Request ] ──► openWithMetadata(record)
+                                │
+                                ├── Resolves key from record.keyVersion (defaults to "legacy")
+                                ├── Reconstructs AES-256-GCM Decipher with authenticated tag check
+                                ├── Decrypts plaintext API key
+                                └── Flags `requiresRotation: record.keyVersion !== activeKeyVersion()`
+                                    (Permits lazy re-encryption on subsequent credential updates)
+========================================================================================================================
+```
 
 ---
 
 ## 8. Clinical Educational Calculators Specification
 
-The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 18 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
+The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implements 22 evidence-based medical calculators with WAI-ARIA tabpanel semantics and arrow-key cycling:
 
 ```
 ========================================================================================================================
@@ -917,6 +1013,23 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
     Child-Pugh Score (Liver)   Score = Bilirubin (1-3) + Albumin (1-3) + INR (1-3)       Score: 5-15 points
                                + Ascites (1-3) + Encephalopathy (1-3)                   Class A: 5-6 (Compensated)
                                Class B: 7-9 (Moderate); Class C: 10-15 (Decompensated)  Mortality: 10% / 30% / 70-80%
+
+    MELD-Na Score              MELD = 9.57*ln(Cr) + 3.78*ln(Bili) + 11.2*ln(INR) + 6.43  Bilirubin: 1.0-50.0 mg/dL
+    (End-Stage Liver Disease)  MELD-Na = MELD + 1.32*(137 - Na) - [0.033*MELD*(137-Na)]  Creatinine: 1.0-4.0 mg/dL
+                               Bounded: Na [125, 137] mEq/L, score capped at 40.         INR: 1.0-20.0, Na: 110-150
+
+    Modified Centor (McIsaac)  Tonsillar exudate (+1), Tender anterior cervical nodes (+1), Binary criteria + Age
+    (Strep Pharyngitis Risk)   Fever history (+1), Absence of cough (+1), Age modifier:  0-1: 1-10% (no swab)
+                               Age 3-14 (+1), Age 15-44 (0), Age >=45 (-1). Range: -1 to 5. 2-3: Rapid swab, 4-5: Rx
+
+    HEART Score                History (0-2) + ECG (0-2) + Age (0-2) + Risk Factors (0-2) Range: 0 to 10 points
+    (Major Cardiac Events)     + Initial Troponin (0-2).                                 0-3: Low (0.9-1.7% MACE)
+                               Validated for ED chest pain risk stratification.          4-6: Mod, 7-10: High (>50%)
+
+    PERC Rule                  8 Criteria: Age >= 50, HR >= 100, SaO2 < 95%, Leg swelling, Binary criteria
+    (PE Rule-Out Criteria)     Hemoptysis, Recent surgery/trauma, Prior PE/DVT, Estrogen. Score = 0: PE safely ruled
+                               Applied ONLY in low-risk gestalt patients.                out (<1.8% risk) without CT/D-dimer
+========================================================================================================================
 ========================================================================================================================
 ```
 

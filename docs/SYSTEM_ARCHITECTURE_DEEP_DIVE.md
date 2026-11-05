@@ -129,7 +129,7 @@ mindmap
       Memory Backpressure Drop Code 1013
       Owner-Scoped Event Fanout
     (06 Evidence Clinical Tools)
-      18 Clinical Calculators
+      22 Clinical Calculators
         BMI Metric and Imperial
         CKD-EPI 2021 eGFR
         CHA2DS2-VASc Stroke Risk
@@ -147,6 +147,10 @@ mindmap
         Mosteller Body Surface Area BSA
         APRI Liver Fibrosis and Cirrhosis
         Child-Pugh Cirrhosis Mortality Score
+        MELD-Na Liver Disease Prognosis
+        Modified Centor McIsaac Strep
+        HEART Score Chest Pain MACE
+        PERC Rule PE Rule-Out
       Accessibility Invariants
         WAI-ARIA Tabpanel Semantics
         Keyboard Alt-Plus-C Shortcut
@@ -791,7 +795,7 @@ export async function apiRequest(path, options = {}) {
 
 ## 10. Pharmacological Drug Interaction Detection & Preservation (`interactionService.js`)
 
-MedAssist AI implements deterministic regular expression screening for 19 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
+MedAssist AI implements deterministic regular expression screening for 23 major FDA black-box warning medication pairs. The critical architectural property of this subsystem is **preserved context invariant**: even if a prompt is flagged as an acute emergency and redirected to 911 guidance, detected drug interactions are attached to `verification.drugInteractions`, ensuring critical pharmacological risk context is never discarded during emergency deflection.
 
 ```
 ====================================================================================================
@@ -821,7 +825,7 @@ MedAssist AI implements deterministic regular expression screening for 19 major 
 ====================================================================================================
 ```
 
-### 10.1 19 FDA Black-Box Interaction Pairs
+### 10.1 23 FDA Black-Box Interaction Pairs
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Primary Risk & Mechanism |
 |:---|:---|:---|:---:|:---|
@@ -844,6 +848,10 @@ MedAssist AI implements deterministic regular expression screening for 19 major 
 | **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | `CRITICAL` | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | **Theophylline + Fluoroquinolones (Ciprofloxacin)** | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
+| **Colchicine + Strong CYP3A4 / P-gp Inhibitor** | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | `CRITICAL` | FDA Black Box Warning: Potent dual CYP3A4 & P-gp inhibition blocks colchicine elimination, triggering severe fatal multi-organ toxicity, rhabdomyolysis, and bone marrow aplasia. |
+| **Carbamazepine + Strong CYP3A4 Inhibitor** | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole, Fluconazole | `CRITICAL` | FDA Warning: Abrupt CYP3A4 inhibition blocks carbamazepine hepatic elimination, precipitating acute neurotoxicity within 24–48 hours (ataxia, nystagmus, diplopia, stupor, respiratory arrest). |
+| **Linezolid + SSRI / SNRI** | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Paroxetine, Venlafaxine, Duloxetine | `CRITICAL` | FDA Boxed Warning: Linezolid is a reversible, non-selective MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, autonomic collapse, delirium, coma). |
+| **Warfarin + Amiodarone (CYP2C9 & CYP3A4)** | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | `CRITICAL` | Major contraindication / FDA Warning: Amiodarone potently inhibits CYP2C9 and CYP3A4, substantially impairing S- and R-warfarin clearance. Given amiodarone's 30–60 day half-life, concurrent use routinely doubles or triples INR, causing fatal hemorrhages unless warfarin dose is empirically reduced by 33%–50% with weekly INR monitoring. |
 
 ---
 
@@ -868,7 +876,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
                  │
                  ▼
    ┌─────────────────────────────────────────────────────────────────┐
-   │ 18 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
+   │ 22 Evidence-Based Clinical Scoring Tools (+ Extension Blueprint)│
    │ ├── 01. Adult BMI (Metric: kg/m², Imperial: lbs/in² * 703)      │
    │ ├── 02. CKD-EPI 2021 Creatinine eGFR (Race-Free ASN-NKF Formula)│
    │ ├── 03. CHA₂DS₂-VASc Score for Atrial Fibrillation Stroke Risk  │
@@ -886,7 +894,11 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
    │ ├── 15. qSOFA Bedside Sepsis Mortality Screening                │
    │ ├── 16. Mosteller Body Surface Area (BSA Metric & Imperial)     │
    │ ├── 17. AST to Platelet Ratio Index (APRI Liver Fibrosis/Cirrh) │
-   │ └── 18. Child-Pugh Cirrhosis Mortality Score (CTP Prognosis)    │
+   │ ├── 18. Child-Pugh Cirrhosis Mortality Score (CTP Prognosis)    │
+   │ ├── 19. MELD-Na Liver Disease Prognosis (UNOS/OPTN 2016 Model)  │
+   │ ├── 20. Modified Centor (McIsaac) GAS Pharyngitis Score         │
+   │ ├── 21. HEART Score for ED Chest Pain Risk Stratification       │
+   │ └── 22. PERC Rule (Pulmonary Embolism Rule-Out Criteria)        │
    └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -916,6 +928,10 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **Mosteller Body Surface Area (BSA)** | Height (cm or in), Weight (kg or lbs) | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Reference adult norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
 | **Child-Pugh Score (CTP)** | Total Bilirubin (mg/dL), Serum Albumin (g/dL), INR, Ascites, Hepatic Encephalopathy | $\text{Child-Pugh} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{INR Pts} + \text{Ascites Pts} + \text{Enceph Pts}$ | Bilirubin: 0.1–50 mg/dL<br>Albumin: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated (~45% 1-yr survival; 70–80% perioperative mortality). |
+| **MELD-Na Liver Disease Prognosis** | Bilirubin (mg/dL), Creatinine (mg/dL), INR, Serum Sodium (mEq/L), Dialysis | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
+| **Modified Centor (McIsaac) Strep Score** | Tonsillar exudates (+1), Tender anterior cervical adenopathy (+1), Fever (+1), Absence of cough (+1), Age (3–14: +1; 15–44: 0; ≥45: -1) | $\text{Centor} = \sum \text{Criteria} + \text{Age Adj}$ (Range: -1 to 5) | 4 clinical checkboxes<br>3 age categories | ≤1: Low risk (1–10%, no throat culture or antibiotics).<br>2: Intermediate risk (11–17%, throat culture/RADT).<br>3: Moderate-high risk (28–35%, throat culture/RADT).<br>≥4: High risk (51–53%, throat culture/RADT; empiric antibiotics per clinical judgment). |
+| **HEART Score for Chest Pain MACE** | History (0–2), ECG (0–2), Age (0–2), Risk Factors (0–2), Initial Troponin (0–2) | $\text{HEART} = H + E + A + R + T$ (Range: 0–10) | 5 categorical dropdowns (0, 1, 2) | 0–3: Low risk (0.9–1.7% 6-week MACE; candidate for early discharge).<br>4–6: Intermediate risk (12–16.6% MACE; observation & serial troponins).<br>7–10: High risk (50–65% MACE; urgent admission & invasive angiography). |
+| **PERC Rule (PE Rule-Out)** | Age ≥50, HR ≥100, SaO₂ <95%, Unilateral leg swelling, Hemoptysis, Recent surgery/trauma, Prior PE/DVT, Exogenous estrogen | Point summation of criteria present (Range: 0–8) | 8 binary checkboxes | 0 criteria present: PERC Negative (PE ruled out in low pre-test probability ED patients without D-dimer or CTPA; <1.4% VTE risk).<br>≥1 criteria present: PERC Positive (PERC rule fails; PE cannot be ruled out clinically; proceed to D-dimer or CTPA). |
 
 ### 11.2 Production Implementation Snippet (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 

@@ -3,6 +3,7 @@ const Chat = require("../models/chatModel");
 const Generation = require("../models/generationModel");
 const { answer } = require("../services/answerService");
 const { id, text, keys, fail } = require("../services/validation");
+const { redactSensitiveText } = require("../services/privacyService");
 exports.handleChat = async (req, res, next) => {
   let job; let ownsJob = false;
   const controller = new AbortController();
@@ -12,6 +13,7 @@ exports.handleChat = async (req, res, next) => {
   try {
     keys(req.body, ["prompt", "sessionId", "exchangeId"]);
     const prompt = text(req.body.prompt, "Message", 4000);
+    const storedPrompt = redactSensitiveText(prompt).text;
     const requestedSession = id(req.body.sessionId, true);
     const exchangeId = req.body.exchangeId ? id(req.body.exchangeId) : randomUUID();
     if (requestedSession && !await Chat.exists({ sessionId: requestedSession, userId: req.user.id })) throw fail("Conversation not found.", 404, "NOT_FOUND");
@@ -28,7 +30,7 @@ exports.handleChat = async (req, res, next) => {
     if (ownsJob) {
       const result = await answer({ prompt, sessionId: requestedSession, userId: req.user.id, signal: controller.signal, services: req.app.locals.services, forceMedical: req.forceMedical });
       if (result.invalid) throw fail(result.text);
-      job.result = { ...result, prompt, exchangeId, timestamp: new Date().toISOString() };
+      job.result = { ...result, prompt: storedPrompt, exchangeId, timestamp: new Date().toISOString() };
       job.state = "ready"; await job.save();
     }
     return res.json({ ...job.result, generationId: job.exchangeId, sessionId: job.sessionId });

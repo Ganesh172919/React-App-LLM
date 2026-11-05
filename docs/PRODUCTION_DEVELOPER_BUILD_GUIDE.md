@@ -10,7 +10,7 @@ Developed by **J Ganesh kumar reddy**
 **MedAssist AI** is an educational health information application and biomedical AI research platform. The system couples client-side conversational workspaces with live literature harvesting via **NCBI Entrez E-Utilities**, multi-provider Large Language Model (LLM) orchestration (**Google Gemini 2.5 Flash**, **Groq**, **Together AI**, and **Local vLLM/Ollama**), and deterministic safety guardrails.
 
 ### Core Architectural Invariants
-1. **Deterministic Safety over Probabilistic Completion**: High-risk medical checks (acute emergency triage, self-harm crisis deflection, and 19 FDA black-box drug interactions) are executed deterministically in code before and after LLM synthesis.
+1. **Deterministic Safety over Probabilistic Completion**: High-risk medical checks (acute emergency triage, self-harm crisis deflection, and 23 FDA black-box drug interactions) are executed deterministically in code before and after LLM synthesis.
 2. **Zero Client Authority**: The browser client possesses zero direct database access, cannot bypass medical routing, cannot alter generation temperature ($0.25$) or token limits ($900$), and never accesses server-side API keys.
 3. **Single Active Device Session**: User accounts enforce a single concurrent device session. Every authentication event increments a monotonic `sessionVersion` counter, instantly invalidating previous access tokens and dropping active WebSocket connections.
 4. **Rotating Refresh Tokens with Replay Revocation**: Cryptographic SHA-256 token hashing with single-use rotation. If a previously consumed refresh token is presented, all sessions for that account family are instantly revoked.
@@ -27,7 +27,7 @@ Developed by **J Ganesh kumar reddy**
      ├── Web Locks API Single-Flight Token Refresh (frontend/src/lib/api.js)
      ├── Resilient Draft & Pending Answer Cache (frontend/src/lib/tabStorage.js)
      ├── IME Composition Safety Guard for East Asian Language Typing
-     └── 18 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
+     └── 22 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
                   │
                   │ HTTP (Port 8080) / Secure WebSocket (/ws)
                   │ (External TLS 1.3 Ingress Required in Production)
@@ -53,7 +53,7 @@ Developed by **J Ganesh kumar reddy**
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 19 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
+     │  - 23 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -86,7 +86,7 @@ mindmap
     (01 Clinical Safety Engine)
       ::icon(fa fa-shield-virus)
       High-Risk DDI Screening
-        19 Production Rules
+        23 Production Rules
         Safe Regex Bounded Matching
         CRITICAL & HIGH Tiers
         Preserved in Emergency Deflections
@@ -97,11 +97,12 @@ mindmap
         Non-Diagnostic Safeguards
     (02 Clinical Calculators)
       ::icon(fa fa-calculator)
-      18 Evidence-Based Tools
+      22 Evidence-Based Tools
         Renal eGFR CrCl FeNa FeUrea
-        Cardiovascular CHA2DS2-VASc MAP Wells HAS-BLED
+        Cardiovascular CHA2DS2-VASc MAP Wells HAS-BLED HEART PERC
         Critical Care GCS qSOFA CURB-65 Fluids
-        Hepatic APRI Child-Pugh Score
+        Hepatic APRI Child-Pugh MELD-Na
+        Infectious Modified Centor McIsaac
       WAI-ARIA Accessibility
         role tablist tab tabpanel
         Arrow Key & Home-End Circular Cycling
@@ -146,17 +147,17 @@ mindmap
         PyTorch PEFT Rank 8
     (07 Master QA Suite)
       ::icon(fa fa-check-double)
-      208 Automated Checks
-        71 Backend Unit & Integration Tests
-        55 Frontend Vitest Tests
+      223 Automated Checks
+        75 Backend Unit & Integration Tests
+        59 Frontend Vitest Tests
         19 Python ML & Dataset Tests
         7 Built HTTP Gateway Assertions
-        56 Playwright Browser Regression Flows
+        63 Playwright Browser Regression Flows
 ```
 
 ---
 
-## 3. High-Risk Drug-Drug Interaction Suite (19 Rules)
+## 3. High-Risk Drug-Drug Interaction Suite (23 Rules)
 
 MedAssist AI screens user queries and answers against a deterministic list of high-risk medication pairs in `backend/services/interactionService.js`:
 
@@ -181,10 +182,14 @@ MedAssist AI screens user queries and answers against a deterministic list of hi
 | 17 | **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | Concurrent 5-HT1 receptor agonist triptans with serotonergic antidepressants elevates central serotonin, precipitating Serotonin Syndrome. |
 | 18 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone | `CRITICAL` | Trimethoprim blocks distal nephron ENaC channels identically to amiloride. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | 19 | **Theophylline + Fluoroquinolones** | Theophylline, Theo-24, Aminophylline | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Ciprofloxacin potently inhibits hepatic CYP1A2, reducing theophylline metabolic clearance by 30% to 50% or more, causing toxic accumulation, refractory seizures, malignant arrhythmias, and death. |
+| 20 | **Colchicine + Strong CYP3A4 / P-gp Inhibitor** | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | `CRITICAL` | FDA Black Box Warning: Potent dual CYP3A4 & P-gp inhibition blocks colchicine elimination, triggering severe fatal multi-organ toxicity, rhabdomyolysis, and bone marrow aplasia. |
+| 21 | **Carbamazepine + Strong CYP3A4 Inhibitor** | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole, Fluconazole | `CRITICAL` | FDA Warning: Abrupt CYP3A4 inhibition blocks carbamazepine hepatic elimination, precipitating acute neurotoxicity within 24–48 hours (ataxia, nystagmus, diplopia, stupor, respiratory arrest). |
+| 22 | **Linezolid + SSRI / SNRI** | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Paroxetine, Venlafaxine, Duloxetine | `CRITICAL` | FDA Boxed Warning: Linezolid is a reversible, non-selective MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, autonomic collapse, delirium, coma). |
+| 23 | **Warfarin + Amiodarone (CYP2C9 & CYP3A4)** | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | `CRITICAL` | Major contraindication / FDA Warning: Amiodarone potently inhibits CYP2C9 and CYP3A4, substantially impairing S- and R-warfarin clearance. Given amiodarone's 30–60 day half-life, concurrent use routinely doubles or triples INR, causing fatal hemorrhages unless warfarin dose is empirically reduced by 33%–50% with weekly INR monitoring. |
 
 ---
 
-## 4. Evidence-Based Clinical Calculators Suite (18 Tools)
+## 4. Evidence-Based Clinical Calculators Suite (22 Tools)
 
 Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` with strict physiological bounds and WAI-ARIA circular arrow navigation:
 
@@ -193,6 +198,25 @@ Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` with
 | **Body Mass Index (BMI)** | $\text{BMI} = \frac{\text{Weight (kg)}}{[\text{Height (m)}]^2}$ | Weight, Height | Wt: 20–300 kg<br>Ht: 50–250 cm | Underweight (<18.5), Normal (18.5–24.9), Overweight (25–29.9), Obese (≥30). |
 | **CKD-EPI 2021 eGFR** | $142 \times \min(S_{\text{cr}}/\kappa, 1)^\alpha \times \max(S_{\text{cr}}/\kappa, 1)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$ | Age, Sex, Serum Cr | Age: 18–120 yr<br>Cr: 0.1–20 mg/dL | G1 (≥90), G2 (60–89), G3a (45–59), G3b (30–44), G4 (15–29), G5 (<15 Kidney Failure). |
 | **CHA₂DS₂-VASc** | Sum of risk factors (CHF, HTN, Age ≥75 [2], DM, Stroke/TIA [2], Vascular, Age 65–74, Sex Female) | Point toggles (0–9 scale) | Binary toggles | Score 0 (Men) / 1 (Women): Low risk.<br>Score ≥2 (Men) / ≥3 (Women): Anticoagulation recommended. |
+| **Mean Arterial Pressure (MAP)** | $\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | Systolic BP, Diastolic BP | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock criterion. |
+| **Cockcroft-Gault CrCl** | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age, Sex, Weight, Serum Cr | Age: 18–120 yr<br>Weight: 30–250 kg | Standard renal dosage adjustment metric for DOACs and antimicrobials. |
+| **Payne Corrected Calcium** | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Calcium, Albumin | Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts total calcium in hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
+| **Serum Anion Gap** | $\text{AG} = \text{Na}^+ - (\text{Cl}^- + \text{HCO}_3^-)$ | Sodium, Chloride, Bicarbonate | Na: 100–180 mEq/L<br>Cl: 60–140 mEq/L | Normal: 8–12 mEq/L.<br>>12 mEq/L: High Anion Gap Metabolic Acidosis. |
+| **Fractional Excretion of Sodium (FeNa)** | $\text{FeNa} = \frac{U_{\text{Na}} \times S_{\text{cr}}}{S_{\text{Na}} \times U_{\text{cr}}} \times 100\%$ | Serum & Urine Na, Serum & Urine Cr | Cr: 0.1–20 mg/dL<br>Na: 5–200 mEq/L | <1%: Prerenal azotemia.<br>>2%: Acute Tubular Necrosis (ATN). |
+| **Fractional Excretion of Urea (FeUrea)** | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | Serum BUN, Urine Urea, Serum/Urine Cr | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking diuretics.<br>>50%: Intrinsic AKI. |
+| **Maintenance Fluids (4-2-1 Rule)** | $4 \text{ mL/kg/hr (1-10kg)} + 2 \text{ mL/kg/hr (11-20kg)} + 1 \text{ mL/kg/hr (>20kg)}$ | Patient Weight (kg) | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
+| **Wells' Criteria for PE** | Point summation across 7 clinical criteria (DVT signs, alternative less likely, HR >100, etc.) | Clinical criteria checkboxes (0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Check D-dimer).<br>>4.0: PE Likely (Proceed to CT Pulmonary Angiography). |
+| **CURB-65 Pneumonia Score** | $\text{CURB-65} = C + U + R + B + 65$ (Confusion, Urea >19, RR ≥30, SBP <90 or DBP ≤60, Age ≥65) | 5 clinical checkboxes (0–5 points) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient).<br>2: Intermediate risk (~9% mortality, short stay).<br>3–5: High risk (15–40% mortality, urgent admission/ICU). |
+| **Glasgow Coma Scale (GCS)** | $\text{GCS} = E (1–4) + V (1–5) + M (1–6)$ (Eye, Verbal, Motor responses) | 3 ordinal dropdown selectors (3–15 points) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway reflexes). |
+| **HAS-BLED Bleeding Risk** | Sum of risk factors: HTN, Abnormal renal/liver (1-2), Stroke, Bleeding, Labile INR, Elderly >65, Drugs/Alcohol (1-2) | 9 clinical checkboxes (0–9 points) | Binary toggles | 0–1: Low risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; review modifiable risks). |
+| **qSOFA Sepsis Screening** | Altered mental status (GCS <15) + Tachypnea (RR ≥22) + Hypotension (SBP ≤100 mmHg) | 3 clinical checkboxes (0–3 points) | Binary toggles | 0–1: Low risk of in-hospital sepsis mortality.<br>2–3: High risk of in-hospital sepsis mortality (prompt evaluation for organ dysfunction & sepsis protocol). |
+| **Body Surface Area (BSA - Mosteller)** | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height (cm/in), Weight (kg/lbs) | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Adult reference norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
+| **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
+| **Child-Pugh Cirrhosis Score** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant functional compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated cirrhosis (~45% 1-yr survival). |
+| **MELD-Na Liver Disease Prognosis** | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bilirubin, Creatinine, INR, Sodium, Dialysis | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
+| **Modified Centor (McIsaac) Strep Score** | $\text{Score} = \text{Exudate} (+1) + \text{Nodes} (+1) + \text{Fever} (+1) + \text{No Cough} (+1) + \text{Age Group} (+1, 0, -1)$ | Tonsillar exudate, Tender nodes, Fever, No cough, Age group | 4 clinical checkboxes<br>Age: 3–14 (+1), 15–44 (0), ≥45 (-1) | ≤1: Low risk (1–10%, no testing/antibiotics).<br>2: Intermediate risk (11–17%, throat culture/RADT).<br>3: Moderate-high risk (28–35%, throat culture/RADT).<br>≥4: High risk (51–53%, RADT/culture; consider empiric antibiotic per clinical judgment). |
+| **HEART Chest Pain MACE Score** | $\text{Score} = \text{History} (0–2) + \text{ECG} (0–2) + \text{Age} (0–2) + \text{Risk Factors} (0–2) + \text{Troponin} (0–2)$ | 5 categorical dropdown selectors (0–10 scale) | History, ECG, Age, Risk factors, Initial Troponin | 0–3: Low risk (0.9–1.7% 6-week MACE; candidate for early discharge).<br>4–6: Intermediate risk (12–16.6% MACE; observation & serial troponins).<br>7–10: High risk (50–65% MACE; urgent admission & invasive angiography). |
+| **PERC Rule (PE Rule-Out)** | 8 clinical criteria (Age ≥50, HR ≥100, SaO₂ <95%, Unilateral leg swelling, Hemoptysis, Recent surgery/trauma, Prior PE/DVT, Exogenous estrogen) | 8 clinical checkboxes (0–8 criteria) | Binary toggles | 0 criteria: PERC Negative (PE ruled out in low pre-test probability ED patients without D-dimer or CTPA; <1.4% VTE risk).<br>≥1 criterion: PERC Positive (PERC rule fails; PE cannot be ruled out clinically; proceed to D-dimer or CTPA). |
 | **Mean Arterial Pressure (MAP)** | $\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | Systolic BP, Diastolic BP | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock criterion. |
 | **Cockcroft-Gault CrCl** | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age, Sex, Weight, Serum Cr | Age: 18–120 yr<br>Weight: 30–250 kg | Standard renal dosage adjustment metric for DOACs and antimicrobials. |
 | **Payne Corrected Calcium** | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Calcium, Albumin | Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts total calcium in hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
@@ -260,7 +284,8 @@ const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
   "aniongap", "fena", "feurea", "fluids", "wells",
   "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri",
-  "childpugh", "meld" // <--- Register new tab key
+  "childpugh", "meld", "centor", "heart", "perc",
+  "customTool" // <--- Register new 23rd tab key here
 ];
 ```
 
@@ -495,20 +520,20 @@ export default router;
 
 ---
 
-## 6. Master Automated Quality Verification Suite (208 Checks)
+## 6. Master Automated Quality Verification Suite (223 Checks)
 
-MedAssist AI enforces a rigorous **208-check automated verification suite** across all application tiers:
+MedAssist AI enforces a rigorous **223-check automated verification suite** across all application tiers:
 
 ```
 ========================================================================================================================
-                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (208 CHECKS)
+                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (223 CHECKS)
 ========================================================================================================================
 
     SUITE / SUBSYSTEM                   HARNESS / RUNNER                TEST COUNT        STATUS
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    1. Backend API & Services           Node 24 Test Runner             71 Tests          100% PASSED
+    1. Backend API & Services           Node 24 Test Runner             75 Tests          100% PASSED
        - application.test.js            Supertest + MongoMemoryServer   24 Tests          PASSED
-       - interactionService.test.js     19 DDI Rules & Safe Combos      20 Tests          PASSED
+       - interactionService.test.js     23 DDI Rules & Safe Combos      24 Tests          PASSED
        - safetyService.test.js          Emergency Regex & Deflection     7 Tests          PASSED
        - providers.test.js              PubMed XML & Gemini Parse        6 Tests          PASSED
        - citationService.test.js        Numeric Bracket Verifiers        4 Tests          PASSED
@@ -517,9 +542,9 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
        - historySearch.test.js          Token Overlap Relevance Check    2 Tests          PASSED
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
 
-    2. Frontend React Components        Vitest + jsdom                  55 Tests          100% PASSED
+    2. Frontend React Components        Vitest + jsdom                  59 Tests          100% PASSED
        - ui.test.jsx                    Workspace, Modals, Forms        25 Tests          PASSED
-       - clinicalCalculators.test.jsx   18 Calculator Logic & ARIA      16 Tests          PASSED
+       - clinicalCalculators.test.jsx   22 Calculator Logic & ARIA      20 Tests          PASSED
        - api.test.js                    Web Locks & Token Refresh        5 Tests          PASSED
        - medicalDetector.test.js        Client Query Classifier          5 Tests          PASSED
        - conversationImport.test.js     Untrusted JSON Import Contract   2 Tests          PASSED
@@ -536,12 +561,12 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
     4. Built-Output HTTP Gateway        check_build_serving.cjs          7 Tests          100% PASSED
        - Cache headers, CSP, SPA routing, /api/* reverse proxying        7 Tests          PASSED
 
-    5. Playwright Headless Browser      Chromium Headless               56 Tests          100% PASSED
+    5. Playwright Headless Browser      Chromium Headless               63 Tests          100% PASSED
        - browser_smoke.cjs              E2E Auth, Chat, Save, Export    21 Tests          PASSED
-       - browser_verify_dark_and_tools  WCAG Dark Mode, 18 Tools, DDI   35 Tests          PASSED
+       - browser_verify_dark_and_tools  WCAG Dark Mode, 22 Tools, DDI   42 Tests          PASSED
 
     =================================================================================================================
-    MASTER AUTOMATED VERIFICATION TOTAL                                208 CHECKS         100% PASSED
+    MASTER AUTOMATED VERIFICATION TOTAL                                223 CHECKS         100% PASSED
 ========================================================================================================================
 ```
 
@@ -550,13 +575,13 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
 ## 7. Execution Commands & Operational Runbook
 
 ```powershell
-# 1. Master project verification runner (executes all 9 automated gates)
+# 1. Master project verification runner (executes all automated gates)
 node scripts/verify_project.cjs
 
-# 2. Backend unit & integration test runner (71 tests across 9 files)
+# 2. Backend unit & integration test runner (75 tests across 9 files)
 npm test --prefix backend
 
-# 3. Frontend Vitest component & ARIA test suite (55 tests across 6 files)
+# 3. Frontend Vitest component & ARIA test suite (59 tests across 6 files)
 npm test --prefix frontend
 
 # 4. Python ML research dataset audit (13 tests)
@@ -571,7 +596,7 @@ node scripts/check_build_serving.cjs
 # 7. Playwright browser smoke test suite (21 workflows)
 node scripts/browser_smoke.cjs
 
-# 8. Playwright dark mode, accessibility & clinical tools suite (35 workflows)
+# 8. Playwright dark mode, accessibility & clinical tools suite (42 workflows)
 node scripts/browser_verify_dark_and_tools.cjs
 
 # 9. Generate Master Architecture & Interview Mastery PDF
@@ -592,12 +617,12 @@ python scripts/generate_interview_mastery_pdf.py
 | **06** | **[`docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md)** | Exhaustive, line-by-line engineering inventory of every file in the repository across `backend/`, `frontend/`, `Model and Dataset/`, `scripts/`, and root configurations, including exported symbols, dependencies, and architectural roles. |
 | **07** | **[`docs/DEPLOYMENT_RUNBOOK.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEPLOYMENT_RUNBOOK.md)** | Production operations manual, multi-container Docker Compose orchestration, bare-metal deployment, automated secrets generation (`deploy/create_env.cjs`), SSL/TLS Nginx configuration, database backup/restore, health probes, and Section 11 Kubernetes & Blue-Green Extensibility. |
 | **08** | **[`docs/EVALUATION_AND_INTEGRATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/EVALUATION_AND_INTEGRATION.md)** | Empirical evaluation framework, paired case-level ablation scoring (`evaluate_benchmark.py`), offline document retrieval with OCR (`document_retrieval.py`), privacy boundaries, and Section 8 Developer Extensibility. |
-| **09** | **[`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (71), frontend (55), Python (19), built HTTP (7), and separately run browser workflows (56). Master Software Regression Total: 208 passed checks. |
+| **09** | **[`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (75), frontend (59), Python (19), built HTTP (7), and separately run browser workflows (63). Master Software Regression Total: 223 passed checks. |
 | **10** | **[`docs/ISSUES_AND_RISKS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/ISSUES_AND_RISKS.md)** | Prioritized risk register and engineering mitigations, multi-tier defense-in-depth model, clinical boundaries, pharmacological heuristic limitations, cryptographic key dependencies, STRIDE threat model, SSRF defense, and Section 10 Custom Guardrails. |
 | **11** | **[`docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md)** | Condensed architectural handbook summarizing the clinical query routing pipeline, PubMed grounding steps, Gemini system instructions, citation validation rules, and Section 9 Custom Harvesters. |
 | **12** | **[`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, modern transformer configurations (Llama-3/Mistral/Gemma), review-gated training commands, and Section 8 Custom Adapters. |
 | **13** | **[`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md)** | Exhaustive, file-by-file implementation deep dive with line-by-line subsystem analysis, real code snippets, ASCII topologies, colorful architectural mindmaps, and Section 10 Developer Extensibility Blueprint. |
 | **14** | **[`docs/README.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/README.md)** | Documentation suite master index, reading path curriculum, system-wide mindmap, and developer reference topology. |
-| **15** | **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)** | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, literature harvesters, MongoDB schemas, and running 208 tests. |
+| **15** | **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)** | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, literature harvesters, MongoDB schemas, and running 223 tests. |
 | **16** | **[`docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf)** | Comprehensive technical architecture, engineering design, clinical tradeoffs, and interview mastery guide generated by `scripts/generate_interview_mastery_pdf.py`. |
-| **17** | **[`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md)** | All-in-one production developer build guide, master topology, complete 19 DDI and 18 calculator tables, and copy-paste recipes for extending the platform. |
+| **17** | **[`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md)** | All-in-one production developer build guide, master topology, complete 23 DDI and 22 calculator tables, and copy-paste recipes for extending the platform. |

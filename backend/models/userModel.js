@@ -91,7 +91,9 @@ const userSchema = new mongoose.Schema({
   answerStyle: { type: String, enum: ["balanced", "brief", "detailed"], default: "balanced" },
   audienceProfile: { type: String, enum: ["general", "student", "clinician"], default: "general" },
   usePastChats: { type: Boolean, default: false },
-});
+  dataProcessingConsentAt: Date,
+  dataProcessingConsentVersion: String,
+}, { timestamps: true });
 
 userSchema.pre("save", async function (next) {
   if (this.isModified("password")) {

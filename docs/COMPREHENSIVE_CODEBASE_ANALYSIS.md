@@ -3,7 +3,7 @@
 Developed by **J Ganesh kumar reddy**  
 *Full-Stack Educational Health Assistance, Biomedical Evidence Grounding, & Machine Learning Research Platform*
 
-> Historical design analysis. Some excerpts below are illustrative and may differ from the running code. Use [implementation status](IMPLEMENTATION_STATUS.md), [deployment runbook](DEPLOYMENT_RUNBOOK.md), and the named source files for current verified behavior.
+> Historical design analysis. Some excerpts below are illustrative and may differ from the running code. Use [CURRENT_CAPABILITIES_AND_RELEASE_GATES.md](CURRENT_CAPABILITIES_AND_RELEASE_GATES.md) as the current release authority; this document is not evidence that illustrative components are enabled.
 
 ---
 

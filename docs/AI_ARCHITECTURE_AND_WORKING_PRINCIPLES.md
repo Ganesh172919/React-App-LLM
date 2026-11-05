@@ -108,7 +108,7 @@ mindmap
         efetch MEDLINE XML Parsing
       fast-xml-parser Text Extraction
     (03 Pharmacological Screening)
-      19 FDA Black-Box Drug Interactions
+      23 FDA Black-Box Drug Interactions
         Preserved in Emergency Deflections
         Non-Diagnostic Safety Banners
     (04 Multi-Provider Synthesis)
@@ -267,7 +267,7 @@ const HIGH_RISK_INTERACTION_RULES = [
     drugsB: [/\bciprofloxacin\b/i, /\bcipro\b/i, /\benoxacin\b/i],
     description: "Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin or enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable nausea/vomiting, cardiac arrhythmias, and fatal seizures.",
   },
-  // 15 additional FDA black-box contraindication rules (19 total active rules)
+  // 19 additional FDA black-box contraindication rules (23 total active rules)
 ];
 
 const detectDrugInteractions = (text) => {
@@ -289,7 +289,7 @@ const detectDrugInteractions = (text) => {
 };
 ```
 
-#### Complete 19 FDA Black-Box Medication Interaction Inventory
+#### Complete 23 FDA Black-Box Medication Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Clinical Pathophysiology & FDA Warning |
 |:---|:---|:---|:---|:---:|:---|
@@ -312,6 +312,10 @@ const detectDrugInteractions = (text) => {
 | **17** | SSRI / SNRI / MAOI + Triptan | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | **CRITICAL** | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **18** | TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | **CRITICAL** | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | **19** | Theophylline + Fluoroquinolones | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
+| **20** | Colchicine + Strong CYP3A4 / P-gp Inhibitor | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | **CRITICAL** | FDA Black Box Warning: Dual CYP3A4 & P-gp inhibition halts colchicine clearance, precipitating fatal multi-organ failure, rhabdomyolysis, and bone marrow aplasia. |
+| **21** | Carbamazepine + Strong CYP3A4 Inhibitor | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole, Fluconazole | **CRITICAL** | FDA Warning: CYP3A4 inhibition causes rapid 2- to 3-fold carbamazepine intoxication within 24–48 hours (ataxia, nystagmus, diplopia, somnolence, respiratory arrest). |
+| **22** | Linezolid + SSRI / SNRI | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Paroxetine, Venlafaxine, Duloxetine | **CRITICAL** | FDA Boxed Warning: Linezolid is a reversible MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, delirium, coma). |
+| **23** | Warfarin + Amiodarone (CYP2C9 & CYP3A4) | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | **CRITICAL** | Major contraindication / FDA Warning: Amiodarone potently inhibits CYP2C9 and CYP3A4, substantially impairing S- and R-warfarin clearance. Prolonged 30–60 day half-life routinely causes INR surges and fatal hemorrhages unless warfarin dose is reduced by 33%–50% with weekly monitoring. |
 
 ### 3.3 Secondary Consensus Model Review (`backend/services/answerVerifier.js`)
 

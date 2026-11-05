@@ -18,7 +18,7 @@ async function main() {
   await mongoose.connect(mongo.getUri());
   const User = requireBackend("./models/userModel");
   await Promise.all([User.init(), requireBackend("./models/chatModel").init(), requireBackend("./models/generationModel").init(), requireBackend("./models/providerCredentialModel").init()]);
-  await User.create({ email: "student@example.test", password: "Student-demo-123", isVerified: true });
+  await User.create({ email: "student@example.test", password: "Student-demo-123", isVerified: true, dataProcessingConsentAt: new Date(), dataProcessingConsentVersion: "2026-11-04" });
   const mailbox = [];
   const deliver = (kind) => async (to, token) => mailbox.push({ to, kind, link: (kind === "verify" ? "/verify-email?token=" : "/reset-password?token=") + encodeURIComponent(token) });
   const services = fixtures ? {

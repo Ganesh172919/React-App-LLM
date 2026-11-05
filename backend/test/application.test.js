@@ -22,7 +22,7 @@ const services = {
 const cookieHeader = (response) => response.headers["set-cookie"].map((value) => value.split(";")[0]).join("; ");
 async function account(target = app) {
   const email = randomUUID() + "@example.test"; const agent = request.agent(target); const password = "Synthetic-pass-123";
-  assert.equal((await agent.post("/api/auth/register").send({ email, password })).status, 201);
+  assert.equal((await agent.post("/api/auth/register").send({ email, password, dataProcessingConsent: true })).status, 201);
   assert.equal((await agent.post("/api/auth/verify-email").send({ token: mail.get(email) })).status, 200);
   const login = await agent.post("/api/auth/login").send({ email, password }); assert.equal(login.status, 200);
   return { agent, email, password, login, user: await User.findOne({ email }) };
@@ -44,11 +44,28 @@ test("health remains live while readiness requires a database", async () => {
 test("registration, verification, duplicate verification, and validation", async () => {
   const email = randomUUID() + "@example.test";
   assert.equal((await request(app).post("/api/auth/register").send({ email, password: "short" })).status, 400);
-  await request(app).post("/api/auth/register").send({ email, password: "Synthetic-pass-123" });
+  assert.equal((await request(app).post("/api/auth/register").send({ email, password: "Synthetic-pass-123" })).status, 400);
+  await request(app).post("/api/auth/register").send({ email, password: "Synthetic-pass-123", dataProcessingConsent: true });
   assert.equal((await request(app).post("/api/auth/login").send({ email, password: "Synthetic-pass-123" })).status, 403);
   const token = mail.get(email);
   for (let i = 0; i < 2; i++) assert.equal((await request(app).post("/api/auth/verify-email").send({ token })).body.verified, true);
   const stored = await User.findOne({ email }); assert.notEqual(stored.password, "Synthetic-pass-123"); assert.equal(stored.verificationToken, undefined);
+  assert.ok(stored.createdAt); assert.ok(stored.dataProcessingConsentAt);
+});
+test("external processing requires current consent and redacts obvious identifiers", async () => {
+  const captured = [];
+  const privacyApp = createApp({ services: { ...services, generate: async (args) => { captured.push(args); return { text: "A synthetic general answer.", model: "privacy-fixture" }; } }, limits: false });
+  const email = randomUUID() + "@example.test"; const password = "Synthetic-pass-123"; const agent = request.agent(privacyApp);
+  await User.create({ email, password, isVerified: true });
+  assert.equal((await agent.post("/api/auth/login").send({ email, password })).status, 200);
+  const blocked = await generate(agent, "What is JavaScript? My email is person@example.test and my phone is 555-555-1212.");
+  assert.equal(blocked.status, 403); assert.equal(blocked.body.code, "PRIVACY_CONSENT_REQUIRED");
+  const accepted = await agent.put("/api/auth/data-processing-consent").send({ accepted: true });
+  assert.equal(accepted.status, 200); assert.equal(accepted.body.user.dataProcessingConsentRequired, false);
+  const response = await generate(agent, "What is JavaScript? My email is person@example.test and my phone is 555-555-1212.");
+  assert.equal(response.status, 200); assert.ok(response.body.verification.privacyRedactions >= 2);
+  assert.doesNotMatch(captured.at(-1).prompt, /person@example\.test|555-555-1212/);
+  assert.doesNotMatch(response.body.prompt, /person@example\.test|555-555-1212/);
 });
 test("Google OAuth validates state and isolates existing password accounts", async (t) => {
   const keys = ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_CALLBACK_URL"];
@@ -205,6 +222,8 @@ test("chat read, rename, search, pagination, export payload, and deletion are ow
   const exportRes = await first.agent.get("/api/auth/export-data");
   assert.equal(exportRes.status, 200);
   assert.equal(exportRes.body.account.email, first.user.email);
+  assert.ok(exportRes.body.account.createdAt);
+  assert.ok(exportRes.body.account.dataProcessingConsentAt);
   assert.ok(Array.isArray(exportRes.body.conversations));
   assert.equal((await second.agent.get("/api/auth/export-data")).body.conversations.length, 0);
   assert.equal((await first.agent.delete("/api/chats/" + sessionId)).status, 200); assert.equal((await first.agent.get("/api/chats/" + sessionId)).status, 404);

@@ -1,5 +1,7 @@
 # MedAssist AI — Educational Health Assistance & Biomedical Evidence Grounding Platform
 
+> **Current-status notice:** Read [docs/CURRENT_CAPABILITIES_AND_RELEASE_GATES.md](docs/CURRENT_CAPABILITIES_AND_RELEASE_GATES.md) before deployment or use. This repository is an educational/research project—not a clinically validated product, medical device, privacy-compliance program, or production-ready service. Historical architecture examples may describe future or illustrative controls rather than shipped functionality.
+
 Developed by **J Ganesh kumar reddy**  
 *Full-Stack Educational Health Assistance, Biomedical Evidence Grounding, & Machine Learning Research Platform*
 
@@ -12,17 +14,18 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
 ### Core System Capabilities
 1. **Biomedical Evidence Grounding**: Live 3-stage NCBI Entrez E-Utilities harvesting (`esearch`, `esummary`, `efetch`) extracting structured MEDLINE XML abstracts.
 2. **Deterministic Citation Auditing**: Set-partitioning mathematical verifier analyzing `[N]` bracketed assertions against retrieved literature bounds.
-3. **Medication Interaction Screener**: Heuristic name matching for 22 selected high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
-4. **Educational Clinical Calculators**: 21 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
+3. **Medication Interaction Screener**: Heuristic name matching for a limited selected set of high-risk medication combinations, with cautions preserved across emergency deflections. It cannot rule out other interactions.
+4. **Educational Clinical Calculators**: 22 reference tools with input bounds and WAI-ARIA tab navigation; outputs have not been clinically validated for patient care.
 5. **Two-Phase Idempotent Persistence**: Ephemeral 24-hour generation buffer followed by an automatic `/api/save` request after an answer is generated.
 6. **Multi-Tab Web Locks Synchronization**: Single-flight token renewal across concurrent browser tabs (`navigator.locks.request`).
 7. **Offline Machine Learning & LoRA Suite**: 1,437 ambiguous question groups quarantined; deterministic SHA-256 modulo 100 hash splits; closed-form LoRA parameter calculations.
+8. **Data Minimization & Privacy Protection**: Pre-flight regex identifier redaction (emails, phone numbers, SSNs, MRNs, Aadhaar, National IDs) and mandatory versioned data-processing consent (`DATA_PROCESSING_CONSENT_VERSION = "2026-11-04"`) before queries reach external literature or AI providers.
 
 > [!IMPORTANT]
 > **Clinical Disclaimer**: MedAssist AI provides health and medical information strictly for educational and research purposes. It does not provide clinical diagnoses, medical advice, or treatment plans. Acute emergency symptoms require immediate contact with local emergency medical services.
 
 > [!TIP]
-> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult the dedicated [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators (21+ tools), medication interaction rules (22+ rules), backend REST models, and custom LoRA datasets.
+> **Developer & Contributor Extensibility Guide**: If you are an engineer or researcher building on this project, please consult the dedicated [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), and [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md#10-developer-extensibility--architecture-blueprint-for-building-on-medassist-ai) for step-by-step blueprints on adding AI providers, clinical calculators (22+ tools), medication interaction rules (23+ rules), backend REST models, and custom LoRA datasets.
 
 **Conversation JSON preview:** The chat sidebar can open a previously exported JSON conversation locally. The file is limited to 512 KB and 100 complete question-and-answer pairs. Imported answer text is marked unverified; citation, verification, provider, and identity metadata are discarded. The preview is not saved to the account or sent as model context. Its Markdown and JSON exports are labeled unverified. Conversation text in Markdown exports is fenced as literal text so imported links and images cannot load when the report is viewed. Start a new conversation to ask another question.
 
@@ -40,7 +43,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      ├── Web Locks API Single-Flight Token Refresh (frontend/src/lib/api.js)
      ├── Resilient Draft & Pending Answer Cache (frontend/src/lib/tabStorage.js)
      ├── IME Composition Safety Guard for East Asian Language Typing
-     └── 21 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
+     └── 22 Validated Educational Clinical Calculators with WAI-ARIA Arrow Navigation
                   │
                   │ HTTP (Port 8080) / Secure WebSocket (/ws)
                   │ (External TLS 1.3 Ingress Required in Production)
@@ -66,7 +69,7 @@ MedAssist AI is a full-stack educational biomedical question-answering platform 
      │  - Rotating SHA-256 Hashed Refresh Tokens with Replay Family Invalidation                                      │
      │  - Hardware-Accelerated AES-256-GCM Authenticated Personal API Key Vault                                       │
      │  - Deterministic Input & Output Safety Screener (safetyService.js)                                             │
-     │  - 20 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
+     │  - 23 Heuristic Medication Interaction Patterns (interactionService.js)                                       │
      │  - Deterministic Numerical Citation Auditor [N] & Source Coverage Math (citationService.js)                  │
      │  - Two-Phase Idempotent Generation Handshake with 24-Hour TTL Auto-Purge                                       │
      │  - Real-Time WebSocket Gateway (/ws) with 30s Heartbeat Watchdog & 1MB Backpressure Drop                       │
@@ -111,7 +114,7 @@ mindmap
       Deterministic Citation Auditor
         Bracket Regex Extraction [N]
         Valid vs Invalid Partitioning
-      20 Heuristic Medication Interaction Patterns
+      23 Heuristic Medication Interaction Patterns
         Preserved Invariant Context
       Secondary Model Review Consensus
     (03 Identity & Cryptographic Security)
@@ -122,7 +125,7 @@ mindmap
       AES-256-GCM Authenticated Vault
       Google OAuth 2.0 PKCE Flow
     (04 Clinical Educational Calculators)
-      18 Clinical Tools
+      22 Clinical Tools
         Adult BMI Metric and Imperial
         CKD-EPI 2021 eGFR Race-Free
         CHA2DS2-VASc Stroke Risk
@@ -140,6 +143,10 @@ mindmap
         Mosteller Body Surface Area BSA
         APRI Liver Fibrosis and Cirrhosis
         Child-Pugh Cirrhosis Mortality Score
+        MELD-Na Liver Disease Prognosis
+        Modified Centor McIsaac Strep
+        HEART Score Chest Pain MACE
+        PERC Rule PE Rule-Out
       Accessibility Controls
         WAI-ARIA Tabpanel Cycling
         Keyboard Alt-Plus-C Shortcut
@@ -160,7 +167,7 @@ mindmap
 
 ## 4. Evidence-Based Clinical Calculators Suite
 
-The platform includes a comprehensive 21-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
+The platform includes a comprehensive 22-calculator clinical suite implemented in [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx).
 
 | Tool Name | Clinical Formula / Scoring Model | Input Parameters | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -185,12 +192,13 @@ The platform includes a comprehensive 21-calculator clinical suite implemented i
 | **MELD-Na Liver Disease Prognosis** | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bilirubin, Creatinine, INR, Sodium, Dialysis | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
 | **Modified Centor (McIsaac) Strep Score** | $\text{Score} = \text{Exudate} (+1) + \text{Nodes} (+1) + \text{Fever} (+1) + \text{No Cough} (+1) + \text{Age Group} (+1, 0, -1)$ | Tonsillar exudate, Tender nodes, Fever, No cough, Age group | 4 clinical checkboxes<br>Age: 3–14 (+1), 15–44 (0), ≥45 (-1) | ≤1: Low risk (1–10%, no testing/antibiotics).<br>2: Intermediate risk (11–17%, throat culture/RADT).<br>3: Moderate-high risk (28–35%, throat culture/RADT).<br>≥4: High risk (51–53%, RADT/culture; consider empiric antibiotic per clinical judgment). |
 | **HEART Chest Pain MACE Score** | $\text{Score} = \text{History} (0–2) + \text{ECG} (0–2) + \text{Age} (0–2) + \text{Risk Factors} (0–2) + \text{Troponin} (0–2)$ | 5 categorical dropdown selectors (0–10 scale) | History, ECG, Age, Risk factors, Initial Troponin | 0–3: Low risk (0.9–1.7% 6-week MACE; candidate for early discharge).<br>4–6: Intermediate risk (12–16.6% MACE; observation & serial troponins).<br>7–10: High risk (50–65% MACE; urgent admission & invasive angiography). |
+| **PERC Rule (PE Rule-Out)** | 8 clinical criteria (Age ≥50, HR ≥100, SaO₂ <95%, Unilateral leg swelling, Hemoptysis, Recent surgery/trauma, Prior PE/DVT, Exogenous estrogen) | 8 clinical checkboxes (0–8 criteria) | Binary toggles | 0 criteria: PERC Negative (PE ruled out in low pre-test probability ED patients without D-dimer or CTPA; <1.4% VTE risk).<br>≥1 criterion: PERC Positive (PERC rule fails; PE cannot be ruled out clinically; proceed to D-dimer or CTPA). |
 
 ---
 
 ## 5. Pharmacological Drug Interaction Screening & Preserved Context
 
-Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 22 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
+Implemented in `backend/services/interactionService.js`, this subsystem scans user questions for 23 selected medication combinations. The list is incomplete and is not an FDA-certified interaction database:
 
 | Interaction Rule | Drug Class A | Drug Class B | Severity | Mechanism & Clinical Hazard |
 |:---|:---|:---|:---:|:---|
@@ -216,6 +224,7 @@ Implemented in `backend/services/interactionService.js`, this subsystem scans us
 | **Colchicine + Strong CYP3A4 / P-gp Inhibitor** | Colchicine (Colcrys, Mitigare) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | `CRITICAL` | FDA Black Box Warning: Potent dual CYP3A4 & P-gp inhibition blocks colchicine elimination, triggering severe fatal multi-organ toxicity, rhabdomyolysis, and pancytopenia. |
 | **Carbamazepine + Strong CYP3A4 Inhibitor** | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole, Fluconazole | `CRITICAL` | FDA Warning: Abrupt CYP3A4 inhibition blocks carbamazepine hepatic elimination, precipitating acute neurotoxicity within 24–48 hours (ataxia, nystagmus, diplopia, stupor, respiratory arrest). |
 | **Linezolid + SSRI / SNRI** | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Paroxetine, Venlafaxine, Duloxetine | `CRITICAL` | FDA Boxed Warning: Linezolid is a reversible, non-selective MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, autonomic collapse, delirium, coma). |
+| **Warfarin + Amiodarone (CYP2C9 & CYP3A4)** | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | `CRITICAL` | Major contraindication / FDA Warning: Amiodarone potently inhibits CYP2C9 and CYP3A4, substantially impairing S- and R-warfarin clearance. Given amiodarone's 30–60 day half-life, concurrent use routinely doubles or triples INR, causing fatal hemorrhages unless warfarin dose is empirically reduced by 33%–50% with weekly INR monitoring. |
 
 ### Preserved Context Invariant
 ```
@@ -334,8 +343,8 @@ if (gcsScore <= 8) {
   gcsStratification = "Moderate brain injury (9–12)";
 }
 
-// WAI-ARIA Arrow Key Tab Navigation
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
+// WAI-ARIA Arrow Key Tab Navigation (22 Clinical Tools)
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart", "perc"];
 const handleKeyDown = (e) => {
   const curIndex = tabList.indexOf(activeTab);
   let nextIndex = -1;
@@ -399,17 +408,17 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
 
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       71 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       55 Passed          PASSED
+    Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       77 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       59 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
     Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
     Headless Browser Smoke Test Suite           Playwright Chromium Headless      21 Passed          PASSED
-    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      35 Passed          PASSED
+    Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      42 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       208 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       225 Passed         PASSED
 ========================================================================================================================
 ```
 
@@ -422,22 +431,22 @@ For deep-dive technical specifications, mathematical derivations, and operationa
 | Volume | Document File | Primary Subject & Technical Scope |
 |:---:|:---|:---|
 | **01** | [`docs/README.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/README.md) | Documentation suite master catalog, system boundaries, and ASCII architecture. |
-| **02** | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md) | Multi-tier infrastructure, Nginx ingress, state machines, Web Locks, and 18 calculators. |
-| **03** | [`docs/CURRENT_IMPLEMENTATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md) | Complete runtime state, API request/response schemas, and Mongoose database models. |
+| **02** | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md) | Multi-tier infrastructure, Nginx ingress, state machines, Web Locks, and 22 calculators. |
+| **03** | [`docs/CURRENT_IMPLEMENTATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/CURRENT_IMPLEMENTATION.md) | Complete runtime state, API request/response schemas, 23 DDI rules, and Mongoose models. |
 | **04** | [`docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md) | Biomedical RAG mathematical formulations, NCBI E-Utilities, and citation auditing. |
 | **05** | [`docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md) | LoRA low-rank matrix decomposition, backpropagation gradients, and SFT masking. |
 | **06** | [`docs/SECURITY_AND_MESSAGE_POLICY.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/SECURITY_AND_MESSAGE_POLICY.md) | Hardware AES-256-GCM vault, single-device session versioning, and OWASP defenses. |
 | **07** | [`docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md) | Complete file-by-file technical catalog and exported symbol/function inventory. |
 | **08** | [`docs/DEPLOYMENT_RUNBOOK.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEPLOYMENT_RUNBOOK.md) | Container mesh operations, host TLS 1.3 Nginx setup, secret generation, and backups. |
 | **09** | [`docs/EVALUATION_AND_INTEGRATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/EVALUATION_AND_INTEGRATION.md) | Paired case ablation scoring tools, strict matrix evaluation, and air-gapped search. |
-| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 208 test assertion inventory. |
+| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 223 test assertion inventory. |
 | **11** | [`docs/ISSUES_AND_RISKS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/ISSUES_AND_RISKS.md) | Prioritized risk register, threat model, heuristic limitations, and mitigations. |
 | **12** | [`docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md) | Concise grounding summary, algorithmic rules, and secondary consensus verifier. |
 | **13** | [`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_FINE_TUNING_AND_LORA_GUIDE.md) | Concise LoRA setup guide, parameter estimation benchmarks, and dataset hygiene. |
 | **14** | [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md) | Line-by-line subsystem analysis, architectural patterns, and file inventory. |
-| **15** | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, and running 208 tests. |
+| **15** | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, and running 223 tests. |
 | **16** | [`docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf) | Comprehensive production architectural specification, clinical interview mastery, mathematical derivations, and technical tradeoff defense generated by `scripts/generate_interview_mastery_pdf.py`. |
-| **17** | [`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md) | All-in-one production developer build guide, master topology, complete 19 DDI and 18 calculator tables, and copy-paste recipes for extending the platform. |
+| **17** | [`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md) | All-in-one production developer build guide, master topology, complete 23 DDI and 22 calculator tables, and copy-paste recipes for extending the platform. |
 
 ---
 
@@ -571,8 +580,8 @@ const generateWithCustomProvider = async ({ prompt, systemInstruction, history =
 
 ```jsx
 // Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx:
-// 1. Register tab identifier in keyboard cycling array (18 tools + custom):
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "customTool"];
+// 1. Register tab identifier in keyboard cycling array (22 tools + custom):
+const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart", "perc", "customTool"];
 
 // 2. Render tab button and pane with WAI-ARIA semantics:
 <button type="button" role="tab" id="tab-customTool" aria-selected={activeTab === "customTool"} aria-controls="tabpanel-customTool" className={`calc-tab ${activeTab === "customTool" ? "active" : ""}`} onClick={() => setActiveTab("customTool")}>
