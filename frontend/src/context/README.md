@@ -148,7 +148,7 @@ export function useTheme() {
 All contexts and reactive UI state workflows are verified by Vitest component tests:
 
 ```powershell
-# Run the complete frontend test suite (55 tests passing across 6 suites)
+# Run the complete frontend test suite (59 tests passing across 6 test files)
 npm test --prefix frontend
 
 # Verify context-driven UI rendering

@@ -115,7 +115,7 @@ mindmap
 - **TTL Index**: `createdAt: { type: Date, default: Date.now, expires: 86400 }` (Automatically purged by MongoDB after 24 hours if unconfirmed).
 
 ### 3.4 Provider Credential Schema (`backend/models/providerCredentialModel.js`)
-- **AES-256-GCM Vault**: Encrypted using a 256-bit server key (`USER_API_KEY_ENCRYPTION_KEY`). Authenticated encryption guarantees that any tampering with ciphertext or auth tags causes decryption failure.
+- **AES-256-GCM Vault & Multi-Version Keyring**: Encrypted using a 256-bit server key (`USER_API_KEY_ENCRYPTION_KEY` or named keys in `USER_API_KEY_ENCRYPTION_KEYS`). Authenticated encryption guarantees that any tampering with ciphertext or auth tags causes decryption failure.
 - **Index Definitions**:
   - `{ owner: 1, provider: 1 }`: Unique compound index ensuring one key per provider per user.
 
@@ -179,7 +179,7 @@ export const PatientProfile = mongoose.model("PatientProfile", PatientProfileSch
 All models and database persistence invariants are verified by the backend test runner with in-memory MongoDB:
 
 ```powershell
-# Run the complete backend test suite (71 tests passing)
+# Run the complete backend test suite (77 tests passing across 10 test files)
 npm test --prefix backend
 
 # Verify model persistence and owner tenancy

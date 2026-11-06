@@ -549,7 +549,7 @@ function attachWebSockets(server, app) {
 
 ### 4.10 High-Risk Medication Contraindication Scanner (`backend/services/interactionService.js`)
 - **File Path**: [`backend/services/interactionService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/interactionService.js)
-- **Role**: Performs deterministic name matching for 19 limited medication-pair cautions. These are not a complete or clinically validated interaction database. Warnings are preserved across emergency redirects in `answerService.js`.
+- **Role**: Performs deterministic regular-expression scanning across user queries for 23 major FDA black-box warning drug interaction pairs. These provide vital safety cautions and are preserved across emergency redirects in `answerService.js`.
 
 ```
 ========================================================================================================================
@@ -560,7 +560,7 @@ function attachWebSockets(server, app) {
               │
               ▼
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │ 19 limited medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                           │
+    │ 23 high-risk medication-name pair cautions (HIGH_RISK_INTERACTION_RULES)                         │
     │ ├── 1. Anticoagulants/Antiplatelets + NSAIDs/Aspirin (Major Bleeding Risk)                       │
     │ ├── 2. PDE5 Inhibitors + Nitrates (Profound Refractory Hypotension)                              │
     │ ├── 3. Serotonergic Opioids + SSRIs/SNRIs (Serotonin Syndrome)                                   │
@@ -579,7 +579,11 @@ function attachWebSockets(server, app) {
     │ ├── 16. Clopidogrel + Omeprazole/Esomeprazole (CYP2C19 Inhibition & Stent Thrombosis)            │
     │ ├── 17. SSRI / SNRI / MAOI + Triptan (Serotonergic Toxicity & Acute Serotonin Syndrome)          │
     │ ├── 18. Bactrim + ACE Inhibitors/ARBs/K-Sparing Diuretics (Refractory Hyperkalemia & Arrhythmia)  │
-    │ └── 19. Theophylline + Fluoroquinolones (CYP1A2 Inhibition & Theophylline Toxicity)             │
+    │ ├── 19. Theophylline + Fluoroquinolones (CYP1A2 Inhibition & Theophylline Toxicity)             │
+    │ ├── 20. Colchicine + Strong CYP3A4/P-gp Inhibitors (Multi-Organ Failure & Aplasia)               │
+    │ ├── 21. Carbamazepine + Strong CYP3A4 Inhibitors (Rapid Neurotoxicity & Ataxia)                  │
+    │ ├── 22. Linezolid + SSRIs/SNRIs (Reversible MAOI Serotonin Syndrome)                            │
+    │ └── 23. Warfarin + Amiodarone (CYP2C9/3A4 Prolonged Clearance Blockade & Severe Hemorrhage)      │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
               │
               ├── Matches Found ──► Emit structured `drugInteractions` array with clinical descriptions
@@ -608,6 +612,10 @@ const detectDrugInteractions = (text) => {
   return matches;
 };
 ```
+
+### 4.11 Data Minimization & Privacy Protection Layer (`backend/services/privacyService.js`)
+- **File Path**: [`backend/services/privacyService.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/backend/services/privacyService.js)
+- **Role**: Validates user data processing consent (`requireCurrentConsent`) against version `"2026-11-04"`, throwing HTTP 403 `PRIVACY_CONSENT_REQUIRED` if unaccepted. Also performs regex-based pre-flight redaction (`redactSensitiveText`) replacing emails, phone numbers, SSNs, Aadhaar, and MRN patterns before transmission to PubMed or AI providers.
 
 ---
 
@@ -765,7 +773,7 @@ const handleKeyDown = (e) => {
 
 ### 5.4 Clinical Educational Calculators Suite (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`)
 - **File Path**: [`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/components/tools/ClinicalCalculatorsModal.jsx)
-- **Role**: Implements 18 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
+- **Role**: Implements 22 validated evidence-based clinical calculators with strict physiological input bounds, WAI-ARIA tabpanel semantics (`role="tablist"`, `role="tabpanel"`), keyboard arrow cycling (`ArrowRight`/`ArrowLeft`/`Home`/`End`), and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -778,9 +786,10 @@ const handleKeyDown = (e) => {
                  │
                  ▼
     ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │ WAI-ARIA Tab Navigation: role="tablist"                                                          │
+    │ WAI-ARIA Tab Navigation: role="tablist" (22 Interactive Tools)                                   │
     │ [BMI] [eGFR] [CHA₂DS₂-VASc] [MAP] [CrCl] [Payne Ca] [Anion Gap] [FeNa] [FeUrea] [Fluids] [Wells]│
-    │ [CURB-65] [Glasgow Coma Scale (GCS)] [HAS-BLED] [qSOFA] [Mosteller BSA] [APRI] [Child-Pugh Score]│
+    │ [CURB-65] [Glasgow Coma Scale] [HAS-BLED] [qSOFA] [Mosteller BSA] [APRI] [Child-Pugh Score]      │
+    │ [MELD-Na Score] [Modified Centor Criteria] [HEART Score for Chest Pain] [PERC PE Rule-Out]      │
     └──────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -795,8 +804,12 @@ const handleKeyDown = (e) => {
 ```
 
 ```javascript
-// Implementation Snippet: Keyboard Arrow Tab Cycling in ClinicalCalculatorsModal.jsx
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
+// Implementation Snippet: Keyboard Arrow Tab Cycling in ClinicalCalculatorsModal.jsx (all 22 active tools)
+const tabList = [
+  "bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena",
+  "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa",
+  "apri", "childpugh", "meld", "centor", "heart", "perc"
+];
 if (activeEl && activeEl.getAttribute("role") === "tab") {
   const curTabId = activeEl.id.replace(/^tab-/, "");
   const curIndex = tabList.indexOf(curTabId);
@@ -974,11 +987,11 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 
 ### 7.4 Clinical Calculators Vitest Component Tests (`frontend/src/test/clinicalCalculators.test.jsx`)
 - **File Path**: [`frontend/src/test/clinicalCalculators.test.jsx`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/test/clinicalCalculators.test.jsx)
-- **Role**: Tests form math, input min/max boundary clamping, Payne calcium formula, Wells criteria scoring, HAS-BLED, qSOFA, Mosteller BSA, APRI, and Child-Pugh cirrhosis score prompt insertion across all 18 calculators (16 passing tests).
+- **Role**: Tests form math, input min/max boundary clamping, Payne calcium formula, Wells criteria scoring, HAS-BLED, qSOFA, Mosteller BSA, APRI, Child-Pugh cirrhosis score, MELD-Na, Modified Centor, HEART score, and PERC PE rule-out prompt insertion across all 22 calculators (20 passing tests).
 
 ### 7.5 Medical Query Detector Vitest Suite (`frontend/src/test/medicalDetector.test.js`)
 - **File Path**: [`frontend/src/test/medicalDetector.test.js`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/frontend/src/test/medicalDetector.test.js)
-- **Role**: Validates client-side heuristic query classification against medical lexicon tokens, prefixes, and suggestion chips while preventing non-medical false positives (8 passing tests).
+- **Role**: Validates client-side heuristic query classification against medical lexicon tokens, prefixes, and suggestion chips while preventing non-medical false positives (5 passing tests).
 
 ---
 
@@ -996,14 +1009,15 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `backend/controllers/chatController.js` | Chat Controller Methods | `chatRoute.js` | Thread retrieval, conversation deletion, title generation |
 | `backend/controllers/medicalController.js` | Medical Search Handler | `medicalRoute.js` | Standalone PubMed search query execution and citation auditing |
 | `backend/controllers/analyticsController.js`| Analytics Handler | `analyticsRoute.js`| Aggregated usage telemetry, message counts, active thread metrics |
-| `backend/models/userModel.js` | User Mongoose Model | Controllers & Auth | User account schema, credentials, session version tracking |
+| `backend/models/userModel.js` | User Mongoose Model | Controllers & Auth | User account schema, credentials, session version tracking, consent status |
 | `backend/models/chatModel.js` | Chat Mongoose Model | `chatController.js` | Persistent chat thread schema, grounded message history |
 | `backend/models/generationModel.js` | Generation Model | `aiController.js` | 24-hour TTL ephemeral generation storage |
-| `backend/models/providerCredentialModel.js` | ProviderCredential Model| `settingsController.js`| AES-256-GCM encrypted user personal API keys |
+| `backend/models/providerCredentialModel.js` | ProviderCredential Model| `settingsController.js`| AES-256-GCM encrypted user personal API keys with keyVersion tracking |
 | `backend/services/answerService.js` | `answer` Function | `aiController.js` | Master biomedical grounding pipeline, PubMed retrieval, citation verification |
-| `backend/services/interactionService.js` | `detectDrugInteractions` | `answerService.js` | 19 FDA black-box drug interaction rules & preserved context |
+| `backend/services/interactionService.js` | `detectDrugInteractions` | `answerService.js` | 23 FDA black-box drug interaction rules & preserved context |
+| `backend/services/privacyService.js` | `redactSensitiveText`, `requireCurrentConsent` | `answerService.js` | Pre-flight data minimization (PII regex redaction) and consent v2026-11-04 gating |
 | `backend/services/modelProvider.js` | Provider Completion Engine | `answerService.js` | Multi-provider API abstraction (Gemini, Groq, Together, Local) |
-| `backend/services/providerCredentials.js` | `seal` & `open` Vault | `settingsController.js`| Symmetric AES-256-GCM encryption/decryption engine |
+| `backend/services/providerCredentials.js` | `seal`, `open`, `openWithMetadata` | `settingsController.js`| Symmetric AES-256-GCM encryption with named keyring rotation |
 | `backend/services/providerSelection.js` | Key & Provider Resolver | `answerService.js` | Fallback hierarchy: personal keys -> deployment keys |
 | `backend/services/sessionService.js` | Session Lifecycle Functions| Auth & WebSocket | Monotonic session invalidation, token issuance, replay tracking |
 | `backend/services/pubmedService.js` | `fetchSources`, `parseAbstracts` | `answerService.js` | Three-stage NCBI Entrez E-Utilities client & XML flattener |
@@ -1017,7 +1031,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `frontend/src/lib/conversationImport.js` | `parseConversationImport` | `ChatWorkspace.jsx` | Bounded local JSON parser with forged-metadata stripping |
 | `frontend/src/lib/tabStorage.js` | `readTab`, `writeTab`, `readPending` | Chat Components | Session-isolated draft caching with memory fallback |
 | `frontend/src/components/chat/ChatWorkspace.jsx` | Chat Workspace View | `App.jsx` | Message stream feed, composer with IME protection, citation pills |
-| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Calculators Modal | `App.jsx` | 13 validated calculators, WAI-ARIA arrow-key cycling |
+| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Calculators Modal | `App.jsx` | 22 validated clinical calculators, WAI-ARIA arrow-key cycling |
 | `frontend/src/utils/medicalDetector.js` | `isMedicalQuery` Heuristic | `ChatWorkspace.jsx` | Client-side clinical keyword lexicon & prefix matcher |
 | `frontend/src/components/auth/AISettings.jsx` | AI Settings View | `App.jsx` | Provider selection UI, encrypted key modal, answer verbosity controls |
 | `frontend/src/components/dashboard/AnalyticsDashboard.jsx` | Analytics Dashboard | `App.jsx` | SVG telemetry charts, query trends, grounded response ratios |
@@ -1032,7 +1046,7 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 | `Model and Dataset/lora/train_lora.py` | LoRA Training Script | Training Pipeline | Dry-run validation, SFT label masking (`-100`), adapter checkpointing |
 | `scripts/verify_project.cjs` | Master Test Runner | CI & Local Dev | Orchestrates all unit/integration test suites across Node, Python, Vite |
 | `scripts/browser_smoke.cjs` | Playwright Browser Smoke| CI & Local Dev | End-to-end headless browser regression verification (21 workflows) |
-| `scripts/browser_verify_dark_and_tools.cjs` | Playwright Tools & Theme| CI & Local Dev | Automated verification of dark mode and 18 clinical calculators (35 workflows) |
+| `scripts/browser_verify_dark_and_tools.cjs` | Playwright Tools & Theme| CI & Local Dev | Automated verification of dark mode and 22 clinical calculators (42 workflows) |
 | `scripts/generate_interview_mastery_pdf.py` | Architecture & PDF Engine | Automation & Docs | Compiles production architecture, interview mastery, and technical tradeoffs into PDF |
 
 ---
@@ -1044,12 +1058,12 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 3. **Multi-Byte IME Safety**: Composer input prevents premature message submission while character composition (`compositionstart` to `compositionend`) is active.
 4. **Zero Partition Leakage**: Training, validation, and test splits are partitioned strictly on SHA-256 hashes of normalized question keys, ensuring identical questions never appear across different evaluation partitions.
 5. **Full Suite Verification Status**: 100% of tests are passing in local and CI environments:
-   - **Backend**: 71 passed in-memory MongoDB tests across 9 suites (`node --test`)
-   - **Frontend**: 55 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
+   - **Backend**: 77 passed in-memory MongoDB tests across 10 test files (`node --test`)
+   - **Frontend**: 59 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
    - **Python Suites**: 19 passed unit tests (13 dataset + 6 LoRA)
    - **Built-Output Gateway**: 7 passed HTTP serving checks
-   - **Headless Browser Workflows**: 56 passed Playwright workflows (21 smoke + 35 dark mode/tools)
-   - **Master Automated Total**: 208 passed software checks across all execution layers
+   - **Headless Browser Workflows**: 63 passed Playwright workflows (21 smoke + 42 dark mode/tools)
+   - **Master Automated Total**: 225 passed software checks across all execution layers
    - **Production Dependencies**: 0 reported critical runtime vulnerabilities
 
 ---
@@ -1535,10 +1549,10 @@ function seal(text, secretKey) {
 Before opening a pull request or cutting a production release, run the unified verification matrix to ensure all system invariants hold:
 
 ```powershell
-# 1. Run backend MongoDB and session lifecycle tests (71 tests)
+# 1. Run backend MongoDB and session lifecycle tests (77 tests across 10 test files)
 npm test --prefix backend
 
-# 2. Run frontend React component and accessibility tests (55 tests)
+# 2. Run frontend React component and accessibility tests (59 tests across 6 test files)
 npm test --prefix frontend
 
 # 3. Run ESLint across frontend components

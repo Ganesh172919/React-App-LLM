@@ -415,7 +415,7 @@ module.exports = { screenPrompt, screenGeneratedAnswer, MAX_PROMPT_LENGTH };
 
 ## 8. Pharmacological Drug Interaction Screening (`backend/services/interactionService.js`)
 
-To guard against hazardous medication combinations frequently inquired about in health queries, MedAssist AI incorporates a deterministic regular expression screening layer covering 19 major FDA black-box warning medication interaction pairs.
+To guard against hazardous medication combinations frequently inquired about in health queries, MedAssist AI incorporates a deterministic regular expression screening layer covering 23 major FDA black-box warning medication interaction pairs.
 
 ```
 ====================================================================================================
@@ -425,7 +425,7 @@ To guard against hazardous medication combinations frequently inquired about in 
    [Incoming User Prompt x]
               │
               ├──► 1. detectDrugInteractions(prompt)
-              │    Matches against 19 FDA Black-Box Rule Sets (drugsA & drugsB)
+              │    Matches against 23 FDA Black-Box Rule Sets (drugsA & drugsB)
               │
               ▼
    [Safety Screener: screenPrompt(prompt)]
@@ -453,7 +453,7 @@ To guard against hazardous medication combinations frequently inquired about in 
 ====================================================================================================
 ```
 
-### 8.1 19 High-Risk Interaction Rules & Clinical Severities
+### 8.1 23 High-Risk Interaction Rules & Clinical Severities
 
 | Rule Name | Class A Drugs | Class B Drugs | Severity | Clinical Pathophysiology & Risk |
 |:---|:---|:---|:---:|:---|
@@ -476,6 +476,10 @@ To guard against hazardous medication combinations frequently inquired about in 
 | **SSRI / SNRI / MAOI + Triptan** | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | `CRITICAL` | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing** | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | `CRITICAL` | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | **Theophylline + Fluoroquinolones (Ciprofloxacin)** | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | `CRITICAL` | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
+| **Colchicine + Strong CYP3A4 / P-gp Inhibitors** | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin, Erythromycin, Ketoconazole, Itraconazole | `CRITICAL` | FDA Black Box Warning / Major Contraindication: Dual potent inhibition of CYP3A4 and P-gp drastically blocks colchicine elimination, triggering life-threatening rhabdomyolysis, bone marrow aplasia, and multi-organ failure. |
+| **Carbamazepine + Strong CYP3A4 Inhibitors** | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin, Erythromycin, Ketoconazole, Fluconazole | `CRITICAL` | Major contraindication (FDA Warning): Potent CYP3A4 inhibition abruptly blocks carbamazepine hepatic clearance, causing rapid drug accumulation and acute neurotoxicity within 24–48 hours (ataxia, nystagmus, respiratory depression). |
+| **Linezolid + SSRIs / SNRIs (Serotonin Syndrome)** | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Duloxetine, Venlafaxine | `CRITICAL` | FDA Boxed Warning / Major Contraindication: Linezolid is a reversible non-selective MAOI; concurrent use with SSRIs/SNRIs precipitates malignant hyperthermia, delirium, and fatal Serotonin Syndrome. |
+| **Warfarin + Amiodarone (CYP2C9 & CYP3A4)** | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | `CRITICAL` | Major contraindication / FDA Warning: Amiodarone's 30–60 day elimination half-life and CYP2C9/3A4 inhibition doubles/triples INR, precipitating life-threatening hemorrhages unless warfarin dose is empirically reduced by 33%–50%. |
 
 ### 8.2 Production Implementation (`backend/services/interactionService.js`)
 
@@ -852,7 +856,7 @@ export function parseConversationImportJson(rawJson) {
 
 ## 11. Evidence-Based Clinical Calculators: Physiological Boundary Clamping & WAI-ARIA Trapping
 
-Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the suite implements 18 validated evidence-based medical formulas with explicit boundary checking:
+Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the suite implements 22 validated evidence-based medical formulas with explicit boundary checking:
 
 | Tool Name | Input Parameters | Formula / Scoring Logic | Physiological Bounds | Clinical Interpretation |
 |:---|:---|:---|:---:|:---|
@@ -874,6 +878,10 @@ Located in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the sui
 | **Mosteller Body Surface Area (BSA)** | Height (cm or in), Weight (kg or lbs) | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Reference adult norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | AST (U/L), AST ULN (U/L), Platelets ($10^9$/L) | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
 | **Child-Pugh Cirrhosis Mortality Score** | Total Bilirubin, Albumin, INR, Ascites, Hepatic Encephalopathy | $\text{Points} = \text{Bili (1–3)} + \text{Alb (1–3)} + \text{INR (1–3)} + \text{Ascites (1–3)} + \text{Enceph (1–3)}$ | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated (~45% 1-yr survival; 70–80% surgical mortality). |
+| **MELD-Na Score** | Bilirubin, Creatinine, INR, Serum Sodium, Hemodialysis | $\text{MELD} = 9.57\ln(\text{Cr}) + 3.78\ln(\text{Bili}) + 11.2\ln(\text{INR}) + 6.43$<br>$\text{MELD-Na} = \text{MELD} + 1.32(137-\text{Na}) - [0.033 \times \text{MELD} \times (137-\text{Na})]$ | Bilirubin: 1.0–50 mg/dL<br>Creatinine: 1.0–4.0 mg/dL<br>INR: 1.0–20.0<br>Sodium: 110–150 mEq/L | Score range: 6–40. Used by UNOS for liver transplant priority allocation and 90-day waitlist mortality estimation. |
+| **Modified Centor (McIsaac)** | Age group, tonsillar findings, tender nodes, fever history, absence of cough | Point summation (Range: -1 to 5) | Age + 4 explicitly assessed findings | Point bands only; no diagnosis, testing, or antibiotic decision from the form. |
+| **HEART Score for Chest Pain** | History, ECG, age, risk factors, initial troponin | Point summation (Range: 0–10) | 5 explicitly assessed components | Point bands only; no discharge, testing, or treatment decision from the form. |
+| **PERC Criteria Record** | Age, heart rate, oxygen saturation, leg swelling, hemoptysis, trauma/surgery, prior VTE, estrogen use | Count of recorded present criteria (0–8) | 8 explicit Present/Absent/Not assessed selectors | Cannot establish low pretest probability, rule out PE, or decide testing. |
 
 ### 11.1 Glasgow Coma Scale (GCS) Implementation & Keyboard Accessibility
 
@@ -893,7 +901,7 @@ export function ClinicalCalculatorsModal({ isOpen, onClose }) {
     gcsStratification = "Moderate brain injury (9–12)";
   }
 
-  // WAI-ARIA Focus Trapping and Tab Cycling
+  // WAI-ARIA Focus Trapping and Tab Cycling (all 22 active clinical tools)
   useEffect(() => {
     if (!isOpen) return;
     const previousFocus = document.activeElement;
@@ -901,7 +909,11 @@ export function ClinicalCalculatorsModal({ isOpen, onClose }) {
 
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh"];
+      const tabList = [
+        "bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena",
+        "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa",
+        "apri", "childpugh", "meld", "centor", "heart", "perc"
+      ];
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -985,6 +997,20 @@ if (
   }
 }
 ```
+
+### 11.3 PERC Rule (Pulmonary Embolism Rule-out) Implementation & Safe Prompt Formatting
+
+```jsx
+// Excerpt from ClinicalCalculatorsModal.jsx. A missing answer is never absent.
+const [percCriteria, setPercCriteria] = useState({});
+const percAssessed = PERC_CRITERIA.filter(({ id }) =>
+  percCriteria[id] === "present" || percCriteria[id] === "absent"
+).length;
+const percComplete = percAssessed === PERC_CRITERIA.length;
+const percScore = PERC_CRITERIA.filter(({ id }) => percCriteria[id] === "present").length;
+
+// Show only an assessed count; disable Ask/Copy until percComplete.
+// Never treat a zero count as a PE rule-out or a testing decision.
 ```
 
 ---

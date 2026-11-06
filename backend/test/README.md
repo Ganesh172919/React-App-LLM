@@ -29,18 +29,19 @@ The MedAssist AI backend test harness (`backend/test/`) verifies the server runt
          ▼                  ▼                  ▼                  ▼
     ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
     │ INTEGRATION  │   │ SAFETY GATES │   │ EVIDENCE RAG │   │ PROVIDERS &  │
-    │ SUITE (24)   │   │ & DDI (25)   │   │ & PARSER (7) │   │ SESSIONS (13)│
+    │ SUITE (25)   │   │ & DDI (32)   │   │ & PARSER (7) │   │ SESSIONS (13)│
     │ application  │   │ safetyService│   │ pubmedService│   │ modelProvider│
-    │ chatTitle    │   │ interaction  │   │ providers    │   │ historySearch│
+    │ chatTitle    │   │ interaction  │   │ providers    │   │ credentials  │
+    │              │   │              │   │              │   │ historySearch│
     └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘
                             │                  │                  │
                             └──────────────────┼──────────────────┘
                                                │
                                                ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │                                71 TESTS PASSED ACROSS 9 TEST FILES (100% PASS RATE)                            │
-    │  - Execution Duration: ~25.7 seconds (single concurrency mode for memory safety)                               │
-    │  - Verified Invariants: Monotonic sessionVersion, SHA-256 tokens, 19 DDI rules, [N] citation grounding         │
+    │                                77 TESTS PASSED ACROSS 10 TEST FILES (100% PASS RATE)                           │
+    │  - Execution Duration: ~37 seconds (single concurrency mode for memory safety)                                 │
+    │  - Verified Invariants: Monotonic sessionVersion, SHA-256 tokens, 23 DDI rules, [N] citation grounding         │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ========================================================================================================================
 ```
@@ -55,7 +56,7 @@ mindmap
   root((Backend Tests))
     ::icon(fa fa-vial)
     (01 Application Integration)
-      application.test.js (24 tests)
+      application.test.js (25 tests)
         Health & Readiness Probes
         Registration & Email Verification
         Google OAuth PKCE State
@@ -72,14 +73,18 @@ mindmap
         Prompt Injection Template Tokens
         Negated Symptom Preservations
         Output Verification Screening
-      interactionService.test.js (20 tests)
-        19 FDA Black-Box Drug Pairs
+      interactionService.test.js (24 tests)
+        23 FDA Black-Box Drug Pairs
         Warfarin + NSAID / Aspirin
         Nitroglycerin + Sildenafil
         Tramadol + Sertraline
         SSRI / SNRI + Triptans
         Bactrim + ACEi / ARBs
         Theophylline + Fluoroquinolones
+        Colchicine + CYP3A4 / P-gp Inhibitors
+        Carbamazepine + CYP3A4 Inhibitors
+        Linezolid + SSRIs / SNRIs
+        Warfarin + Amiodarone
         Safe Non-Interacting Combinations
     (03 Biomedical Evidence & RAG)
       pubmedService.test.js (3 tests)
@@ -105,6 +110,9 @@ mindmap
         OpenAI-Compatible Wire Payload Formatting
         Together AI Bounded Messages & Error Guards
         Model Review Consensus Verdict Verification
+      providerCredentials.test.js (1 test)
+        Named Keyring Rotation Support
+        Legacy Key Version Fallback & Migration
 ```
 
 ---
@@ -113,16 +121,17 @@ mindmap
 
 | Test Suite File | Test Framework | Test Count | Key Invariants Verified |
 |:---|:---:|:---:|:---|
-| `application.test.js` | `node:test` + MongoMemoryServer | **24** | Auth lifecycle, token rotation, session invalidation, two-phase generation, owner isolation, AES-256-GCM vault, analytics integrity. |
-| `interactionService.test.js` | `node:test` | **20** | 19 FDA black-box drug-drug interaction pairs (including Theophylline + Fluoroquinolones), brand-name detection, safe combinations. |
+| `application.test.js` | `node:test` + MongoMemoryServer | **25** | Auth lifecycle, token rotation, session invalidation, two-phase generation, owner isolation, AES-256-GCM vault, analytics integrity. |
+| `interactionService.test.js` | `node:test` | **24** | 23 FDA black-box drug-drug interaction pairs (including Colchicine, Carbamazepine, Linezolid, Warfarin + Amiodarone), brand-name detection, safe combinations. |
 | `safetyService.test.js` | `node:test` | **7** | Self-harm interception (988 lifeline), acute emergency symptoms, prompt injection containment, output screening, educational queries. |
 | `providers.test.js` | `node:test` | **6** | PubMed UID numeric sorting, MEDLINE XML abstract parsing, HTTP workflow, Gemini normalizations, startup cookie validation. |
 | `citationService.test.js` | `node:test` | **4** | Numerical bracket `[N]` auditing, range parsing `[1-3]`, out-of-bounds rejection, supplied vs cited distinction. |
 | `modelProvider.test.js` | `node:test` | **4** | Multi-provider resolution (Gemini, Groq, Together, Local), OpenAI-compatible payload format, Together AI bounds, model review verdict. |
 | `pubmedService.test.js` | `node:test` | **3** | Query tokenization, conversational noise removal, clinical keyword extraction, duplicate term elimination. |
+| `providerCredentials.test.js` | `node:test` | **1** | Multi-version AES-256-GCM keyring rotation, named keys (`USER_API_KEY_ENCRYPTION_KEYS`), and legacy key migration. |
 | `historySearch.test.js` | `node:test` | **2** | Stop words removal, tokenization, conversational context retrieval, relevance ranking by token overlap. |
 | `chatTitle.test.js` | `node:test` | **1** | Title sanitization, Markdown link/image stripping, length bounds. |
-| **TOTAL (npm test --prefix backend)** | `node:test` | **71 Tests** | **100% Passing (0 failures, 0 skipped across 9 test files)** |
+| **TOTAL (npm test --prefix backend)** | `node:test` | **77 Tests** | **100% Passing (0 failures, 0 skipped across 10 test files)** |
 
 ---
 

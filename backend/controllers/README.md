@@ -113,7 +113,8 @@ mindmap
 - **Security & Safety Invariants**:
   - Generated responses are written to an ephemeral `Generation` document (24-hour TTL) rather than committed directly to conversation history.
   - Intercepts acute emergency symptoms and self-harm intentions deterministically before invoking external AI providers.
-  - Preserves detected 19 FDA black-box drug-drug interaction cautions across both standard answers and emergency deflections.
+  - Preserves detected 23 FDA black-box drug-drug interaction cautions across both standard answers and emergency deflections.
+  - Enforces user data processing consent verification (`requireCurrentConsent(user)`) before invoking external providers.
   - Audits numerical citations `[N]` against retrieved PubMed literature bounds, dropping ungrounded references.
 
 ### 3.4 `medicalController.js` — Forced Biomedical Literature Grounding
@@ -130,7 +131,7 @@ mindmap
 
 ### 3.7 `analyticsController.js` — Operational Telemetry & Surveillance
 - **Routes Covered**: `GET /api/analytics/overview`.
-- **Invariants**: Computes daily UTC activity buckets over 7, 30, and 90-day intervals, tracking evidence attachment rates, citation distributions, and 19 FDA black-box interaction encounter counts scoped strictly to `owner: req.user._id`.
+- **Invariants**: Computes daily UTC activity buckets over 7, 30, and 90-day intervals, tracking evidence attachment rates, citation distributions, and 23 FDA black-box interaction encounter counts scoped strictly to `owner: req.user._id`.
 
 ---
 
@@ -186,7 +187,7 @@ export async function submitClinicalFeedback(req, res) {
 All controllers are verified by the backend Node.js integration test runner:
 
 ```powershell
-# Run the complete backend test suite (71 tests passing)
+# Run the complete backend test suite (77 tests passing across 10 test files)
 npm test --prefix backend
 
 # Run controller integration tests directly

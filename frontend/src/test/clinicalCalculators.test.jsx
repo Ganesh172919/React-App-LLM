@@ -211,21 +211,15 @@ it("calculates qSOFA sepsis screening score without diagnostic claims and update
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "qSOFA (Sepsis Screening)" }));
-  expect(screen.getByText(/educational bedside screening tool used to identify adult patients with suspected infection/)).toBeTruthy();
-  expect(screen.getByText("0 / 3 points")).toBeTruthy();
-  expect(screen.getByText(/Not high risk for in-hospital sepsis mortality/)).toBeTruthy();
-  expect(screen.getByText(/prompting immediate bedside clinical assessment for acute organ dysfunction/)).toBeTruthy();
-
-  // Toggle Altered mental status (+1) and Tachypnea (+1) -> 2 / 3 -> High risk
-  fireEvent.click(screen.getByLabelText(/Altered Mental Status/));
-  fireEvent.click(screen.getByLabelText(/Tachypnea/));
-  expect(screen.getByText("2 / 3 points")).toBeTruthy();
-  expect(screen.getByText(/High risk for in-hospital sepsis mortality/)).toBeTruthy();
-
-  // Toggle Hypotension (+1) -> 3 / 3
-  fireEvent.click(screen.getByLabelText(/Hypotension/));
+  expect(screen.getByText(/must not be used alone to screen for or exclude sepsis/)).toBeTruthy();
+  expect(screen.getByText("0 of 3 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this qSOFA score" }).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText(/Altered mental status/i), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Respiratory rate/i), { target: { value: "present" } });
+  expect(screen.getByText("2 of 3 findings assessed")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText(/Systolic blood pressure/i), { target: { value: "present" } });
   expect(screen.getByText("3 / 3 points")).toBeTruthy();
-  expect(screen.getByText(/High risk for in-hospital sepsis mortality/)).toBeTruthy();
+  expect(screen.getByText(/A low qSOFA count does not exclude sepsis/)).toBeTruthy();
 
   // Check prompt insertion
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this qSOFA score" }));
@@ -396,42 +390,37 @@ it("calculates Modified Centor / McIsaac score for pharyngitis across age groups
 
   fireEvent.click(screen.getByRole("tab", { name: "Centor (Strep Throat)" }));
   expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
-  expect(screen.getByText(/McIsaac Criteria/)).toBeTruthy();
+  expect(screen.getByText(/Modified Centor \(McIsaac\) criteria/)).toBeTruthy();
 
-  // Default values: no symptoms checked, age 15-44 -> Score 0 points, Low risk
-  expect(screen.getByText("Score: 0 points")).toBeTruthy();
-  expect(screen.getByText(/Low risk \(1–10% streptococcal probability/)).toBeTruthy();
+  expect(screen.getByText("0 of 5 inputs assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this Centor score" }).disabled).toBe(true);
 
-  // Select all 4 symptoms: tonsils (+1), nodes (+1), fever (+1), no cough (+1)
-  const tonsilsCb = screen.getByLabelText(/Tonsillar exudate or swelling/i);
-  const nodesCb = screen.getByLabelText(/Tender or swollen anterior cervical lymph nodes/i);
-  const feverCb = screen.getByLabelText(/History of fever/i);
-  const noCoughCb = screen.getByLabelText(/Absence of cough/i);
-
-  fireEvent.click(tonsilsCb);
-  fireEvent.click(nodesCb);
-  fireEvent.click(feverCb);
-  fireEvent.click(noCoughCb);
-
-  // 4 symptoms + age 15-44 (0) = 4 points, High risk
-  expect(screen.getByText("Score: 4 points")).toBeTruthy();
-  expect(screen.getByText(/High risk \(51–53% probability/)).toBeTruthy();
-
-  // Change age group to 3 to 14 years (+1) -> 5 points
+  const tonsilsSelect = screen.getByLabelText(/Tonsillar exudate or swelling/i);
+  const nodesSelect = screen.getByLabelText(/Tender or swollen anterior cervical lymph nodes/i);
+  const feverSelect = screen.getByLabelText(/History of fever/i);
+  const noCoughSelect = screen.getByLabelText(/Absence of cough/i);
   const ageSelect = screen.getByLabelText(/Age group \(McIsaac criteria\)/i);
+
+  for (const select of [tonsilsSelect, nodesSelect, feverSelect, noCoughSelect]) {
+    fireEvent.change(select, { target: { value: "present" } });
+  }
+  expect(screen.getByText("4 of 5 inputs assessed")).toBeTruthy();
+  fireEvent.change(ageSelect, { target: { value: "15to44" } });
+
+  expect(screen.getByText("Score: 4 points")).toBeTruthy();
+  expect(screen.getByText("4 to 5 point band")).toBeTruthy();
+
   fireEvent.change(ageSelect, { target: { value: "3to14" } });
   expect(screen.getByText("Score: 5 points")).toBeTruthy();
 
-  // Change age group to 45 years and older (-1) -> 3 points, Moderate to high risk
   fireEvent.change(ageSelect, { target: { value: "45plus" } });
   expect(screen.getByText("Score: 3 points")).toBeTruthy();
-  expect(screen.getByText(/Moderate to high risk \(28–35% probability/)).toBeTruthy();
+  expect(screen.getByText("3 point band")).toBeTruthy();
 
-  // Uncheck fever and tonsils -> 1 point (nodes + no cough - 1 age = 1 point)
-  fireEvent.click(feverCb);
-  fireEvent.click(tonsilsCb);
+  fireEvent.change(feverSelect, { target: { value: "absent" } });
+  fireEvent.change(tonsilsSelect, { target: { value: "absent" } });
   expect(screen.getByText("Score: 1 point")).toBeTruthy();
-  expect(screen.getByText(/Low risk \(1–10% streptococcal probability/)).toBeTruthy();
+  expect(screen.getByText("−1 to 1 point band")).toBeTruthy();
 
   // Prompt insertion test
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this Centor score" }));
@@ -448,9 +437,17 @@ it("calculates HEART score for chest pain MACE stratification across all 5 clini
   expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
   expect(screen.getByText(/HEART Score is an evidence-based clinical decision rule/)).toBeTruthy();
 
-  // Default values: moderate (1), normal (0), 45-64 (1), 1-2 risk (1), trop normal (0) -> 3 points, Low risk
-  expect(screen.getByText("Score: 3 points")).toBeTruthy();
-  expect(screen.getByText(/Low risk \(~0\.9–1\.7% 6-week MACE risk/)).toBeTruthy();
+  expect(screen.getByText("0 of 5 inputs assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this HEART score" }).disabled).toBe(true);
+  expect(screen.getByText(/cannot determine whether discharge/)).toBeTruthy();
+
+  fireEvent.change(screen.getByLabelText(/History \(anamnesis suspicion\)/i), { target: { value: "slightly" } });
+  fireEvent.change(screen.getByLabelText(/ECG \(electrocardiogram\)/i), { target: { value: "normal" } });
+  fireEvent.change(screen.getByLabelText(/^Age$/i), { target: { value: "under45" } });
+  fireEvent.change(screen.getByLabelText(/Risk factors/i), { target: { value: "none" } });
+  fireEvent.change(screen.getByLabelText(/Initial Troponin/i), { target: { value: "normal" } });
+  expect(screen.getByText("Score: 0 points")).toBeTruthy();
+  expect(screen.getByText("0–3 point band")).toBeTruthy();
 
   // Elevate to high risk: highly (+2), st_deviation (+2), 65plus (+2), three_plus (+2), greater_three (+2) -> 10 points
   fireEvent.change(screen.getByLabelText(/History \(anamnesis suspicion\)/i), { target: { value: "highly" } });
@@ -460,7 +457,7 @@ it("calculates HEART score for chest pain MACE stratification across all 5 clini
   fireEvent.change(screen.getByLabelText(/Initial Troponin/i), { target: { value: "greater_three" } });
 
   expect(screen.getByText("Score: 10 points")).toBeTruthy();
-  expect(screen.getByText(/High risk \(~50–65% 6-week MACE risk/)).toBeTruthy();
+  expect(screen.getByText("7–10 point band")).toBeTruthy();
 
   // Intermediate risk check: moderate (1), nonspecific (1), 45to64 (1), one_two (1), one_to_three (1) -> 5 points
   fireEvent.change(screen.getByLabelText(/History \(anamnesis suspicion\)/i), { target: { value: "moderate" } });
@@ -470,7 +467,7 @@ it("calculates HEART score for chest pain MACE stratification across all 5 clini
   fireEvent.change(screen.getByLabelText(/Initial Troponin/i), { target: { value: "one_to_three" } });
 
   expect(screen.getByText("Score: 5 points")).toBeTruthy();
-  expect(screen.getByText(/Intermediate risk \(~12–16\.6% 6-week MACE risk/)).toBeTruthy();
+  expect(screen.getByText("4–6 point band")).toBeTruthy();
 
   // Prompt insertion test
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this HEART score" }));
@@ -479,52 +476,35 @@ it("calculates HEART score for chest pain MACE stratification across all 5 clini
   expect(heartPrompt).toContain("HEART Score of 5 points");
 });
 
-it("calculates PERC rule for pulmonary embolism rule-out across all 8 criteria", () => {
+it("keeps unassessed PERC criteria distinct from absent criteria and avoids rule-out advice", () => {
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
 
   fireEvent.click(screen.getByRole("tab", { name: "PERC (PE Rule-Out)" }));
   expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
-  expect(screen.getByText(/The PERC \(Pulmonary Embolism Rule-out Criteria\) rule/)).toBeTruthy();
+  expect(screen.getByText(/PERC is a clinical decision rule/)).toBeTruthy();
+  expect(screen.getByText("0 of 8 criteria assessed")).toBeTruthy();
+  expect(screen.getByText("Assessment incomplete")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this PERC rule" }).disabled).toBe(true);
+  expect(screen.getByRole("button", { name: "Copy result" }).disabled).toBe(true);
 
-  // Initially 0 criteria checked -> PERC Negative (0 criteria; PE ruled out in low-risk patients)
-  expect(screen.getByText("Score: 0 criteria present")).toBeTruthy();
-  expect(screen.getByText(/PERC Negative \(0 criteria; PE ruled out in low-risk patients\)/)).toBeTruthy();
-  expect(screen.getByText(/All 8 PERC criteria are absent/)).toBeTruthy();
+  const selects = [...screen.getByRole("tabpanel", { name: "PERC (PE Rule-Out)" }).querySelectorAll("select")];
+  expect(selects).toHaveLength(8);
+  fireEvent.change(selects[0], { target: { value: "present" } });
+  expect(screen.getByText("1 of 8 criteria assessed")).toBeTruthy();
+  expect(screen.getByText("Assessment incomplete")).toBeTruthy();
 
-  // Check Age >= 50
-  const ageCb = screen.getByLabelText(/Age \u2265 50 years/i);
-  fireEvent.click(ageCb);
-  expect(screen.getByText("Score: 1 criterion present")).toBeTruthy();
-  expect(screen.getByText(/PERC Positive \(1 criterion present; rule fails\)/)).toBeTruthy();
-  expect(screen.getByText(/The PERC rule cannot be used to rule out PE/)).toBeTruthy();
+  for (const select of selects.slice(1)) fireEvent.change(select, { target: { value: "absent" } });
+  expect(screen.getByText("1 of 8 criteria present")).toBeTruthy();
+  expect(screen.getByText("All criteria recorded")).toBeTruthy();
+  expect(screen.getByText(/not a diagnosis or a rule-out decision/)).toBeTruthy();
+  expect(screen.queryByText(/PE ruled out|Neither D-dimer/i)).toBeNull();
 
-  // Check HR >= 100, SaO2 < 95%, Unilateral leg swelling
-  const hrCb = screen.getByLabelText(/Heart rate \u2265 100 bpm/i);
-  const o2Cb = screen.getByLabelText(/Pulse oximetry SaO₂ < 95% on room air/i);
-  const legCb = screen.getByLabelText(/Unilateral leg swelling/i);
-
-  fireEvent.click(hrCb);
-  fireEvent.click(o2Cb);
-  fireEvent.click(legCb);
-
-  expect(screen.getByText("Score: 4 criteria present")).toBeTruthy();
-  expect(screen.getByText(/PERC Positive \(4 criteria present; rule fails\)/)).toBeTruthy();
-
-  // Uncheck all 4 -> returns to PERC Negative
-  fireEvent.click(ageCb);
-  fireEvent.click(hrCb);
-  fireEvent.click(o2Cb);
-  fireEvent.click(legCb);
-  expect(screen.getByText("Score: 0 criteria present")).toBeTruthy();
-  expect(screen.getByText(/PERC Negative/)).toBeTruthy();
-
-  // Re-check one criterion and test prompt insertion
-  fireEvent.click(ageCb);
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this PERC rule" }));
   expect(onInsertPrompt).toHaveBeenCalled();
   const percPrompt = onInsertPrompt.mock.calls[0][0];
-  expect(percPrompt).toContain("PERC Rule (Pulmonary Embolism Rule-out Criteria) with 1 criteria present");
+  expect(percPrompt).toContain("1 of 8 criteria present");
+  expect(percPrompt).toContain("Do not give an individual rule-out");
 });
 
 it("supports arrow key navigation across calculator tabs", () => {
@@ -544,4 +524,11 @@ it("supports arrow key navigation across calculator tabs", () => {
   expect(bmiTab.getAttribute("aria-selected")).toBe("true");
   fireEvent.keyDown(bmiTab, { key: "ArrowLeft" });
   expect(percTab.getAttribute("aria-selected")).toBe("true");
+});
+
+it("lets users jump directly to a calculator beyond the visible tab strip", () => {
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
+  fireEvent.change(screen.getByLabelText("Jump to calculator"), { target: { value: "perc" } });
+  expect(screen.getByRole("tab", { name: "PERC (PE Rule-Out)" }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getByRole("tabpanel", { name: "PERC (PE Rule-Out)" })).toBeTruthy();
 });

@@ -48,9 +48,11 @@ The MedAssist AI backend is engineered as a high-throughput, security-hardened s
 |  ├── answerService.js: Query routing, safety interception, context windowing, RAG coordinator                        |
 |  ├── modelProvider.js: Multi-provider dispatch (Gemini 2.5 Flash, Groq, Together AI, Local vLLM/Ollama)              |
 |  ├── providerSelection.js: Resolves deployment defaults vs AES-256-GCM user-vault personal keys                     |
+|  ├── providerCredentials.js: AES-256-GCM authenticated cipher vault with multi-version keyring rotation (seal/open)  |
+|  ├── privacyService.js: Pre-flight consent check (v2026-11-04) & regex PII minimization (email, phone, SSN, MRN)     |
 |  ├── pubmedService.js: NCBI Entrez REST client (esearch, esummary, efetch) & fast-xml-parser flattener               |
 |  ├── citationService.js: Deterministic [N] numerical citation extraction & set partitioning auditor                  |
-|  ├── interactionService.js: Deterministic 22-pair FDA black-box drug interaction scanner                             |
+|  ├── interactionService.js: Deterministic 23-pair FDA black-box drug interaction scanner                             |
 |  ├── answerVerifier.js: Secondary LLM consensus reviewer (SUPPORTED vs UNSUPPORTED)                                 |
 |  ├── safetyService.js: Deterministic prompt & output screening for crisis, emergency, and harmful synthesis         |
 |  └── websocketService.js: 30s heartbeat watchdog ping-pong & 1MB backpressure drop protection                        |
@@ -104,7 +106,7 @@ mindmap
         Acute Emergency Interception
         Harmful Synthesis Rejection
         Prompt Injection Token Stripping
-      22 FDA Black-Box Drug Interaction Pairs
+      23 FDA Black-Box Drug Interaction Pairs
         Preserved in Emergency Redirects
     (05 Real-Time & Persistence)
       Two-Phase Ephemeral Generation
@@ -143,10 +145,10 @@ backend/
 │   └── authToken.js                # Validates HttpOnly access cookie & monotonic sessionVersion
 │
 ├── models/                         # Mongoose Schemas & Database Models
-│   ├── userModel.js                # User accounts, salted bcrypt hash, sessionVersion
+│   ├── userModel.js                # User accounts, salted bcrypt hash, sessionVersion, consent
 │   ├── chatModel.js                # Conversation threads, message turns, PubMed references
 │   ├── generationModel.js          # Ephemeral in-flight generations with 24-hour TTL index
-│   └── providerCredentialModel.js  # AES-256-GCM encrypted user API keys (IV, Tag, Data)
+│   └── providerCredentialModel.js  # AES-256-GCM encrypted user API keys (IV, Tag, Data, keyVersion)
 │
 ├── routes/                         # Express Route Definitions
 │   ├── aiRoute.js                  # POST /api/ai/chat
@@ -164,9 +166,10 @@ backend/
 │   ├── config.js                   # Startup environment variable validation & key checks
 │   ├── emailService.js             # Brevo transactional email dispatcher
 │   ├── historySearch.js            # Conversational turn relevance ranking via token overlap
-│   ├── interactionService.js       # Deterministic 22-pair FDA black-box drug interaction scanner
+│   ├── interactionService.js       # Deterministic 23-pair FDA black-box drug interaction scanner
 │   ├── modelProvider.js            # Multi-provider client (Gemini, Groq, Together, Local)
-│   ├── providerCredentials.js      # AES-256-GCM authenticated cipher vault (seal/open)
+│   ├── privacyService.js           # Data processing consent enforcement (v2026-11-04) & regex PII redactions
+│   ├── providerCredentials.js      # AES-256-GCM authenticated cipher vault with named keyring rotation
 │   ├── providerSelection.js        # Resolves operator deployment vs personal encrypted keys
 │   ├── pubmedService.js            # NCBI Entrez client (esearch, esummary, efetch) & XML parser
 │   ├── safetyService.js            # Deterministic prompt and output safety screening
@@ -174,17 +177,18 @@ backend/
 │   ├── validation.js               # Schema validators for UUIDs, email, allowed JSON keys
 │   └── websocketService.js         # WebSocket server on /ws with 30s heartbeat watchdog
 │
-└── test/                           # Automated Backend Test Suites (74 Passing Tests)
+└── test/                           # Automated Backend Test Suites (77 Passing Tests across 10 test files)
     ├── application.test.js         # Integration tests with in-memory MongoMemoryServer (24 tests)
     ├── chatTitle.test.js           # Conversation auto-titling and markdown stripping tests (1 test)
     ├── citationService.test.js     # Unit tests for citation parsing and coverage math (4 tests)
     ├── historySearch.test.js       # Auxiliary tests for conversational history selection (2 tests)
-    ├── interactionService.test.js  # Unit tests for 22 high-risk drug interaction pairs (23 tests)
+    ├── interactionService.test.js  # Unit tests for 23 high-risk drug interaction pairs (23 tests)
     ├── modelProvider.test.js       # Unit tests for multi-provider API resolution (4 tests)
+    ├── providerCredentials.test.js # Unit tests for AES-256-GCM keyring rotation & migration (1 test)
     ├── providers.test.js           # Auxiliary tests for PubMed sorting, XML parsing, Gemini (6 tests)
     ├── pubmedService.test.js       # Unit tests for PubMed query string generation (3 tests)
     ├── README.md                   # Backend test architecture & verification manual
-    └── safetyService.test.js       # Unit tests for emergency & crisis screening (7 tests)
+    └── safetyService.test.js       # Unit tests for emergency & crisis screening (9 tests)
 ```
 
 ---
@@ -426,7 +430,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 };
 ```
 
-### 4.7 Complete 22 FDA Black-Box Medication Interaction Inventory
+### 4.7 Complete 23 FDA Black-Box Medication Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Clinical Risk & Pharmacology |
 |:---|:---|:---|:---|:---:|:---|
@@ -452,6 +456,7 @@ const assessCitationGrounding = (text, sourceCount = 0) => {
 | **20** | Colchicine + Strong CYP3A4 / P-gp Inhibitor | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole | **CRITICAL** | FDA Black Box Warning / Major Contraindication: Dual potent inhibition of CYP3A4 and P-glycoprotein drastically reduces colchicine elimination, triggering life-threatening colchicine poisoning (severe rhabdomyolysis, bone marrow aplasia / pancytopenia, multi-organ failure, and death). |
 | **21** | Carbamazepine + Strong CYP3A4 Inhibitor | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin (Biaxin), Erythromycin, Ketoconazole, Fluconazole | **CRITICAL** | Major contraindication (FDA Warning): Potent CYP3A4 inhibition abruptly blocks carbamazepine hepatic metabolism, leading to rapid drug accumulation and acute neurotoxicity within 24 to 48 hours (severe ataxia, nystagmus, diplopia, stupor, respiratory depression, and cardiac conduction disturbances). |
 | **22** | Linezolid + SSRIs / SNRIs | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Paroxetine, Venlafaxine, Duloxetine | **CRITICAL** | FDA Boxed Warning: Linezolid is a reversible, non-selective MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperpyrexia, hyperreflexia, autonomic collapse, delirium, coma). |
+| **23** | Warfarin + Amiodarone | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | **CRITICAL** | Major contraindication / FDA Warning: Amiodarone potently inhibits CYP2C9 and CYP3A4, substantially impairing warfarin clearance. With amiodarone's 30–60 day half-life, concurrent use routinely doubles or triples INR, precipitating life-threatening hemorrhages unless warfarin dose is empirically reduced by 33%–50%. |
 
 ---
 
@@ -492,9 +497,9 @@ cd backend
 npm test
 ```
 
-### Complete Test Suite Breakdown (74 Tests across 9 Test Files in npm test):
-1. `application.test.js` (24 Tests): Comprehensive HTTP and WebSocket integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, single-device `sessionVersion` invalidation, two-phase generation commitment (`/api/save`), cursor pagination, rate limiters, and WebSocket notifications.
-2. `interactionService.test.js` (23 Tests): Validates deterministic name matching across all 22 FDA black-box drug interaction rules (including Colchicine + Clarithromycin, Theophylline + Fluoroquinolones, Carbamazepine + Strong CYP3A4 Inhibitors, and Linezolid + SSRIs/SNRIs) and ensures benign/unrelated medications pass without false warnings.
+### Complete Test Suite Breakdown (77 Tests across 10 Test Files in npm test):
+1. `application.test.js` (25 Tests): Comprehensive HTTP and WebSocket integration suite with `MongoMemoryServer`. Tests registration, token rotation, replay detection, single-device `sessionVersion` invalidation, two-phase generation commitment (`/api/save`), cursor pagination, rate limiters, and WebSocket notifications.
+2. `interactionService.test.js` (24 Tests): Validates deterministic name matching across all 23 FDA black-box drug interaction rules (including Colchicine + Clarithromycin, Theophylline + Fluoroquinolones, Carbamazepine + Strong CYP3A4 Inhibitors, Linezolid + SSRIs/SNRIs, and Warfarin + Amiodarone) and ensures benign/unrelated medications pass without false warnings (23 positive rules + 1 safe combination baseline).
 3. `safetyService.test.js` (7 Tests): Verifies 988 crisis deflection, acute emergency symptom interception, prompt injection containment, educational query handling, and output screening.
 4. `providers.test.js` (6 Tests): Unit tests for PubMed UID numerical sorting, MEDLINE XML abstract parsing, HTTP workflow, Gemini normalizations, and startup cookie validation.
 5. `citationService.test.js` (4 Tests): Validates numerical bracket parsing `[N]`, multi-citation ranges `[1-3]`, and valid vs invalid set partitioning.
@@ -502,6 +507,7 @@ npm test
 7. `pubmedService.test.js` (3 Tests): Unit tests for E-Utilities query string construction, keyword extraction, and rate throttle delays.
 8. `historySearch.test.js` (2 Tests): Stop-word tokenization and conversational context retrieval relevance ranking by token overlap.
 9. `chatTitle.test.js` (1 Test): Validates conversation auto-titling, markdown link/image stripping, and length bounding.
+10. `providerCredentials.test.js` (1 Test): Validates AES-256-GCM authenticated encryption, multi-version keyring keyId resolution, legacy fallback migration, and tamper authentication rejection.
 
 ---
 

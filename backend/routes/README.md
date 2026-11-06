@@ -142,7 +142,7 @@ app.use("/api/feedback", createFeedbackRoute({ rateLimiters }));
 
 ## 5. Automated Verification Commands
 
-All routes and middleware pipelines are verified by the 71 passing backend integration tests:
+All routes and middleware pipelines are verified by the 77 passing backend integration tests across 10 test files:
 
 ```powershell
 # Run the complete backend test suite

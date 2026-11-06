@@ -30,7 +30,7 @@ The MedAssist AI Chat Workspace (`frontend/src/components/chat/ChatWorkspace.jsx
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                       BACKEND DUAL-ENGINE PROCESSING PIPELINE                                  │
     │  - safetyService.js: Deterministic Acute Emergency & Crisis Deflection                                         │
-    │  - interactionService.js: 19 FDA Black-Box Drug Interaction Screening (Preserved Context Invariant)            │
+    │  - interactionService.js: 23 FDA Black-Box Drug Interaction Screening (Preserved Context Invariant)            │
     │  - pubmedService.js: NCBI Entrez Three-Stage Harvesting (esearch -> esummary -> efetch MEDLINE XML)             │
     │  - modelProvider.js: Multi-Engine Synthesis (Gemini 2.5 Flash, Groq, Together AI, Local vLLM)                 │
     │  - citationService.js: Deterministic Bracket Numerical Citation Audit ([N] Set Partitioning)                   │
@@ -77,7 +77,7 @@ mindmap
         Title, Journal, Authors
         Direct NCBI URL Links
     (02 Clinical Guardrails)
-      19 FDA Drug Interaction Banners
+      23 FDA Drug Interaction Banners
         Bidirectional Matching
         Preserved in Emergency Deflections
       Emergency 911 Deflection Banners
@@ -114,7 +114,7 @@ mindmap
 | `pending` | `Object \| null` | `null` (or recovered) | Stores in-flight generation metadata (`{ prompt, sessionId, exchangeId, result }`). Prevents page navigation and reloads from dropping answers. |
 | `active` | `string \| null` | `null` | MongoDB ObjectId of the current conversation thread. `null` indicates a fresh uncommitted exchange. |
 | `importPreview` | `boolean` | `false` | When true, renders an untrusted client-side conversation preview. Composer input is locked to prevent sending messages into an imported preview. |
-| `calcModalOpen` | `boolean` | `false` | Modal toggle for the 18 evidence-based clinical calculators (`ClinicalCalculatorsModal.jsx`), triggered via UI button or `Alt+C`. |
+| `calcModalOpen` | `boolean` | `false` | Modal toggle for the 22 evidence-based clinical calculators (`ClinicalCalculatorsModal.jsx`), triggered via UI button or `Alt+C`. |
 | `online` | `boolean` | `false` | Reflects live WebSocket connection status to `/ws`. Auto-reconnects with exponential backoff on drop. |
 
 ### 3.2 Security & Markdown Sanitization Contract
@@ -223,7 +223,7 @@ useEffect(() => {
       if (window.innerWidth <= 700) setSidebarOpen(true);
       drawer.current?.querySelector("input")?.focus();
     }
-    // Alt+C: Toggle 18 Clinical Calculators Modal
+    // Alt+C: Toggle 22 Clinical Calculators Modal
     else if (event.altKey && event.key.toLowerCase() === "c") {
       event.preventDefault();
       setCalcModalOpen((prev) => !prev);

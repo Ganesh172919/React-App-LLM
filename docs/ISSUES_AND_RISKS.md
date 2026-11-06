@@ -24,7 +24,7 @@ MedAssist AI operates at the intersection of generative language models, automat
 | Medium | A local JSON export could display forged verification and PubMed source metadata as if MedAssist had checked it; the old import label also implied the file was saved. | Fixed: bounded local preview strips evidence metadata, marks imported answers unverified, disables sending, and states that it is not saved or used as model context. Browser and component regressions cover this path. |
 | Medium | A Markdown export of an imported file still claimed to be a MedAssist evidence report and retained active Markdown image syntax from untrusted text. | Fixed: preview downloads carry an unverified label; all conversation text is emitted in literal Markdown fences, and saved-chat reference links are constructed only from numeric PubMed IDs. Export and render regressions cover this path. |
 
-The integrated working tree passed 71 backend, 55 frontend, 19 Python, 7 built HTTP, and 56 browser checks (21 core browser and 35 dark/tools browser checks). A parallel Vitest run timed out starting one worker under local resource pressure; the single-worker rerun passed all six files. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
+The integrated working tree passed 77 backend, 59 frontend, 19 Python, 7 built HTTP, and 63 browser checks (21 core browser and 42 dark/tools browser checks) — totaling 225 locally verified automated checks. A single-worker rerun passed all test files cleanly. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
 
 ```
 ========================================================================================================================
@@ -62,7 +62,7 @@ The integrated working tree passed 71 backend, 55 frontend, 19 Python, 7 built H
                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │ TIER 4: PHARMACOLOGICAL NAME MATCHER & CALCULATOR BOUNDS (backend/services/interactionService.js)              │
-    │ ├── 19 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
+    │ ├── 23 limited name-pair cautions: Flags co-occurring medication names (e.g. Warfarin + NSAID)                 │
     │ ├── Preservation Across Redirects: Retains drug interaction warnings even during emergency deflection           │
     │ └── Calculator Physiological Bounds: Caps input parameters to prevent clinically impossible calculations       │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -126,7 +126,7 @@ The following matrix identifies prioritized technical, operational, and clinical
 | :---: | :---: | :---: | :--- | :--- | :--- | :---: |
 | **RSK-01** | **CRITICAL** | Clinical | **Citation Numbering vs Semantic Entailment** | The model may correctly cite `[1]`, but the cited abstract does not actually support the factual proposition. | Two-phase verification: regex citation bounds checking plus optional secondary LLM consensus review (`GEMINI_VERIFY_ANSWERS`). Fallback to references-only. | **Medium** (Requires human clinical review) |
 | **RSK-02** | **CRITICAL** | Clinical | **Acute Emergency Presentation Delay** | User seeking guidance during an acute emergency (stroke, anaphylaxis) waits for chatbot output instead of calling 911. | Deterministic `safetyService.js` regex matches emergency symptoms before any API or PubMed call, immediately returning emergency deflection text. | **Low** (Heuristic rules cover primary presentations) |
-| **RSK-03** | **HIGH** | Clinical | **Pharmacological Heuristic False Negatives** | Drug interaction checker matches 19 high-risk pairs, but misses unlisted drugs, dosage-dependent interactions, or metabolites. | Explicit non-diagnostic caution banner; disclaimers stating absence of a flag does not imply safety; user prompted to consult a pharmacist. | **Medium** (Not a replacement for pharmacy systems) |
+| **RSK-03** | **HIGH** | Clinical | **Pharmacological Heuristic False Negatives** | Drug interaction checker matches 23 high-risk pairs, but misses unlisted drugs, dosage-dependent interactions, or metabolites. | Explicit non-diagnostic caution banner; disclaimers stating absence of a flag does not imply safety; user prompted to consult a pharmacist. | **Medium** (Not a replacement for pharmacy systems) |
 | **RSK-04** | **HIGH** | Cryptographic | **Master Encryption Key Compromise or Loss** | Loss of `USER_API_KEY_ENCRYPTION_KEY` renders all stored user provider keys permanently unreadable. | Stored in isolated `.env` / enterprise secret store; zero persistence in MongoDB; graceful error code `KEY_UNAVAILABLE` allows re-saving. | **Low** (Controlled via operator runbook) |
 | **RSK-05** | **HIGH** | Security | **Concurrent Session Hijacking & Replay** | Stolen refresh tokens or session reuse across multiple unauthorized devices. | Monotonic `sessionVersion` counter increments on every login, instantly invalidating previous JWTs and closing WebSockets with code `4001`. | **Low** (Single active device invariant) |
 | **RSK-06** | **MEDIUM** | Infrastructure | **PubMed E-Utilities Throttling & 429 Errors** | NCBI Entrez rate limits (3 req/s without key, 10 req/s with key) breached under load, breaking medical answers. | Request rate throttle (110ms / 350ms wait) in `pubmedService.js`; automatic exponential retry backoff on 429/503 HTTP status codes. | **Low** (Graceful fallback to references) |
@@ -173,7 +173,7 @@ A primary vulnerability of Retrieval-Augmented Generation (RAG) systems is **hal
 
 ### 4.2 Drug Interaction Screening Boundaries
 
-The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 19 selected medication pairs. Its coverage is incomplete and has not been clinically validated:
+The medication interaction service (`backend/services/interactionService.js`) employs a deterministic regular-expression engine scanning for 23 selected medication pairs. Its coverage is focused on high-risk FDA black-box combinations and has not been clinically validated across all pharmacy scenarios:
 
 1. **Anticoagulants / Antiplatelets + NSAIDs / Aspirin** (Elevated systemic & intracranial hemorrhage risk)
 2. **PDE5 Inhibitors + Nitrates** (Profound refractory systemic hypotension and syncope)
@@ -193,7 +193,11 @@ The medication interaction service (`backend/services/interactionService.js`) em
 16. **Clopidogrel + Omeprazole / Esomeprazole** (CYP2C19 inhibition prevents hepatic metabolic conversion of prodrug clopidogrel into active antiplatelet metabolite, elevating risk of stent thrombosis and reinfarction)
 17. **SSRI / SNRI / MAOI + Triptan** (Concurrent use of 5-HT1 receptor agonist triptans with serotonergic antidepressants substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome)
 18. **TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing Diuretics** (Trimethoprim blocks distal nephron epithelial sodium channels identically to amiloride. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur)
-19. **Theophylline + Fluoroquinolones (Ciprofloxacin / Enoxacin)** (Potent CYP1A2 inhibition reduces hepatic clearance of theophylline by 30–50%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and seizures)
+19. **Theophylline + Fluoroquinolones (Ciprofloxacin / Enoxacin)** (Potent CYP1A2 inhibition reduces hepatic clearance of theophylline by 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and seizures)
+20. **Colchicine + Strong CYP3A4 / P-gp Inhibitors (Clarithromycin, Ketoconazole)** (Dual inhibition severely impairs hepatic and renal elimination of colchicine, precipitating fatal multiorgan toxicity, rhabdomyolysis, and bone marrow failure)
+21. **Carbamazepine + Strong CYP3A4 Inhibitors (Erythromycin, Clarithromycin, Azoles)** (Potent CYP3A4 inhibition abruptly arrests carbamazepine metabolism, causing severe acute carbamazepine neurotoxicity, cerebellar ataxia, nystagmus, diplopia, and respiratory failure within 24–48 hours)
+22. **Linezolid + SSRIs / SNRIs** (FDA Boxed Warning: Linezolid is a reversible, non-selective MAO-A inhibitor. Co-administration with serotonergic antidepressants triggers acute, potentially fatal Serotonin Syndrome)
+23. **Warfarin + Amiodarone** (Amiodarone potently inhibits CYP2C9 and P-glycoprotein, dramatically reducing S-warfarin clearance, elevating INR by 100–200%, and precipitating life-threatening gastrointestinal or intracranial hemorrhage)
 
 ```javascript
 // Implementation snippet from backend/services/interactionService.js:

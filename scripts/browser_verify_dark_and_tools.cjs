@@ -135,15 +135,16 @@ async function main() {
 
   // Test 3j: qSOFA Sepsis Screening Tab in Clinical Calculators
   await page.getByRole("tab", { name: /qSOFA \(Sepsis Screening\)/i }).click();
-  await page.getByText(/educational bedside screening tool used to identify adult patients with suspected infection/).waitFor();
-  await page.getByText("0 / 3 points", { exact: true }).waitFor();
-  await page.getByText(/Not high risk for in-hospital sepsis mortality/).waitFor();
-  await page.getByLabel(/Altered Mental Status/).check();
-  await page.getByLabel(/Tachypnea/).check();
+  await page.getByText(/must not be used alone to screen for or exclude sepsis/).waitFor();
+  await page.getByText("0 of 3 findings assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this qSOFA score" }).isDisabled(), true);
+  await page.getByLabel(/Altered mental status/i).selectOption("present");
+  await page.getByLabel(/Respiratory rate/i).selectOption("present");
+  await page.getByLabel(/Systolic blood pressure/i).selectOption("absent");
   await page.getByText("2 / 3 points", { exact: true }).waitFor();
-  await page.getByText(/High risk for in-hospital sepsis mortality/).waitFor();
+  await page.getByText(/A low qSOFA count does not exclude sepsis/).waitFor();
   await page.screenshot({ path: path.join(output, "qsofa-dark-modal.png") });
-  console.log("PASS qSOFA sepsis screening calculator verified and captured in dark styles");
+  console.log("PASS qSOFA requires assessed inputs and does not exclude sepsis");
 
   // Test 3k: Mosteller BSA Tab in Clinical Calculators
   await page.getByRole("tab", { name: "BSA (Mosteller)" }).click();
@@ -214,29 +215,28 @@ async function main() {
 
   // Test 3o: Centor (Strep Throat) Tab in Clinical Calculators
   await page.getByRole("tab", { name: "Centor (Strep Throat)" }).click();
-  await page.getByText(/The Modified Centor Score/i).waitFor();
-  await page.getByText("Score: 0 points", { exact: true }).waitFor();
-  await page.getByText(/Low risk \(1–10% streptococcal probability/i).waitFor();
+  await page.getByText(/The Modified Centor \(McIsaac\) criteria/i).waitFor();
+  await page.getByText("0 of 5 inputs assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this Centor score" }).isDisabled(), true);
 
-  // Check symptoms: tonsils (+1), nodes (+1), fever (+1), no cough (+1)
-  await page.getByLabel(/Tonsillar exudate or swelling/i).check();
-  await page.getByLabel(/Tender or swollen anterior cervical lymph nodes/i).check();
-  await page.getByLabel(/History of fever/i).check();
-  await page.getByLabel(/Absence of cough/i).check();
+  for (const label of [/Tonsillar exudate or swelling/i, /Tender or swollen anterior cervical lymph nodes/i, /History of fever/i, /Absence of cough/i]) {
+    await page.getByLabel(label).selectOption("present");
+  }
+  await page.getByLabel(/Age group \(McIsaac criteria\)/i).selectOption("15to44");
   await page.getByText("Score: 4 points", { exact: true }).waitFor();
-  await page.getByText(/High risk \(51–53% probability/i).waitFor();
+  await page.getByText("4 to 5 point band", { exact: true }).waitFor();
 
   // Change age group to 3 to 14 years old (+1) -> Score: 5 points
   await page.getByLabel(/Age group \(McIsaac criteria\)/i).selectOption("3to14");
   await page.getByText("Score: 5 points", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "centor-dark-modal.png") });
-  console.log("PASS Centor (McIsaac) pharyngitis calculator verified and captured in dark styles");
+  console.log("PASS Centor requires assessed inputs and avoids antibiotic decisions");
 
   // Test 3q: HEART (Chest Pain) Tab in Clinical Calculators
   await page.getByRole("tab", { name: "HEART (Chest Pain)" }).click();
   await page.getByText(/HEART Score is an evidence-based clinical decision rule/i).waitFor();
-  await page.getByText("Score: 3 points", { exact: true }).waitFor();
-  await page.getByText(/Low risk \(~0\.9–1\.7% 6-week MACE risk/i).waitFor();
+  await page.getByText("0 of 5 inputs assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this HEART score" }).isDisabled(), true);
 
   // Change dropdowns to high risk: highly (+2), st_deviation (+2), 65plus (+2), three_plus (+2), greater_three (+2)
   await page.getByLabel(/History \(anamnesis suspicion\)/i).selectOption("highly");
@@ -246,21 +246,31 @@ async function main() {
   await page.getByLabel(/Initial Troponin/i).selectOption("greater_three");
 
   await page.getByText("Score: 10 points", { exact: true }).waitFor();
-  await page.getByText(/High risk \(~50–65% 6-week MACE risk/i).waitFor();
+  await page.getByText("7–10 point band", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "heart-dark-modal.png") });
-  console.log("PASS HEART score chest pain prognostic calculator verified and captured in dark styles");
+  console.log("PASS HEART requires assessed inputs and avoids treatment conclusions");
 
-  // Test 3r: Arrow Key Navigation across tabs wrapping from last tab (HEART) to first tab (BMI)
-  const heartTab = page.getByRole("tab", { name: "HEART (Chest Pain)" });
-  await heartTab.focus();
+  await page.getByLabel("Jump to calculator").selectOption("perc");
+  await page.getByText("0 of 8 criteria assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this PERC rule" }).isDisabled(), true);
+  const percInputs = page.getByRole("tabpanel", { name: "PERC (PE Rule-Out)" }).locator("select");
+  for (let index = 0; index < 8; index += 1) await percInputs.nth(index).selectOption("absent");
+  await page.getByText("0 of 8 criteria present", { exact: true }).waitFor();
+  assert.equal((await page.getByRole("tabpanel", { name: "PERC (PE Rule-Out)" }).innerText()).includes("PE ruled out"), false);
+  await page.screenshot({ path: path.join(output, "perc-dark-modal.png") });
+  console.log("PASS PERC requires eight explicit answers without a rule-out claim");
+
+  // Test 3r: Arrow Key Navigation across tabs wrapping from last tab (PERC) to first tab (BMI)
+  const percTab = page.getByRole("tab", { name: "PERC (PE Rule-Out)" });
+  await percTab.focus();
   await page.keyboard.press("ArrowRight");
   const bmiSelected = await page.getByRole("tab", { name: "BMI" }).getAttribute("aria-selected");
   assert.equal(bmiSelected, "true");
-  console.log("PASS arrow navigation wrapped from last tab (HEART) to first tab (BMI)");
+  console.log("PASS arrow navigation wrapped from last tab (PERC) to first tab (BMI)");
   await page.keyboard.press("ArrowLeft");
-  const heartSelected = await heartTab.getAttribute("aria-selected");
-  assert.equal(heartSelected, "true");
-  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (HEART)");
+  const percSelected = await percTab.getAttribute("aria-selected");
+  assert.equal(percSelected, "true");
+  console.log("PASS arrow navigation wrapped backward from first tab (BMI) to last tab (PERC)");
 
   // Return to Corrected Calcium for prompt insertion test
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();

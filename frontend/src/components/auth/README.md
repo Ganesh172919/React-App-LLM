@@ -102,7 +102,8 @@ mindmap
   - Removing a key via `DELETE /api/settings/keys/:provider` automatically reverts the user's provider choice to the deployment default.
 
 ### 3.3 `AccountPage.jsx` — Privacy, Data Export & Account Deletion
-- **Role**: Primary settings view allowing users to inspect stored data policies, clear in-memory drafts from `tabStorage`, export all saved conversations in structured JSON format, and permanently wipe their account.
+- **Role**: Primary settings view allowing users to inspect stored data policies, review active data processing consent (`DATA_PROCESSING_CONSENT_VERSION = "2026-11-04"`), clear in-memory drafts from `tabStorage`, export all saved conversations in structured JSON format, and permanently wipe their account.
+- **Privacy & Consent Invariant**: Enforces consent requirement prior to clinical AI synthesis; displays consent timestamp and versioning.
 - **Account Deletion Guard**: Requires typing `"DELETE"` into the confirmation input before activating the destructive `DELETE /api/auth/account` endpoint.
 
 ---

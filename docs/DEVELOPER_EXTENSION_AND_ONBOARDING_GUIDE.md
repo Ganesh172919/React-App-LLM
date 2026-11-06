@@ -17,7 +17,7 @@ This guide provides developers with a step-by-step engineering blueprint to exte
 5. **Client Concurrency & Resilience**: Working with the Web Locks API, storage fault tolerance, and IME composition safety.
 6. **ML Research & LoRA SFT**: Training adapters, compiling instruction datasets, and running parameter audits.
 7. **Production Deployment & Operations**: Multi-container Docker orchestration, TLS termination, CSP headers, and health monitoring.
-8. **Automated Quality Assurance**: Executing and adding to the 223 automated software verification suites.
+8. **Automated Quality Assurance**: Executing and adding to the 225 automated software verification suites.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
@@ -86,9 +86,9 @@ mindmap
         PyTorch PEFT Rank 8
     (07 Master QA Suite)
       ::icon(fa fa-check-double)
-      223 Automated Checks
-        75 Backend Tests
-        59 Frontend Vitest Tests
+      225 Automated Checks
+        77 Backend Tests (10 files)
+        59 Frontend Vitest Tests (6 files)
         19 Python ML Tests
         7 Gateway Assertions
         63 Playwright Browser Flows
@@ -132,7 +132,7 @@ mindmap
 |   ┌──────────────────────────────────────────────────────────────────────────────────────────┐   |
 |   │ 2. CLINICAL SAFETY & DETERMINISTIC INTERACTION ENGINE                                     │   |
 |   │    - safetyService.js: Acute Emergency Regex Screening (911 Immediate Deflection)       │   |
-|   │    - interactionService.js: 19 High-Risk Drug-Drug Interaction Rules (CRITICAL / HIGH)   │   |
+|   │    - interactionService.js: 23 High-Risk Drug-Drug Interaction Rules (CRITICAL / HIGH)   │   |
 |   └──────────────────────────────────────────────────────────────────────────────────────────┘   |
 |                                                │                                                 |
 |                                                ▼                                                 |
@@ -1038,25 +1038,26 @@ server {
 
 ## 11. Master Quality Verification & Testing Runbook
 
-MedAssist AI enforces a rigorous **208-check automated verification suite** across all application tiers.
+MedAssist AI enforces a rigorous **225-check automated verification suite** across all application tiers.
 
 ```
 ========================================================================================================================
-                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (223 CHECKS)
+                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (225 CHECKS)
 ========================================================================================================================
 
     SUITE / SUBSYSTEM                   HARNESS / RUNNER                TEST COUNT        STATUS
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    1. Backend API & Services           Node 24 Test Runner             75 Tests          100% PASSED
+    1. Backend API & Services           Node 24 Test Runner             77 Tests          100% PASSED
        - application.test.js            Supertest + MongoMemoryServer   24 Tests          PASSED
-       - interactionService.test.js     23 DDI Rules & Safe Combos      24 Tests          PASSED
-       - safetyService.test.js          Emergency Regex & Deflection     7 Tests          PASSED
+       - interactionService.test.js     23 DDI Rules & Safe Combos      23 Tests          PASSED
+       - safetyService.test.js          Emergency Regex & Deflection     9 Tests          PASSED
        - providers.test.js              PubMed XML & Gemini Parse        6 Tests          PASSED
        - citationService.test.js        Numeric Bracket Verifiers        4 Tests          PASSED
        - modelProvider.test.js          Provider Gateway & Fallbacks     4 Tests          PASSED
        - pubmedService.test.js          NCBI E-Utilities Mock Engine     3 Tests          PASSED
        - historySearch.test.js          Token Overlap Relevance Check    2 Tests          PASSED
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
+       - providerCredentials.test.js    Keyring Rotation & Fallback      1 Test           PASSED
 
     2. Frontend React Components        Vitest + jsdom                  59 Tests          100% PASSED
        - ui.test.jsx                    Workspace, Modals, Forms        25 Tests          PASSED
@@ -1082,7 +1083,7 @@ MedAssist AI enforces a rigorous **208-check automated verification suite** acro
        - browser_verify_dark_and_tools  WCAG Dark Mode, 22 Tools, DDI   42 Tests          PASSED
 
     =================================================================================================================
-    MASTER AUTOMATED VERIFICATION TOTAL                                223 CHECKS         100% PASSED
+    MASTER AUTOMATED VERIFICATION TOTAL                                225 CHECKS         100% PASSED
 ========================================================================================================================
 ```
 
@@ -1095,10 +1096,10 @@ node scripts/verify_project.cjs
 
 Or execute individual suites:
 ```bash
-# Backend unit & integration suite (71 tests)
+# Backend unit & integration suite (77 tests across 10 test files)
 npm test --prefix backend
 
-# Frontend Vitest component & unit suite (55 tests)
+# Frontend Vitest component & unit suite (59 tests across 6 test files)
 npm test --prefix frontend
 
 # Python ML & dataset audit suite (19 tests)
@@ -1110,7 +1111,7 @@ cd ..
 # Built HTTP gateway verification (7 checks)
 node scripts/check_build_serving.cjs
 
-# Playwright browser automation (56 checks: 21 smoke + 35 dark & tools)
+# Playwright browser automation (63 checks: 21 smoke + 42 dark & tools)
 node scripts/browser_smoke.cjs
 node scripts/browser_verify_dark_and_tools.cjs
 ```
@@ -1169,4 +1170,4 @@ When contributing new code to MedAssist AI:
 2. **Safe Regex Invariant**: Ensure all medication and symptom regexes include word boundaries (`\b`) and avoid exponential backtracking.
 3. **WAI-ARIA Invariant**: Ensure every new interactive modal or widget supports full keyboard navigation (`Tab`, `Escape`, arrow keys) and has proper ARIA labels.
 4. **Zero-Persistence Secrets Invariant**: Never persist unencrypted provider API keys in MongoDB or client-side storage.
-5. **Quality Gate Invariant**: All 208 automated tests must pass before opening a pull request.
+5. **Quality Gate Invariant**: All 225 automated verification checks must pass before opening a pull request.

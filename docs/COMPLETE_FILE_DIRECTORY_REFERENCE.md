@@ -242,21 +242,21 @@ c:\Users\RAVIPRAKASH\React-App-LLM\
 │   │   ├── CONTINUOUS_IMPROVEMENT_PROMPT.md # 200-word cycle prompt
 │   │   └── PROJECT_ANALYSIS.md              # Project verification report & CI/CD pipeline
 │   └── qa/                                  # Automated Test Logs & Headless Browser Screenshots
-│       ├── automated-results.json           # 208-check verification summary
+│       ├── automated-results.json           # 225-check verification summary
 │       ├── browser-results.json             # 21 core browser smoke workflow logs
 │       ├── build-serving-results.json       # 7 HTTP ingress assertions
 │       └── README.md                        # Quality assurance evidence catalog & artifact reference
 │
 └── scripts/                                 # Verification & Operations Automation
     ├── browser_smoke.cjs                    # Playwright browser smoke test suite (21 automated workflows)
-    ├── browser_verify_dark_and_tools.cjs    # Playwright accessibility & dark mode suite (35 workflows)
+    ├── browser_verify_dark_and_tools.cjs    # Playwright accessibility & dark mode suite (42 workflows)
     ├── check_build_serving.cjs              # Automated HTTP assertions against built-output server (7 checks)
     ├── generate_project_report.py           # Compiles documentation and test logs into PDF report
     ├── generate_interview_mastery_pdf.py    # Compiles master architecture & interview mastery into PDF
     ├── README.md                            # Automation scripts, verification harness & QA runbook
     ├── run_build_qa.cjs                     # Serves built frontend bundle and API on port 4173
     ├── run_local.cjs                        # Isolated local stack with in-memory Mongo & fixtures
-    └── verify_project.cjs                   # Master verification aggregator executing all 208 checks
+    └── verify_project.cjs                   # Master verification aggregator executing all 225 checks
 ```
 
 ---
@@ -274,16 +274,16 @@ mindmap
       Middleware (authToken.js)
       Mongoose Models (user, chat, generation, providerCredential)
       Routes (auth, chat, ai, medical, settings, analytics)
-      Services (answer, pubmed, ai, citation, verifier, providerSelection, session, websocket)
-      Automated Tests (node test runner suites - 71 tests)
+      Services (answer, pubmed, ai, citation, verifier, providerSelection, session, websocket, privacy)
+      Automated Tests (node test runner suites - 77 tests)
     (02 Frontend Subsystem)
       Core Views (Home, ChatWorkspace, AnalyticsDashboard, AccountPage, AISettings)
       Context Providers (AuthContext, SidebarContext)
       Client Utilities (api.js Web Locks, tabStorage.js)
-      18 Clinical Calculators (ClinicalCalculatorsModal.jsx)
+      22 Clinical Calculators (ClinicalCalculatorsModal.jsx)
       Vite & Tailwind (vite.config.js, tailwind.config.js, index.css)
       Nginx Configuration (nginx.conf)
-      Vitest Test Suites (55 tests across 6 suites)
+      Vitest Test Suites (59 tests across 6 suites)
     (03 Model & Dataset Subsystem)
       Source Data (Final dataset CSV - 16,412 rows)
       Dataset Profilers (analyze_dataset, audit_dataset)
@@ -295,7 +295,7 @@ mindmap
       Docker Compose & Deployment (docker-compose.yml, create_env.cjs, mongo-init.js)
       Test Automation (verify_project.cjs, browser_smoke.cjs, browser_verify_dark_and_tools.cjs)
       PDF Report Generator (generate_project_report.py)
-      Master Quality Verification (208 Passed Checks)
+      Master Quality Verification (225 Locally Observed Passed Checks)
 ```
 
 ---
@@ -322,7 +322,7 @@ mindmap
 | `backend/models/generationModel.js` | Ephemeral Buffer | Mongoose `Generation` model (24h TTL) | `mongoose` |
 | `backend/services/pubmedService.js` | PubMed Client | `buildPubMedQuery`, `orderedRecords`, `parseAbstracts`, `fetchSources` | `axios`, `fast-xml-parser` |
 | `backend/services/citationService.js` | Citation Audit | `assessCitationGrounding` | Standard regex |
-| `backend/services/interactionService.js` | Drug Interaction Screener | `detectDrugInteractions`, `HIGH_RISK_INTERACTION_RULES` | Standard regex & 19 FDA black-box warning pairs |
+| `backend/services/interactionService.js` | Drug Interaction Screener | `detectDrugInteractions`, `HIGH_RISK_INTERACTION_RULES` | Standard regex & 23 FDA black-box warning pairs |
 | `backend/services/answerVerifier.js` | Model Review | `verifyAnswer` | `aiService.js` |
 | `backend/services/providerCredentials.js` | AES-256-GCM Vault | `seal`, `open` | `crypto` |
 | `backend/services/providerSelection.js` | Multi-Provider Engine | `resolveProviderSelection`, `listChoices`, `defaultProvider` | `providerCredentialModel.js`, `userModel.js` |
@@ -344,7 +344,7 @@ mindmap
 | `frontend/src/context/SidebarContext.jsx` | Drawer State | `SidebarContext`, `SidebarProvider`, `useSidebar` | React |
 | `frontend/src/components/chat/ChatWorkspace.jsx` | Chat UI | `<ChatWorkspace />` | `react-markdown`, `tabStorage.js`, `api.js` |
 | `frontend/src/components/dashboard/AnalyticsDashboard.jsx` | Metrics Dashboard | `<AnalyticsDashboard />` | `lib/api.js`, Lucide icons |
-| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Tools | `<ClinicalCalculatorsModal />` | 18 evidence-based calculators with WAI-ARIA tab semantics |
+| `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` | Clinical Tools | `<ClinicalCalculatorsModal />` | 22 evidence-based calculators with WAI-ARIA tab semantics |
 | `frontend/src/components/auth/AccountPage.jsx` | Account Manager | `<AccountPage />` | `AuthContext.jsx`, `tabStorage.js` |
 | `frontend/src/components/auth/AISettings.jsx` | Provider Settings | `<AISettings />` | `lib/api.js` |
 | `frontend/src/components/auth/AuthPage.jsx` | Auth Modal | `<AuthPage />` | React |
@@ -388,6 +388,6 @@ mindmap
 | **Event Bus & Workers** | `backend/services/outboxService.js` | [`docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md`](SYSTEM_ARCHITECTURE_DEEP_DIVE.md#13-developer-extensibility-event-buses-microservices--asynchronous-workers) | Transactional outbox, MongoDB change streams, Redis Streams consumer groups, DLQ retry loops |
 | **Clinical Safety Invariants** | `backend/services/safetyService.js` | [`docs/ISSUES_AND_RISKS.md`](ISSUES_AND_RISKS.md#10-developer-extensibility-custom-safety-invariants--guardrail-pipelines) | Pediatric contraindications, Narrow Therapeutic Index monitoring, pre/post generation filtering |
 | **Corpus Profilers & Auditing** | `Model and Dataset/reports/` | [`Model and Dataset/reports/dataset_analysis.md`](../Model%20and%20Dataset/reports/dataset_analysis.md#9-developer-extension-blueprint-adding-custom-analyzers--quality-profilers) | Flesch Reading Ease, Type-Token Ratio, ROUGE-L longest common subsequence, semantic triage |
-| **Developer Onboarding** | Entire Repository | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete end-to-end developer guide for adding rules, calculators, providers, and running 208 tests |
-| **Production Build Guide** | Entire Repository | [`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](PRODUCTION_DEVELOPER_BUILD_GUIDE.md) | Master production developer build manual, ASCII topologies, colorful mindmaps, and 208-check verification |
-| **Roadmap & Feature Epics** | `IMPROVEMENT_PLAN.md` | [`IMPROVEMENT_PLAN.md`](../IMPROVEMENT_PLAN.md#9-developer-contribution-backlog--feature-extension-guide) | OpenFDA integration, semantic hybrid RAG, local WebGPU inference, 208-check verification gate |
+| **Developer Onboarding** | Entire Repository | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete end-to-end developer guide for adding rules, calculators, providers, and running 225 verification checks |
+| **Production Build Guide** | Entire Repository | [`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](PRODUCTION_DEVELOPER_BUILD_GUIDE.md) | Master production developer build manual, ASCII topologies, colorful mindmaps, and 225-check verification |
+| **Roadmap & Feature Epics** | `IMPROVEMENT_PLAN.md` | [`IMPROVEMENT_PLAN.md`](../IMPROVEMENT_PLAN.md#9-developer-contribution-backlog--feature-extension-guide) | OpenFDA integration, semantic hybrid RAG, local WebGPU inference, 225-check verification gate |

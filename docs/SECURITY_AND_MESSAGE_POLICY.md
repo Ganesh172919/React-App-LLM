@@ -45,14 +45,18 @@ MedAssist AI operates under a **Zero-Trust Client Boundary**: all client submiss
       |          BOUNDARY 3: AUTHENTICATION & SESSION VAULT         |
       | - Monotonic sessionVersion counter (Single Active Device)   |
       | - Rotating SHA-256 Refresh Token Hashes (Instant Revocation)|
-      | - AES-256-GCM Authenticated Encryption for User API Keys    |
+      | - Multi-Version AES-256-GCM Vault & Keyring Rotation        |
+      | - Data Processing Consent Gate (Version: 2026-11-04)        |
       | - Google OAuth 2.0 with PKCE S256 Code Challenges           |
       +-------------------------------------------------------------+
                                      │
                                      ▼
       +-------------------------------------------------------------+
-      |           BOUNDARY 4: DETERMINISTIC AI SAFETY GATE          |
+      |       BOUNDARY 4: DATA MINIMIZATION & DETERMINISTIC SAFETY  |
+      | - Data Minimization: Pre-flight regex identifier redaction  |
+      |   ([email removed], [phone number removed], [id removed])   |
       | - Prompt Screen: Intercept self-harm, weapons, emergencies  |
+      | - 23 High-Risk FDA Black-Box Drug-Drug Interaction Rules     |
       | - Source Framing: Label PubMed abstracts as "untrusted data"|
       | - Citation Screen: [N] set partitioning rejects hallucinations|
       | - Output Screen: Strip imperative dosages and prescriptions |
@@ -87,16 +91,23 @@ mindmap
       Brevo Tokenized Email Activation
     (03 Data Confidentiality & Vault)
       AES-256-GCM Personal Key Encryption
+      Multi-Version Keyring Rotation
       Zero Plaintext Secret Storage
       Secure HttpOnly Cookie Transport
       Ephemeral Generations 24h TTL
       Authoritative Two-Phase Persistence
-    (04 Deterministic Message Safety)
+    (04 Data Minimization & Privacy)
+      Consent Version 2026-11-04
+      Pre-Flight Email Redaction
+      Pre-Flight Phone Redaction
+      Pre-Flight SSN / Aadhaar / MRN Redaction
+    (05 Deterministic Message Safety)
       Unicode NFKC Normalization
       Zero-Width Character Removal
       Crisis & Self-Harm Refusal
       Chemical & Biological Weapon Refusal
       Acute Medical Emergency Directives
+      23 FDA Black-Box DDI Rules
       Generated Prescription Output Block
 ```
 
@@ -104,10 +115,10 @@ mindmap
 
 ## 3. Cryptographic Key Vault Specification (`backend/services/providerCredentials.js`)
 
-When users supply personal API keys (Gemini, Groq, Together AI), keys are encrypted using **Authenticated AES-256-GCM** before database insertion:
+When users supply personal API keys (Gemini, Groq, Together AI), keys are encrypted using **Authenticated AES-256-GCM** with a multi-version keyring architecture before database insertion:
 
 ```
-[Plaintext API Key] + [Master USER_API_KEY_ENCRYPTION_KEY (32-byte)]
+[Plaintext API Key] + [Active Encryption Key from Keyring (e.g., "v2" or "legacy")]
                                │
                                ├── Generate Cryptographic Random IV (12-byte)
                                ▼
@@ -121,33 +132,71 @@ When users supply personal API keys (Gemini, Groq, Together AI), keys are encryp
                                │
                                ▼
             [Stored in MongoDB ProviderCredential Schema]
-            - iv (Base64)
-            - tag (Base64)
-            - ciphertext (Base64)
-            - lastFour (Plaintext display suffix)
+            - keyVersion: String ("v2", "legacy", etc.)
+            - iv: Base64 (12-byte initialization vector)
+            - tag: Base64 (16-byte authentication tag)
+            - ciphertext: Base64
+            - lastFour: Safe display suffix
 ```
+
+### 3.1 Keyring Architecture & Lazy Re-encryption Implementation
+
+The vault reads named keys from `USER_API_KEY_ENCRYPTION_KEYS` (formatted as comma-delimited `version:64hexchar`) and falls back to `USER_API_KEY_ENCRYPTION_KEY` as version `"legacy"`. Upon read via `openWithMetadata()`, if `requiresRotation === true`, the system can transparently re-encrypt the credential with the current active version:
 
 ```javascript
 // backend/services/providerCredentials.js
 const { randomBytes, createCipheriv, createDecipheriv } = require("crypto");
 const { fail } = require("./validation");
 
-const encryptionKey = () => {
-  const raw = process.env.USER_API_KEY_ENCRYPTION_KEY;
-  if (!raw || !/^[0-9a-f]{64}$/i.test(raw)) {
+const VERSION = /^[A-Za-z0-9._-]{1,32}$/;
+const validKey = (value) => /^[0-9a-f]{64}$/i.test(value || "");
+
+const keyRing = () => {
+  const entries = new Map();
+  const configured = String(process.env.USER_API_KEY_ENCRYPTION_KEYS || "").trim();
+  if (configured) {
+    for (const item of configured.split(",")) {
+      const [version, raw] = item.split(":");
+      if (!VERSION.test(version || "") || !validKey(raw) || entries.has(version)) {
+        throw fail("Personal API key storage is misconfigured.", 503, "KEY_STORAGE_UNAVAILABLE");
+      }
+      entries.set(version, Buffer.from(raw, "hex"));
+    }
+  }
+  if (process.env.USER_API_KEY_ENCRYPTION_KEY) {
+    if (!validKey(process.env.USER_API_KEY_ENCRYPTION_KEY)) {
+      throw fail("Personal API key storage is misconfigured.", 503, "KEY_STORAGE_UNAVAILABLE");
+    }
+    if (entries.has("legacy")) {
+      throw fail("Personal API key storage has duplicate legacy keys.", 503, "KEY_STORAGE_UNAVAILABLE");
+    }
+    entries.set("legacy", Buffer.from(process.env.USER_API_KEY_ENCRYPTION_KEY, "hex"));
+  }
+  if (!entries.size) throw fail("Personal API keys are unavailable on this deployment.", 503, "KEY_STORAGE_UNAVAILABLE");
+  return entries;
+};
+
+const activeKeyVersion = () =>
+  process.env.USER_API_KEY_ENCRYPTION_KEY_VERSION || (process.env.USER_API_KEY_ENCRYPTION_KEYS ? "" : "legacy");
+
+const encryptionKey = (version = activeKeyVersion()) => {
+  const entries = keyRing();
+  if (!VERSION.test(version || "") || !entries.has(version)) {
     throw fail("Personal API key storage is misconfigured.", 503, "KEY_STORAGE_UNAVAILABLE");
   }
-  return Buffer.from(raw, "hex");
+  return { version, key: entries.get(version) };
 };
 
 const seal = (apiKey) => {
-  if (typeof apiKey !== "string" || apiKey.length < 12 || apiKey.length > 512 || /\s/.test(apiKey)) {
+  if (typeof apiKey !== "string" || apiKey.length < 12 || apiKey.length > 512 || /\s|[\x00-\x1f\x7f]/.test(apiKey)) {
     throw fail("Enter a valid API key without spaces (12 to 512 characters).");
   }
   const iv = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
+  const encryption = encryptionKey();
+  const cipher = createCipheriv("aes-256-gcm", encryption.key, iv);
   const ciphertext = Buffer.concat([cipher.update(apiKey, "utf8"), cipher.final()]);
   return {
+    keyVersion: encryption.version,
     iv: iv.toString("base64"),
     tag: cipher.getAuthTag().toString("base64"),
     ciphertext: ciphertext.toString("base64"),
@@ -156,17 +205,79 @@ const seal = (apiKey) => {
   };
 };
 
-const open = (record) => {
+const openWithMetadata = (record) => {
   try {
-    const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(record.iv, "base64"));
+    const encryption = encryptionKey(record.keyVersion || "legacy");
+    const decipher = createDecipheriv("aes-256-gcm", encryption.key, Buffer.from(record.iv, "base64"));
     decipher.setAuthTag(Buffer.from(record.tag, "base64"));
-    return Buffer.concat([decipher.update(Buffer.from(record.ciphertext, "base64")), decipher.final()]).toString("utf8");
+    const apiKey = Buffer.concat([decipher.update(Buffer.from(record.ciphertext, "base64")), decipher.final()]).toString("utf8");
+    return { apiKey, keyVersion: encryption.version, requiresRotation: encryption.version !== activeKeyVersion() };
   } catch {
     throw fail("The saved API key could not be read. Remove it and add a new key.", 503, "KEY_UNAVAILABLE");
   }
 };
 
-module.exports = { seal, open };
+const open = (record) => openWithMetadata(record).apiKey;
+const validateKeyConfiguration = () => { encryptionKey(); };
+
+module.exports = { seal, open, openWithMetadata, activeKeyVersion, validateKeyConfiguration };
+```
+
+---
+
+## 3.2 Data Minimization & Privacy Protection Policy (`backend/services/privacyService.js`)
+
+To comply with data minimization requirements and prevent inadvertent leakage of Protected Health Information (PHI) or Personally Identifiable Information (PII) to external cloud providers (Google Gemini, Groq, Together AI, NCBI), MedAssist AI executes pre-flight privacy gating:
+
+```
+========================================================================================================================
+                          DATA MINIMIZATION & CONSENT ENFORCEMENT GATE
+========================================================================================================================
+
+    [ User Question Prompt ]
+                 │
+                 ├── 1. requireCurrentConsent(user)
+                 │      ├── Evaluates user.dataProcessingConsentVersion === "2026-11-04"
+                 │      └── If false/absent: Throws 403 PRIVACY_CONSENT_REQUIRED
+                 │
+                 ▼
+    [ redactSensitiveText(prompt) ]
+                 ├── Email: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi ──► "[email removed]"
+                 ├── Phone: /(?<!\w)(?:\+?\d{1,3}[ .-]?)?.../g ──► "[phone number removed]"
+                 ├── Government & Clinical IDs (SSN/Aadhaar/MRN): ──► "[identifier removed]"
+                 └── Formatted 9-digit / 16-digit Card/ID Sequences ──► "[identifier removed]"
+                 │
+                 ▼
+    [ Sanitized Prompt ] ──► Forwarded to PubMed E-Utilities & Model Provider Pipelines
+========================================================================================================================
+```
+
+```javascript
+// Excerpt from backend/services/privacyService.js
+const DATA_PROCESSING_CONSENT_VERSION = "2026-11-04";
+const REDACTION_RULES = [
+  [/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email removed]"],
+  [/(?<!\w)(?:\+?\d{1,3}[ .-]?)?(?:\(?\d{2,4}\)?[ .-]?)?\d{3,4}[ .-]\d{3,4}(?!\w)/g, "[phone number removed]"],
+  [/\b(?:ssn|social security|aadhaar|national id|patient id|medical record number|mrn)\s*(?:number|no\.?|#|:)?\s*[A-Z0-9-]{4,}\b/gi, "[identifier removed]"],
+  [/\b(?:\d{3}-?\d{2}-?\d{4}|\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4})\b/g, "[identifier removed]"],
+];
+
+function redactSensitiveText(value) {
+  let text = String(value || "");
+  let redactionCount = 0;
+  for (const [pattern, replacement] of REDACTION_RULES) {
+    text = text.replace(pattern, () => { redactionCount += 1; return replacement; });
+  }
+  return { text, redactionCount };
+}
+
+function requireCurrentConsent(user) {
+  if (!user?.dataProcessingConsentAt || user.dataProcessingConsentVersion !== DATA_PROCESSING_CONSENT_VERSION) {
+    throw fail("Review and accept the data-processing notice in Account before sending questions to external literature or AI providers.", 403, "PRIVACY_CONSENT_REQUIRED");
+  }
+}
+
+module.exports = { DATA_PROCESSING_CONSENT_VERSION, redactSensitiveText, requireCurrentConsent };
 ```
 
 ---
@@ -254,7 +365,7 @@ Before any generated answer is returned to the client or saved to MongoDB, `scre
 
 ## 7. High-Risk Drug Interaction Screening Policy (`interactionService.js`)
 
-In addition to first-line prompt screening, all queries entering `/api/ai/chat` and `/api/medical` are scanned against **19 Verified FDA Black-Box Warning Contraindication Rules**:
+In addition to first-line prompt screening, all queries entering `/api/ai/chat` and `/api/medical` are scanned against **23 Verified FDA Black-Box Warning Contraindication Rules**:
 
 ```
 ========================================================================================================================
@@ -274,8 +385,8 @@ In addition to first-line prompt screening, all queries entering `/api/ai/chat` 
          [ Acute Emergency Detected ]     [ Safe for Query Processing ]
                       │                          │
                       │                          ▼
-                      │             [ 19 FDA Drug Pair Evaluator ]
-                      │             - Scans 19 high-risk drug interaction rule regexes
+                      │             [ 23 FDA Drug Pair Evaluator ]
+                      │             - Scans 23 high-risk drug interaction rule regexes
                       │             - Detects simultaneous Drug A and Drug B presence
                       │                          │
                       ▼                          ▼
@@ -327,6 +438,14 @@ mindmap
         Distal ENaC blockade and lethal hyperkalemia
       Theophylline + Fluoroquinolones
         CYP1A2 clearance inhibition and fatal seizures
+      Colchicine + Strong CYP3A4 / P-gp Inhibitors
+        Multi-organ failure and bone marrow aplasia
+      Carbamazepine + Strong CYP3A4 Inhibitors
+        Acute carbamazepine neurotoxicity and ataxia
+      Linezolid + SSRIs / SNRIs
+        MAOI inhibition and malignant Serotonin Syndrome
+      Warfarin + Amiodarone
+        CYP2C9/3A4 inhibition with 30-60d half-life hemorrhages
     (02 High-Risk Monitored Pairs)
       Tramadol / Opioids + SSRIs / SNRIs
         Serotonin syndrome and seizure threshold
@@ -344,7 +463,7 @@ mindmap
       Zero Silent Warning Drops
 ```
 
-### 7.2 Complete 19 FDA Black-Box Warning Interaction Inventory
+### 7.2 Complete 23 FDA Black-Box Warning Interaction Inventory
 
 | # | Medication Pair Category | Class / Agent A | Class / Agent B | Severity | Mechanism & Clinical Consequence |
 |:---|:---|:---|:---|:---:|:---|
@@ -367,6 +486,10 @@ mindmap
 | **17** | SSRI / SNRI / MAOI + Triptan | Fluoxetine, Sertraline, Duloxetine, Phenelzine | Sumatriptan, Rizatriptan, Zolmitriptan, Eletriptan | **CRITICAL** | FDA Warning: Concurrent use of 5-HT1 receptor agonist triptans with SSRIs, SNRIs, or MAOIs substantially elevates central serotonin receptor stimulation, precipitating acute Serotonin Syndrome. |
 | **18** | TMP-SMX (Bactrim) + ACEI / ARB / K-Sparing | Trimethoprim-Sulfamethoxazole (Bactrim, Septra) | Lisinopril, Losartan, Spironolactone, Eplerenone | **CRITICAL** | Major contraindication: Trimethoprim blocks distal nephron epithelial sodium channels (ENaC) identically to potassium-sparing diuretics. Combined with RAAS blockade, severe refractory hyperkalemia and sudden cardiac arrest occur. |
 | **19** | Theophylline + Fluoroquinolones | Theophylline (Theo-24, Uniphyl, Elixophyllin) | Ciprofloxacin (Cipro), Enoxacin | **CRITICAL** | Major contraindication: Potent hepatic CYP1A2 metabolic inhibition by ciprofloxacin/enoxacin reduces theophylline clearance by up to 50–70%, precipitating life-threatening theophylline toxicity, intractable cardiac arrhythmias, and fatal seizures. |
+| **20** | Colchicine + Strong CYP3A4 / P-gp Inhibitors | Colchicine (Colcrys, Mitigare, Gloperba) | Clarithromycin, Erythromycin, Ketoconazole, Itraconazole | **CRITICAL** | Dual CYP3A4 and P-gp inhibition drastically blocks colchicine elimination, triggering rhabdomyolysis, bone marrow aplasia, and multi-organ failure (FDA Boxed Warning). |
+| **21** | Carbamazepine + Strong CYP3A4 Inhibitors | Carbamazepine (Tegretol, Carbatrol, Equetro) | Clarithromycin, Erythromycin, Ketoconazole, Fluconazole | **CRITICAL** | Potent CYP3A4 inhibition abruptly blocks carbamazepine clearance, causing severe acute neurotoxicity, ataxia, diplopia, and respiratory depression within 24–48 hours (FDA Warning). |
+| **22** | Linezolid + SSRIs / SNRIs | Linezolid (Zyvox) | Sertraline, Fluoxetine, Escitalopram, Duloxetine, Venlafaxine | **CRITICAL** | Linezolid is a reversible non-selective MAOI; co-administration precipitates malignant hyperthermia, delirium, and fatal Serotonin Syndrome (FDA Boxed Warning). |
+| **23** | Warfarin + Amiodarone | Warfarin (Coumadin, Jantoven) | Amiodarone (Cordarone, Pacerone, Nexterone) | **CRITICAL** | Potent CYP2C9 and CYP3A4 inhibition with 30–60 day half-life routinely doubles/triples INR, causing fatal hemorrhages unless warfarin dose is empirically reduced by 33%–50%. |
 
 ---
 
@@ -586,7 +709,9 @@ Developers integrating new features must adhere to MedAssist AI's security invar
                  │
                  ▼
     ┌─────────────────────────────────────────────────────────────────┐
-    │ 1. INPUT SCREENING (services/safetyService.js)                  │
+    │ 1. INPUT SCREENING (services/safetyService.js & privacyService) │
+    │ ├── Consent Gate (requireCurrentConsent: version 2026-11-04)    │
+    │ ├── Data Minimization (redactSensitiveText: email/phone/IDs)    │
     │ ├── Crisis / Self-Harm Regex (Deflects with crisis resources)   │
     │ ├── Acute Emergency Symptoms (Deflects with 911 alert)          │
     │ ├── Harmful Instructions & Toxin Synthesis (Immediate 400 Bad)  │
@@ -607,7 +732,7 @@ Developers integrating new features must adhere to MedAssist AI's security invar
     │ ├── Strip prescriptive / authoritative imperative dosing        │
     │ ├── Mandatory Educational Disclaimer Injection                  │
     │ ├── Deterministic Citation Auditor ([N] bracket set bounds)     │
-    │ └── 19 FDA High-Risk Drug-Drug Interaction Warnings             │
+    │ └── 23 FDA High-Risk Drug-Drug Interaction Warnings             │
     └─────────────────────────────────────────────────────────────────┘
                  │
                  ▼

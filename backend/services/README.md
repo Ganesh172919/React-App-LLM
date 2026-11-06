@@ -20,7 +20,8 @@ The MedAssist AI backend service layer (`backend/services/`) encapsulates pure d
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                          SECURITY & CRYPTO SERVICES                                            │
     │  - sessionService.js: Rotating SHA-256 Refresh Tokens, JWT Access Tokens, Monotonic sessionVersion             │
-    │  - providerCredentials.js: Authenticated AES-256-GCM Vault for Stored Personal LLM Keys                        │
+    │  - providerCredentials.js: Authenticated AES-256-GCM Vault & Multi-Version Keyring Rotation                     │
+    │  - privacyService.js: User Consent Lifecycle (v2026-11-04) & Deterministic PII Redaction                        │
     │  - validation.js: Input Validation, Bounded Query Strings, Payload Normalization                               │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
@@ -28,7 +29,7 @@ The MedAssist AI backend service layer (`backend/services/`) encapsulates pure d
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                    DETERMINISTIC CLINICAL SAFETY GATES                                         │
     │  - safetyService.js: Deterministic Pre/Post-Generation Screener (Self-Harm, Acute Emergency, Injection Defense)│
-    │  - interactionService.js: 22 FDA Black-Box Drug-Drug Interaction Rules (Preserved across Deflections)          │
+    │  - interactionService.js: 23 FDA Black-Box Drug-Drug Interaction Rules (Preserved across Deflections)          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
                  ▼
@@ -73,7 +74,7 @@ mindmap
         Emergency Deflections (Chest Pain, Stroke)
         Prompt Injection Token Stripping
       interactionService.js
-        22 High-Risk Drug Caution Pairs
+        23 High-Risk Drug Caution Pairs
         Bidirectional Regex Matchers
         Preservation Across Deflections
       citationService.js
@@ -95,7 +96,12 @@ mindmap
         Replay Attack Revocation
       providerCredentials.js
         AES-256-GCM Key Vault
+        Multi-Version Keyring Rotation
         IV, Tag, Ciphertext Serialization
+      privacyService.js
+        Consent Lifecycle v2026-11-04
+        Deterministic PII Redaction
+        requireCurrentConsent Gate
     (04 Generation & Dispatch)
       answerService.js
         Two-Phase Persistence Handshake
@@ -142,10 +148,10 @@ mindmap
 - **Invariants**: Any citation referencing an index $> \text{sourceCount}$ triggers an `invalid_citations` state, suppressing ungrounded model claims.
 
 ### 3.4 `interactionService.js` — Drug-Drug Interaction Screener
-- **Role**: Scans clinical queries and responses for 22 high-risk medication pairs based on FDA black-box warnings.
+- **Role**: Scans clinical queries and responses for 23 high-risk medication pairs based on FDA black-box warnings.
 - **Exported Symbols**:
-  - `detectDrugInteractions(text)`: Scans input text using bidirectional regular expressions covering generic and brand names (e.g., Warfarin + Aspirin, Nitroglycerin + Sildenafil, Tramadol + Sertraline, SSRI/SNRI + Triptan, Bactrim + ACEi/ARB, Theophylline + Ciprofloxacin, Colchicine + Clarithromycin, Carbamazepine + Erythromycin, Linezolid + SSRIs).
-  - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 22 rule definitions with risk severity (`CRITICAL`, `HIGH`).
+  - `detectDrugInteractions(text)`: Scans input text using bidirectional regular expressions covering generic and brand names (e.g., Warfarin + Aspirin, Nitroglycerin + Sildenafil, Tramadol + Sertraline, SSRI/SNRI + Triptan, Bactrim + ACEi/ARB, Theophylline + Ciprofloxacin, Colchicine + Clarithromycin, Carbamazepine + Erythromycin, Linezolid + SSRIs, Warfarin + Amiodarone).
+  - `HIGH_RISK_INTERACTION_RULES`: Canonical array of 23 rule definitions with risk severity (`CRITICAL`, `HIGH`).
 - **Invariants**: Detected interaction warnings are preserved even if a query is deflected by emergency screening.
 
 ```
@@ -156,7 +162,7 @@ mindmap
     [ User Question Text ] ──► detectDrugInteractions(text)
                                      │
                                      ├── Lowercase normalization & word-boundary tokenization
-                                     ├── Iterate canonical HIGH_RISK_INTERACTION_RULES (22 Rules)
+                                     ├── Iterate canonical HIGH_RISK_INTERACTION_RULES (23 Rules)
                                      │     ├── rule.drugsA.some(pattern.test(text))  ──► Matches Drug Group A
                                      │     └── rule.drugsB.some(pattern.test(text))  ──► Matches Interacting Partner
                                      │
@@ -175,7 +181,7 @@ mindmap
     [ Injected into API response ] ──► Retained even across emergency 911 redirects
 ```
 
-#### 22 High-Risk Drug-Drug Interaction Rules Inventory:
+#### 23 High-Risk Drug-Drug Interaction Rules Inventory:
 
 | # | Pair | Severity | Mechanism & Clinical Hazard |
 |:---:|:---|:---:|:---|
@@ -184,7 +190,7 @@ mindmap
 | 03 | **Tramadol / Opioids + SSRI / SNRI** | `HIGH` | Massive serotonin accumulation causing Serotonin Syndrome. |
 | 04 | **ACEI / ARB + K-Sparing Diuretic** | `HIGH` | Additive potassium retention causing fatal cardiac arrhythmias. |
 | 05 | **Methotrexate + TMP-SMX (Bactrim)** | `CRITICAL` | Reduced renal tubular excretion causing lethal bone marrow suppression. |
-| 06 | **Fluoroquinolone + Corticosteroid** | `HIGH` | Synergistic collagen degradation causing Achilles tendon rupture. |
+| 06 | **Fluoroquinolones + Corticosteroid** | `HIGH` | Synergistic collagen degradation causing Achilles tendon rupture. |
 | 07 | **Benzodiazepine + Opioid Analgesic** | `CRITICAL` | Severe CNS and respiratory depression, coma, fatal overdose (FDA Black Box). |
 | 08 | **Lithium + NSAID / ACE Inhibitor** | `HIGH` | Reduced renal prostaglandin clearance elevating serum lithium into toxic range. |
 | 09 | **Statin + Strong CYP3A4 Inhibitor** | `CRITICAL` | CYP3A4 inhibition elevates statin AUC up to 10x, causing rhabdomyolysis. |
@@ -201,15 +207,23 @@ mindmap
 | 20 | **Colchicine + Strong CYP3A4 / P-gp Inhibitor** | `CRITICAL` | Dual CYP3A4 & P-gp inhibition blocks colchicine elimination, triggering severe fatal toxicity, rhabdomyolysis, and pancytopenia. |
 | 21 | **Carbamazepine + Strong CYP3A4 Inhibitor** | `CRITICAL` | Abrupt CYP3A4 inhibition blocks carbamazepine hepatic elimination, precipitating acute neurotoxicity within 24–48 hours (ataxia, nystagmus, diplopia, stupor, respiratory arrest). |
 | 22 | **Linezolid + SSRI / SNRI** | `CRITICAL` | FDA Boxed Warning: Linezolid is a reversible, non-selective MAOI. Co-administration with SSRIs/SNRIs precipitates severe, fatal Serotonin Syndrome (hyperthermia, autonomic instability, rigidity, delirium). |
+| 23 | **Warfarin + Amiodarone** | `CRITICAL` | Amiodarone potently inhibits CYP2C9 and P-glycoprotein, reducing S-warfarin clearance, elevating INR by 100–200%, and precipitating life-threatening hemorrhage. |
 
-### 3.5 `providerCredentials.js` — AES-256-GCM Personal Key Vault
-- **Role**: Secures user-supplied API keys for Google Gemini, Groq, and Together AI.
+### 3.5 `providerCredentials.js` — AES-256-GCM Personal Key Vault & Keyring Rotation
+- **Role**: Secures user-supplied API keys for Google Gemini, Groq, and Together AI with zero-downtime key rotation.
 - **Exported Symbols**:
-  - `seal(plainTextKey, masterEncryptionKey)`: Encrypts key using AES-256-GCM with a random 12-byte IV and returns Base64-encoded `{ iv, authTag, ciphertext }`.
-  - `open(encryptedEnvelope, masterEncryptionKey)`: Decrypts and authenticates key payload. Throws on authentication tag mismatch.
-- **Invariants**: Plaintext keys are never stored in MongoDB and never returned in API responses.
+  - `seal(plainTextKey, masterEncryptionKey, keyId)`: Encrypts key using AES-256-GCM with a random 12-byte IV and returns Base64-encoded `{ iv, authTag, ciphertext, keyId }`.
+  - `open(encryptedEnvelope, masterEncryptionKey)`: Decrypts and authenticates key payload. Supports multi-key resolution from `USER_API_KEY_ENCRYPTION_KEYS` (JSON map of `{ keyId: hexKey }`) with transparent legacy fallback to `USER_API_KEY_ENCRYPTION_KEY`.
+- **Invariants**: Plaintext keys are never stored in MongoDB and never returned in API responses. Decryption failures trigger lazy migration or controlled rejection.
 
-### 3.6 `sessionService.js` — Cryptographic Session State Machine
+### 3.6 `privacyService.js` — Data Minimization & Privacy Protection Layer
+- **Role**: Enforces user data processing consent mandates and deterministic redaction of personal health identifiers (PHI/PII) before storage or logging.
+- **Exported Symbols**:
+  - `requireCurrentConsent(user)`: Validates that `user.dataProcessingConsentVersion === DATA_PROCESSING_CONSENT_VERSION ("2026-11-04")`. Throws 403 `PRIVACY_CONSENT_REQUIRED` if unconsented or version is stale.
+  - `redactSensitiveText(text)`: Performs deterministic regex redaction on emails (`[email removed]`), phone numbers (`[phone number removed]`), and national/institutional identifiers (`[identifier removed]` for SSN, Aadhaar, MRN) before logging or outbound transmission.
+- **Invariants**: AI generation and medical search endpoints reject unconsented requests at the service layer prior to external I/O.
+
+### 3.7 `sessionService.js` — Cryptographic Session State Machine
 - **Role**: Manages single-device session versioning and rotating refresh tokens.
 - **Exported Symbols**:
   - `hashToken(rawToken)`: Computes SHA-256 hex digest of refresh tokens.
@@ -217,7 +231,11 @@ mindmap
   - `setCookies(res, tokens)`: Binds tokens to `HttpOnly`, `SameSite=Strict`, `Secure` cookies.
 - **Invariants**: Refresh tokens rotate upon every consumption. Replay of an invalidated token triggers instant revocation of all sessions for that account.
 
-### 3.7 `websocketService.js` — Real-Time WebSocket Gateway
+### 3.8 `websocketService.js` — Real-Time WebSocket Gateway
+- **Role**: Provides real-time bidirectional synchronization between client and server.
+- **Exported Symbols**:
+  - `attachWebSockets(server)`: Binds `ws` server to `/ws` endpoint with 30-second heartbeat ping-pong watchdog.
+- **Invariants**: Enforces owner tenancy isolation; drops messages exceeding 1MB backpressure buffer.
 - **Role**: Provides real-time bidirectional synchronization between client and server.
 - **Exported Symbols**:
   - `attachWebSockets(server)`: Binds `ws` server to `/ws` endpoint with 30-second heartbeat ping-pong watchdog.
@@ -270,7 +288,7 @@ export function detectAllergyRisks(patientAllergies = [], queryText = "") {
 
 ## 5. Automated Verification Commands
 
-All backend services are covered by 74 unit and integration tests:
+All backend services are covered by 77 unit and integration tests across 10 test files:
 
 ```powershell
 # Run the entire backend test suite
@@ -281,4 +299,5 @@ node --test backend/test/safetyService.test.js
 node --test backend/test/citationService.test.js
 node --test backend/test/interactionService.test.js
 node --test backend/test/pubmedService.test.js
+node --test backend/test/providerCredentials.test.js
 ```

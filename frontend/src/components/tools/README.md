@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive Overview & Clinical Tools Topology
 
-The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 21 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
+The MedAssist AI clinical calculation engine (`frontend/src/components/tools/ClinicalCalculatorsModal.jsx`) implements 22 evidence-based physiological scoring tools. Designed strictly for educational exploration and student learning, all calculators implement deterministic arithmetic, strict physiological input clamping, and accessible WAI-ARIA keyboard navigation patterns.
 
 > [!CAUTION]
 > **Educational & Learning Notice**: These tools are educational demonstrations. Numeric scores do not establish clinical diagnoses, treatment plans, or formal prognosis. Clinical decisions must always be guided by qualified healthcare providers and institutional protocols.
@@ -100,6 +100,9 @@ mindmap
         RR >= 22, Altered Mentation, SBP <= 100
       Modified Centor (McIsaac)
         Strep Pharyngitis Probability (-1 to 5)
+      PERC PE Rule-Out Criteria
+        8-Point Exclusion Criteria
+        Zero Positive Rule-Out (<1.8% PE risk)
       Maintenance Fluids (4-2-1)
         Hourly Rate (4 mL/kg + 2 mL/kg + 1 mL/kg)
     (04 Metabolic & Hepatic)
@@ -116,6 +119,9 @@ mindmap
       Child-Pugh (Cirrhosis)
         Bilirubin, Albumin, INR, Ascites, Enceph
         Classes: A (5-6), B (7-9), C (10-15)
+      MELD-Na Score
+        UNOS 2016 Formula with Serum Sodium
+        90-Day End-Stage Liver Mortality (6 to 40)
 ```
 
 ---
@@ -252,9 +258,7 @@ $$\text{qSOFA Score} = \text{Altered Mentation (1)} + \text{Tachypnea (1)} + \te
   - Altered mental status ($\text{GCS} < 15$)
   - Respiratory rate $\ge 22\text{ breaths/min}$
   - Systolic blood pressure $\le 100\text{ mmHg}$
-- **Stratification**:
-  - Score $0 - 1$: Low risk of in-hospital mortality.
-  - Score $2 - 3$: High risk of poor outcome / in-hospital mortality ($\approx 3-14\times$ elevated risk); prompts immediate diagnostic workup for organ dysfunction, serum lactate measurement, blood cultures, and sepsis protocol activation.
+- **UI behavior**: All three findings start as Not assessed. The point count and Ask/Copy actions appear only after each is marked Present or Absent. A low count does not exclude sepsis. qSOFA must not be used as a sole screening tool; see the [Surviving Sepsis Campaign guidance](https://www.sccm.org/survivingsepsiscampaign/guidelines-and-resources/surviving-sepsis-campaign-adult-guidelines).
 
 ### 3.16 CHA₂DS₂-VASc Stroke Risk Score
 $$\text{CHA}_2\text{DS}_2\text{-VASc} = C + H + A_2 + D + S_2 + V + A + Sc$$
@@ -283,11 +287,7 @@ $$\text{Centor Score} = \text{Exudate (+1)} + \text{Tender Nodes (+1)} + \text{F
     - $3 - 14\text{ years}$: $+1$
     - $15 - 44\text{ years}$: $0$
     - $\ge 45\text{ years}$: $-1$
-- **Stratification & Stewardship Guidance (IDSA/CDC)**:
-  - Score $\le 1$: Low risk ($1 - 10\%$ streptococcal probability; throat culture or antibiotic typically not indicated).
-  - Score $2$: Intermediate risk ($11 - 17\%$ probability; throat culture or rapid antigen test [RADT] recommended; treat only if positive).
-  - Score $3$: Moderate-to-high risk ($28 - 35\%$ probability; throat culture or RADT recommended; treat only if positive).
-  - Score $\ge 4$: High risk ($51 - 53\%$ probability; RADT or throat culture recommended; consider empiric antibiotic per clinical judgment).
+- **UI behavior**: Four findings and the age group start as Not assessed. The point count and Ask/Copy actions appear only when all five inputs are recorded. The UI shows point bands without using the score alone to decide testing or antibiotics. Clinical findings alone cannot diagnose group A strep when clear viral symptoms are absent; see [CDC guidance](https://www.cdc.gov/group-a-strep/hcp/clinical-guidance/strep-throat.html).
 
 ### 3.18 HEART Score for Major Adverse Cardiac Events (MACE)
 $$\text{HEART Score} = H + E + A + R + T$$
@@ -297,14 +297,40 @@ $$\text{HEART Score} = H + E + A + R + T$$
   - **A (Age)**: $< 45\text{ years}$ ($0$), $45 - 64\text{ years}$ ($1$), $\ge 65\text{ years}$ ($2$).
   - **R (Risk Factors)**: No known risk factors ($0$), $1 - 2$ risk factors ($1$), $\ge 3$ risk factors or history of atherosclerotic disease ($2$). *(Risk factors: hypertension, hypercholesterolemia, diabetes, smoking, family history of early CAD, obesity)*.
   - **T (Troponin)**: Normal / $\le$ normal limit ($0$), $1 - 3\times$ normal limit ($1$), $> 3\times$ normal limit ($2$).
-- **6-Week MACE Risk Stratification**:
-  - **Low Risk ($0 - 3$ points)**: $\approx 0.9 - 1.7\%$ risk of 6-week MACE; candidate for early discharge or non-invasive outpatient evaluation.
-  - **Intermediate Risk ($4 - 6$ points)**: $\approx 12 - 16.6\%$ risk of 6-week MACE; observation unit admission, serial troponins, non-invasive cardiac testing.
-  - **High Risk ($7 - 10$ points)**: $\approx 50 - 65\%$ risk of 6-week MACE; urgent cardiology consultation, early invasive strategy (coronary angiography), aggressive medical stabilization.
+- **UI behavior**: All five inputs start as Not assessed. The point count and Ask/Copy actions appear only when each is recorded. The UI displays $0-3$, $4-6$, or $7-10$ point bands without individual event percentages, discharge decisions, or treatment instructions. Acute chest symptoms require urgent assessment independent of the score.
+
+### 3.19 MELD-Na Score for End-Stage Liver Disease Mortality
+$$\text{MELD(i)} = 9.57 \times \ln(\text{Cr}) + 3.78 \times \ln(\text{Bili}) + 11.20 \times \ln(\text{INR}) + 6.43$$
+$$\text{MELD-Na} = \text{MELD(i)} + 1.32 \times (137 - \text{Na}) - [0.033 \times \text{MELD(i)} \times (137 - \text{Na})]$$
+- **Physiological Clamping & UNOS Rules**:
+  - Creatinine: $1.0 - 4.0\text{ mg/dL}$ (if patient is on dialysis $\ge 2$ times in prior 7 days, Cr automatically clamped to $4.0$).
+  - Bilirubin: $\ge 1.0\text{ mg/dL}$.
+  - INR: $\ge 1.0$.
+  - Serum Sodium: bounded between $125 - 137\text{ mEq/L}$.
+  - Result score clamped between $6 - 40$.
+- **90-Day Mortality Stratification**:
+  - Score $\le 9$: $\approx 1.9\%$ mortality.
+  - Score $10 - 19$: $\approx 6.0\%$ mortality.
+  - Score $20 - 29$: $\approx 19.6\%$ mortality.
+  - Score $30 - 39$: $\approx 52.6\%$ mortality.
+  - Score $\ge 40$: $\approx 71.3\%$ mortality (urgent liver transplant priority).
+
+### 3.20 PERC Criteria for Pulmonary Embolism Rule-Out
+$$\text{PERC Score} = \sum \text{Positive Findings across 8 Exclusion Criteria}$$
+- **Eight Exclusion Criteria**:
+  1. Age $\ge 50\text{ years}$
+  2. Heart rate $\ge 100\text{ bpm}$
+  3. $\text{SpO}_2 < 95\%$ on room air
+  4. Unilateral leg swelling
+  5. Hemoptysis
+  6. Recent trauma or surgery ($\le 4\text{ weeks}$)
+  7. Prior documented PE or DVT
+  8. Exogenous estrogen use (oral contraceptives, hormone replacement, estrogenic tamoxifen)
+- **UI behavior**: All eight findings start as Not assessed. The count and Ask/Copy actions appear only when each is recorded. Even when the recorded count is zero, the form does not establish low clinical suspicion, rule out PE, or decide whether testing is needed. PERC is a clinician-applied rule for appropriately assessed low-risk emergency patients; see the [ACEP clinical policy](https://www.acep.org/siteassets/new-pdfs/clinical-policies/clinical.policy.suspected.acute.venous.thromboembolic.disease.pdf).
 
 ---
 
-## 4. Developer Extensibility: Adding Calculator #22
+## 4. Developer Extensibility: Adding Calculator #23
 
 Follow this architectural guide to add a new calculator:
 
@@ -314,7 +340,7 @@ Follow this architectural guide to add a new calculator:
 const tabList = [
   "bmi", "egfr", "chads", "map", "crcl", "calcium",
   "aniongap", "fena", "feurea", "fluids", "wells", "curb65",
-  "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart"
+  "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meldna", "centor", "heart", "perc"
 ];
 
 // Step 2: Implement deterministic formula with clamping in React state:
@@ -345,7 +371,7 @@ const tabList = [
 
 ## 5. Automated Verification Commands
 
-All 21 clinical calculators are verified by 19 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
+All 22 clinical calculators are verified by 20 unit tests in `frontend/src/test/clinicalCalculators.test.jsx`:
 
 ```powershell
 # Run the clinical calculators test suite

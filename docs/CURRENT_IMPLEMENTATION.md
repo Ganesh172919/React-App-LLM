@@ -1360,10 +1360,11 @@ export function calculateCustomScore({ paramA, paramB, age }) {
 Add the calculator tab and pane inside `ClinicalCalculatorsModal.jsx`:
 
 ```jsx
-// Register tab in arrow-navigation tabList:
+// Register tab in arrow-navigation tabList (all 22 active tools + new extension slot):
 const tabList = [
-  "bmi", "egfr", "chads", "map", "crcl", "calcium",
-  "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "custom_tool"
+  "bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena",
+  "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa",
+  "apri", "childpugh", "meld", "centor", "heart", "perc", "custom_tool"
 ];
 
 // In JSX tablist:

@@ -166,7 +166,7 @@ frontend/
     │   │   └── ChatWorkspace.jsx        # Message list, composer, IME guard, citation chips
     │   │
     │   ├── tools/                       # Evidence-Based Clinical Utilities
-    │   │   └── ClinicalCalculatorsModal.jsx # 21 evidence-based calculators with strict input bounds & ARIA tabs
+    │   │   └── ClinicalCalculatorsModal.jsx # 22 evidence-based calculators with strict input bounds & ARIA tabs
     │   │
     │   ├── dashboard/                   # Telemetry & Research Analytics
     │   │   └── AnalyticsDashboard.jsx   # 7/30/90-day SVG trends, lifetime summary metrics
@@ -183,9 +183,9 @@ frontend/
     ├── utils/
     │   └── medicalDetector.js           # Client-side heuristic medical keyword classifier
     │
-    └── test/                            # Vitest Component & Unit Tests (58 Passing across 6 suites)
+    └── test/                            # Vitest Component & Unit Tests (59 Passing across 6 suites)
         ├── api.test.js                  # Web Locks refresh and fetch interceptor tests
-        ├── clinicalCalculators.test.jsx # 21 calculator math & accessibility tests (19 tests)
+        ├── clinicalCalculators.test.jsx # 22 calculator math & accessibility tests (20 tests)
         ├── conversationImport.test.js   # JSON import bounding and anti-spoofing tests
         ├── medicalDetector.test.js      # Medical entity & suggestion chip classification
         ├── tabStorage.test.js           # sessionStorage fallback & TTL cache tests
@@ -411,7 +411,7 @@ export function parseConversationImport(jsonText) {
 
 ## 5. Educational Clinical Calculators Implementation
 
-The `ClinicalCalculatorsModal.jsx` component implements 19 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
+The `ClinicalCalculatorsModal.jsx` component implements 22 standardized clinical scoring algorithms with WAI-ARIA tab semantics, arrow-key cycling, strict input bounding, and non-diagnostic educational disclaimers.
 
 ```
 ========================================================================================================================
@@ -487,6 +487,10 @@ The `ClinicalCalculatorsModal.jsx` component implements 19 standardized clinical
 
     HEART Chest Pain Score     History (0-2) + ECG (0-2) + Age (0-2) + Risk (0-2) + Trop (0-2) Score: 0-10 points
                                Low (0-3): 0.9-1.7%; Mod (4-6): 12-16.6%; High (7-10): 50-65% MACE Risk at 6 Weeks
+
+    PERC PE Rule-Out Criteria  8 Criteria: Age >= 50, HR >= 100, SaO2 < 95%, Leg swelling, Binary criteria
+                               Hemoptysis, Recent surgery/trauma, Prior PE/DVT, Estrogen. Score = 0: PE safely ruled
+                               Applied ONLY in low-risk gestalt patients.                out (<1.8% risk) without CT/D-dimer
 ========================================================================================================================
 ```
 
@@ -506,8 +510,12 @@ if (gcsScore <= 8) {
   gcsStratification = "Moderate brain injury (9–12)";
 }
 
-// Arrow key navigation across all 21 tabs
-const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart"];
+// Arrow key navigation across all 22 tabs
+const tabList = [
+  "bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena",
+  "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa",
+  "apri", "childpugh", "meld", "centor", "heart", "perc"
+];
 ```
 
 ---
@@ -524,7 +532,7 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (58 tests across 6 suites)
+# 3. Execute Vitest automated unit and component test suite (59 tests across 6 suites)
 npm test
 
 # 4. Compile optimized production distribution bundle
@@ -611,12 +619,12 @@ When contributing a new evidence-based clinical calculator to [`frontend/src/com
 #### Step 1: Append Calculator Key to `tabList`
 
 ```javascript
-// File: frontend/src/components/tools/ClinicalCalculatorsModal.jsx
+// File: frontend/src/components/tools/ClinicalCalculatorsModal.jsx (all 22 active tools + new extension slot)
 const tabList = [
-  "bmi", "egfr", "chads", "map", "crcl", "calcium", 
-  "aniongap", "fena", "feurea", "fluids", "wells", 
-  "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh",
-  "meld" // <-- Add unique tab ID for new tool
+  "bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena",
+  "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa",
+  "apri", "childpugh", "meld", "centor", "heart", "perc",
+  "custom_tool" // <-- Add unique tab ID for new tool
 ];
 ```
 

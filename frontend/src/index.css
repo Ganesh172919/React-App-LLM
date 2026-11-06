@@ -300,6 +300,18 @@ input:focus, textarea:focus, select:focus { border-color: #087d79; }
   padding-bottom: 14px;
   margin-bottom: 16px;
 }
+.calc-jump {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+.calc-jump select {
+  flex: 1;
+  min-width: 0;
+  max-width: 360px;
+}
 .calc-tabs {
   display: flex;
   gap: 6px;
@@ -307,6 +319,10 @@ input:focus, textarea:focus, select:focus { border-color: #087d79; }
   padding-bottom: 10px;
   margin-bottom: 18px;
   overflow-x: auto;
+}
+@media (max-width: 480px) {
+  .calc-jump { align-items: stretch; flex-direction: column; gap: 6px; }
+  .calc-jump select { max-width: none; width: 100%; }
 }
 .calc-tab {
   background: transparent;

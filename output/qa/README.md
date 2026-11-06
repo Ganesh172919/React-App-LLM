@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive QA Overview & Artifact Topology
 
-The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 208 automated checks.
+The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 225 automated verification checks.
 
 ```
 ========================================================================================================================
@@ -22,7 +22,7 @@ The quality assurance output directory (`output/qa/`) stores automated verificat
     │  - automated-results.json: Aggregate code-check metrics (backend, frontend, python, build)                     │
     │  - browser-results.json: Results of 21 core browser workflows and scenarios                                   │
     │  - build-serving-results.json: 7 HTTP ingress assertions (cache headers, SPA routing, proxying)               │
-    │  - frontend-results.json: Vitest JSON output covering 55 component and unit tests                             │
+    │  - frontend-results.json: Vitest JSON output covering 59 component and unit tests                             │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                 │
                                                 ▼
@@ -49,7 +49,7 @@ mindmap
     ::icon(fa fa-clipboard-check)
     (01 Structured Metrics)
       automated-results.json
-        208 Master Checks
+        225 Master Checks
         Duration & Timestamp
       browser-results.json
         21 Smoke Workflows
@@ -61,7 +61,7 @@ mindmap
         Two-Row Header Stacking
       Dark Theme Modals
         WCAG AA Contrast
-        18 Clinical Calculators
+        22 Clinical Calculators
         Child-Pugh Cirrhosis Modal
       Drug Interaction Banners
         Theophylline + Ciprofloxacin
@@ -82,10 +82,10 @@ mindmap
 
 | Artifact File | Category | Source Script | Description |
 |:---|:---:|:---:|:---|
-| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 208 automated software checks across all suites. |
+| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 225 locally observed software checks across all suites. |
 | `browser-results.json` | Report | `browser_smoke.cjs` | Verification logs for 21 browser end-to-end user workflows. |
 | `build-serving-results.json` | Report | `check_build_serving.cjs` | HTTP response header assertions (immutable cache, CSP, SPA fallbacks). |
-| `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (18 tools). |
+| `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (22 tools). |
 | `childpugh-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Child-Pugh cirrhosis mortality score calculator. |
 | `bsa-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of Mosteller BSA calculator. |
 | `apri-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of APRI liver fibrosis calculator. |

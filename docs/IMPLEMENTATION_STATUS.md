@@ -29,7 +29,7 @@ This document details the engineering implementation status and test verificatio
     │  - Framework: Node.js   │   │  - Framework: Vitest    │   │  - Framework: unittest  │
     │    test runner          │   │  - Environment: jsdom   │   │  - Zero GPU / stdlib    │
     │  - MongoMemoryServer    │   │  - React 19 Hooks       │   │  - Dataset & LoRA tests │
-    │  - 75 Unit/Integ Tests  │   │  - 59 Component Tests   │   │  - 19 Unit Tests        │
+    │  - 77 Unit/Integ Tests  │   │  - 59 Component Tests   │   │  - 19 Unit Tests        │
     └─────────────────────────┘   └─────────────────────────┘   └─────────────────────────┘
                  │                             │                             │
                  └─────────────────────────────┼─────────────────────────────┘
@@ -71,7 +71,7 @@ mindmap
   root((Quality Status))
     ::icon(fa fa-check-circle)
     (01 Backend Verification)
-      75 Passing Unit & Integration Tests
+      77 Passing Unit & Integration Tests
       In-Memory MongoMemoryServer
       Single-Device sessionVersion Revocation
       Rotating SHA-256 Token State Machine
@@ -107,12 +107,12 @@ mindmap
 
 ## 3. Comprehensive Verification Summary Matrix
 
-The local verification runs reported 223 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
+The local verification runs reported 225 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
 
 | Test Suite / Quality Layer | Target Subsystem / Files | Assertion Count | Execution Environment | Status |
 | :--- | :--- | :---: | :--- | :---: |
-| **Backend Unit & Integration** | `backend/test/*.test.js` | **75** | Node 24 + In-Memory MongoDB | **PASSED** |
-| • `application.test.js` | Express middleware, CORS, rate limits, CSRF origin gate, session versioning | 24 | In-Memory MongoDB | **PASSED** |
+| **Backend Unit & Integration** | `backend/test/*.test.js` | **77** | Node 24 + In-Memory MongoDB | **PASSED** |
+| • `application.test.js` | Express middleware, CORS, rate limits, CSRF origin gate, session versioning | 25 | In-Memory MongoDB | **PASSED** |
 | • `interactionService.test.js` | 23 medication-pair name matching rules & safe non-interacting combos | 24 | Standalone Node.js | **PASSED** |
 | • `safetyService.test.js` | Crisis, emergency, prompt injection, unsafe output, prompt reduction | 7 | Standalone Node.js | **PASSED** |
 | • `providers.test.js` | PubMed numeric keys, MEDLINE XML abstract parsing, Gemini normalization | 6 | Standalone Node.js | **PASSED** |
@@ -121,6 +121,7 @@ The local verification runs reported 223 passing checks or workflows across Node
 | • `pubmedService.test.js` | E-Utilities query builder, XML parsing, retry backoff | 3 | Axios Mock Adapter | **PASSED** |
 | • `historySearch.test.js` | Conversational context retrieval, relevance ranking by token overlap | 2 | Standalone Node.js | **PASSED** |
 | • `chatTitle.test.js` | Title generation, markdown stripping, length bounding | 1 | Standalone Node.js | **PASSED** |
+| • `providerCredentials.test.js` | Encrypted personal keys active lookup, legacy rotation fallback | 1 | Standalone Node.js | **PASSED** |
 | **Frontend Unit & Component** | `frontend/src/test/*.test.js*` | **59** | Vitest + jsdom | **PASSED** |
 | • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 5 | jsdom + Mock Fetch | **PASSED** |
 | • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 2 | jsdom Storage Mock | **PASSED** |
@@ -139,7 +140,7 @@ The local verification runs reported 223 passing checks or workflows across Node
 | **Production Build & Serving** | `scripts/check_build_serving.cjs` | **7** | Production Nginx / Express | **PASSED** |
 | **Playwright Browser Smoke** | `scripts/browser_smoke.cjs` | **21** | Headless Chromium (Built App) | **PASSED** |
 | **Playwright Dark & Tools** | `scripts/browser_verify_dark_and_tools.cjs`| **42** | Headless Chromium (Built App) | **PASSED** |
-| **Locally Observed Total** | **Separately run software checks** | **223** | **Isolated fixture environment** | **PASSED** |
+| **Locally Observed Total** | **Separately run software checks** | **225** | **Isolated fixture environment** | **PASSED** |
 
 ---
 

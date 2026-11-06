@@ -147,9 +147,9 @@ mindmap
         PyTorch PEFT Rank 8
     (07 Master QA Suite)
       ::icon(fa fa-check-double)
-      223 Automated Checks
-        75 Backend Unit & Integration Tests
-        59 Frontend Vitest Tests
+      225 Automated Checks
+        77 Backend Unit & Integration Tests (10 test files)
+        59 Frontend Vitest Tests (6 test files)
         19 Python ML & Dataset Tests
         7 Built HTTP Gateway Assertions
         63 Playwright Browser Regression Flows
@@ -209,14 +209,14 @@ Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` with
 | **CURB-65 Pneumonia Score** | $\text{CURB-65} = C + U + R + B + 65$ (Confusion, Urea >19, RR ≥30, SBP <90 or DBP ≤60, Age ≥65) | 5 clinical checkboxes (0–5 points) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient).<br>2: Intermediate risk (~9% mortality, short stay).<br>3–5: High risk (15–40% mortality, urgent admission/ICU). |
 | **Glasgow Coma Scale (GCS)** | $\text{GCS} = E (1–4) + V (1–5) + M (1–6)$ (Eye, Verbal, Motor responses) | 3 ordinal dropdown selectors (3–15 points) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway reflexes). |
 | **HAS-BLED Bleeding Risk** | Sum of risk factors: HTN, Abnormal renal/liver (1-2), Stroke, Bleeding, Labile INR, Elderly >65, Drugs/Alcohol (1-2) | 9 clinical checkboxes (0–9 points) | Binary toggles | 0–1: Low risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; review modifiable risks). |
-| **qSOFA Sepsis Screening** | Altered mental status (GCS <15) + Tachypnea (RR ≥22) + Hypotension (SBP ≤100 mmHg) | 3 clinical checkboxes (0–3 points) | Binary toggles | 0–1: Low risk of in-hospital sepsis mortality.<br>2–3: High risk of in-hospital sepsis mortality (prompt evaluation for organ dysfunction & sepsis protocol). |
+| **qSOFA Sepsis Screening** | Altered mental status, respiratory rate, systolic blood pressure | 3 explicit Present/Absent/Not assessed selectors | 0–3 points after all findings are assessed | A low count does not exclude sepsis; never use qSOFA as the sole screening tool. |
 | **Body Surface Area (BSA - Mosteller)** | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height (cm/in), Weight (kg/lbs) | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Adult reference norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
 | **Child-Pugh Cirrhosis Score** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant functional compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated cirrhosis (~45% 1-yr survival). |
 | **MELD-Na Liver Disease Prognosis** | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bilirubin, Creatinine, INR, Sodium, Dialysis | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
-| **Modified Centor (McIsaac) Strep Score** | $\text{Score} = \text{Exudate} (+1) + \text{Nodes} (+1) + \text{Fever} (+1) + \text{No Cough} (+1) + \text{Age Group} (+1, 0, -1)$ | Tonsillar exudate, Tender nodes, Fever, No cough, Age group | 4 clinical checkboxes<br>Age: 3–14 (+1), 15–44 (0), ≥45 (-1) | ≤1: Low risk (1–10%, no testing/antibiotics).<br>2: Intermediate risk (11–17%, throat culture/RADT).<br>3: Moderate-high risk (28–35%, throat culture/RADT).<br>≥4: High risk (51–53%, RADT/culture; consider empiric antibiotic per clinical judgment). |
-| **HEART Chest Pain MACE Score** | $\text{Score} = \text{History} (0–2) + \text{ECG} (0–2) + \text{Age} (0–2) + \text{Risk Factors} (0–2) + \text{Troponin} (0–2)$ | 5 categorical dropdown selectors (0–10 scale) | History, ECG, Age, Risk factors, Initial Troponin | 0–3: Low risk (0.9–1.7% 6-week MACE; candidate for early discharge).<br>4–6: Intermediate risk (12–16.6% MACE; observation & serial troponins).<br>7–10: High risk (50–65% MACE; urgent admission & invasive angiography). |
-| **PERC Rule (PE Rule-Out)** | 8 clinical criteria (Age ≥50, HR ≥100, SaO₂ <95%, Unilateral leg swelling, Hemoptysis, Recent surgery/trauma, Prior PE/DVT, Exogenous estrogen) | 8 clinical checkboxes (0–8 criteria) | Binary toggles | 0 criteria: PERC Negative (PE ruled out in low pre-test probability ED patients without D-dimer or CTPA; <1.4% VTE risk).<br>≥1 criterion: PERC Positive (PERC rule fails; PE cannot be ruled out clinically; proceed to D-dimer or CTPA). |
+| **Modified Centor (McIsaac) Strep Score** | Exudate, tender nodes, fever, absence of cough, and age group | 4 explicit finding selectors plus age group | −1 to 5 points after all inputs are assessed | Shows point bands only; cannot diagnose strep throat or decide testing or antibiotics. |
+| **HEART Chest Pain MACE Score** | History, ECG, age, risk factors, troponin | 5 categorical selectors starting Not assessed | 0–10 points after all inputs are assessed | Shows point bands only; cannot determine discharge, testing, or treatment. |
+| **PERC Criteria Record** | Age, heart rate, oxygen saturation, leg swelling, hemoptysis, trauma/surgery, prior VTE, estrogen use | 8 explicit Present/Absent/Not assessed selectors | Count shown only after all findings are assessed | Does not establish low pretest probability, rule out PE, or decide testing. |
 | **Mean Arterial Pressure (MAP)** | $\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | Systolic BP, Diastolic BP | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock criterion. |
 | **Cockcroft-Gault CrCl** | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age, Sex, Weight, Serum Cr | Age: 18–120 yr<br>Weight: 30–250 kg | Standard renal dosage adjustment metric for DOACs and antimicrobials. |
 | **Payne Corrected Calcium** | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Calcium, Albumin | Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts total calcium in hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
@@ -228,7 +228,7 @@ Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` with
 | **CURB-65 Pneumonia Score** | $\text{CURB-65} = C + U + R + B + 65$ (Confusion, Urea >19, RR ≥30, SBP <90 or DBP ≤60, Age ≥65) | 5 clinical checkboxes (0–5 points) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient).<br>2: Intermediate risk (~9% mortality, short stay).<br>3–5: High risk (15–40% mortality, urgent admission/ICU). |
 | **Glasgow Coma Scale (GCS)** | $\text{GCS} = E (1–4) + V (1–5) + M (1–6)$ (Eye, Verbal, Motor responses) | 3 ordinal dropdown selectors (3–15 points) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway reflexes). |
 | **HAS-BLED Bleeding Risk** | Sum of risk factors: HTN, Abnormal renal/liver (1-2), Stroke, Bleeding, Labile INR, Elderly >65, Drugs/Alcohol (1-2) | 9 clinical checkboxes (0–9 points) | Binary toggles | 0–1: Low risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; review modifiable risks). |
-| **qSOFA Sepsis Screening** | Altered mental status (GCS <15) + Tachypnea (RR ≥22) + Hypotension (SBP ≤100 mmHg) | 3 clinical checkboxes (0–3 points) | Binary toggles | 0–1: Low risk of in-hospital sepsis mortality.<br>2–3: High risk of in-hospital sepsis mortality (prompt evaluation for organ dysfunction & sepsis protocol). |
+| **qSOFA Sepsis Screening** | Altered mental status, respiratory rate, systolic blood pressure | 3 explicit Present/Absent/Not assessed selectors | 0–3 points after all findings are assessed | A low count does not exclude sepsis; never use qSOFA as the sole screening tool. |
 | **Body Surface Area (BSA - Mosteller)** | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height (cm/in), Weight (kg/lbs) | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Adult reference norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
 | **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
 | **Child-Pugh Cirrhosis Score** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant functional compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated cirrhosis (~45% 1-yr survival). |
@@ -520,19 +520,19 @@ export default router;
 
 ---
 
-## 6. Master Automated Quality Verification Suite (223 Checks)
+## 6. Master Automated Quality Verification Suite (225 Checks)
 
-MedAssist AI enforces a rigorous **223-check automated verification suite** across all application tiers:
+MedAssist AI enforces a rigorous **225-check automated verification suite** across all application tiers:
 
 ```
 ========================================================================================================================
-                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (223 CHECKS)
+                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (225 CHECKS)
 ========================================================================================================================
 
     SUITE / SUBSYSTEM                   HARNESS / RUNNER                TEST COUNT        STATUS
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    1. Backend API & Services           Node 24 Test Runner             75 Tests          100% PASSED
-       - application.test.js            Supertest + MongoMemoryServer   24 Tests          PASSED
+    1. Backend API & Services           Node 24 Test Runner             77 Tests          100% PASSED
+       - application.test.js            Supertest + MongoMemoryServer   25 Tests          PASSED
        - interactionService.test.js     23 DDI Rules & Safe Combos      24 Tests          PASSED
        - safetyService.test.js          Emergency Regex & Deflection     7 Tests          PASSED
        - providers.test.js              PubMed XML & Gemini Parse        6 Tests          PASSED
@@ -540,6 +540,7 @@ MedAssist AI enforces a rigorous **223-check automated verification suite** acro
        - modelProvider.test.js          Provider Gateway & Fallbacks     4 Tests          PASSED
        - pubmedService.test.js          NCBI E-Utilities Mock Engine     3 Tests          PASSED
        - historySearch.test.js          Token Overlap Relevance Check    2 Tests          PASSED
+       - providerCredentials.test.js    Key Envelope & Legacy Fallback   1 Test           PASSED
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
 
     2. Frontend React Components        Vitest + jsdom                  59 Tests          100% PASSED
@@ -566,7 +567,7 @@ MedAssist AI enforces a rigorous **223-check automated verification suite** acro
        - browser_verify_dark_and_tools  WCAG Dark Mode, 22 Tools, DDI   42 Tests          PASSED
 
     =================================================================================================================
-    MASTER AUTOMATED VERIFICATION TOTAL                                223 CHECKS         100% PASSED
+    MASTER AUTOMATED VERIFICATION TOTAL                                225 CHECKS         100% PASSED
 ========================================================================================================================
 ```
 
@@ -578,7 +579,7 @@ MedAssist AI enforces a rigorous **223-check automated verification suite** acro
 # 1. Master project verification runner (executes all automated gates)
 node scripts/verify_project.cjs
 
-# 2. Backend unit & integration test runner (75 tests across 9 files)
+# 2. Backend unit & integration test runner (77 tests across 10 files)
 npm test --prefix backend
 
 # 3. Frontend Vitest component & ARIA test suite (59 tests across 6 files)
@@ -617,12 +618,12 @@ python scripts/generate_interview_mastery_pdf.py
 | **06** | **[`docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md)** | Exhaustive, line-by-line engineering inventory of every file in the repository across `backend/`, `frontend/`, `Model and Dataset/`, `scripts/`, and root configurations, including exported symbols, dependencies, and architectural roles. |
 | **07** | **[`docs/DEPLOYMENT_RUNBOOK.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEPLOYMENT_RUNBOOK.md)** | Production operations manual, multi-container Docker Compose orchestration, bare-metal deployment, automated secrets generation (`deploy/create_env.cjs`), SSL/TLS Nginx configuration, database backup/restore, health probes, and Section 11 Kubernetes & Blue-Green Extensibility. |
 | **08** | **[`docs/EVALUATION_AND_INTEGRATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/EVALUATION_AND_INTEGRATION.md)** | Empirical evaluation framework, paired case-level ablation scoring (`evaluate_benchmark.py`), offline document retrieval with OCR (`document_retrieval.py`), privacy boundaries, and Section 8 Developer Extensibility. |
-| **09** | **[`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (75), frontend (59), Python (19), built HTTP (7), and separately run browser workflows (63). Master Software Regression Total: 223 passed checks. |
+| **09** | **[`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md)** | Local verification evidence across backend (77), frontend (59), Python (19), built HTTP (7), and separately run browser workflows (63). Master Software Regression Total: 225 passed checks. |
 | **10** | **[`docs/ISSUES_AND_RISKS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/ISSUES_AND_RISKS.md)** | Prioritized risk register and engineering mitigations, multi-tier defense-in-depth model, clinical boundaries, pharmacological heuristic limitations, cryptographic key dependencies, STRIDE threat model, SSRF defense, and Section 10 Custom Guardrails. |
 | **11** | **[`docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md)** | Condensed architectural handbook summarizing the clinical query routing pipeline, PubMed grounding steps, Gemini system instructions, citation validation rules, and Section 9 Custom Harvesters. |
 | **12** | **[`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_FINE_TUNING_AND_LORA_GUIDE.md)** | Condensed PEFT guide covering LoRA parameter reduction, zero-leakage dataset partitioning, modern transformer configurations (Llama-3/Mistral/Gemma), review-gated training commands, and Section 8 Custom Adapters. |
 | **13** | **[`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md)** | Exhaustive, file-by-file implementation deep dive with line-by-line subsystem analysis, real code snippets, ASCII topologies, colorful architectural mindmaps, and Section 10 Developer Extensibility Blueprint. |
 | **14** | **[`docs/README.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/README.md)** | Documentation suite master index, reading path curriculum, system-wide mindmap, and developer reference topology. |
-| **15** | **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)** | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, literature harvesters, MongoDB schemas, and running 223 tests. |
+| **15** | **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)** | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, literature harvesters, MongoDB schemas, and running 225 tests. |
 | **16** | **[`docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf)** | Comprehensive technical architecture, engineering design, clinical tradeoffs, and interview mastery guide generated by `scripts/generate_interview_mastery_pdf.py`. |
 | **17** | **[`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md)** | All-in-one production developer build guide, master topology, complete 23 DDI and 22 calculator tables, and copy-paste recipes for extending the platform. |

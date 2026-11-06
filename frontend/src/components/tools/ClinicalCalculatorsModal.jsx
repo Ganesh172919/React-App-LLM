@@ -1,5 +1,43 @@
 import { useState, useEffect, useId, useRef } from "react";
 
+const PERC_CRITERIA = [
+  { id: "age", label: "Age ≥ 50 years" },
+  { id: "hr", label: "Heart rate ≥ 100 bpm" },
+  { id: "o2", label: "Pulse oximetry SaO₂ < 95% on room air" },
+  { id: "prior", label: "Previous documented DVT or PE" },
+  { id: "trauma", label: "Recent trauma or surgery (past 4 weeks requiring hospitalization / general anesthesia)" },
+  { id: "hemoptysis", label: "Hemoptysis (coughing up blood)" },
+  { id: "estrogen", label: "Exogenous estrogen use (oral contraceptives, hormone replacement, estrogen therapy)" },
+  { id: "leg", label: "Unilateral leg swelling (clinically asymmetrical edema)" },
+];
+
+const QSOFA_CRITERIA = [
+  { id: "mental", label: "Altered mental status (Glasgow Coma Scale < 15)" },
+  { id: "resp", label: "Respiratory rate ≥ 22 breaths/min" },
+  { id: "bp", label: "Systolic blood pressure ≤ 100 mmHg" },
+];
+
+const CENTOR_CRITERIA = [
+  { id: "tonsils", label: "Tonsillar exudate or swelling" },
+  { id: "nodes", label: "Tender or swollen anterior cervical lymph nodes" },
+  { id: "fever", label: "History of fever > 38°C (100.4°F)" },
+  { id: "noCough", label: "Absence of cough" },
+];
+
+const CALCULATORS = [
+  ["bmi", "BMI"], ["egfr", "eGFR (CKD-EPI)"], ["chads", "CHA₂DS₂-VASc"],
+  ["map", "MAP / Perfusion"], ["crcl", "CrCl (Cockcroft-Gault)"],
+  ["calcium", "Corrected Calcium"], ["aniongap", "Serum Anion Gap"],
+  ["fena", "FeNa (Fractional Excretion of Na)"], ["feurea", "FeUrea (on Diuretics)"],
+  ["fluids", "Pediatric 4-2-1 fluid example"], ["wells", "Wells' Criteria (PE)"],
+  ["curb65", "CURB-65 (Pneumonia)"], ["gcs", "GCS (Coma Scale)"],
+  ["hasbled", "HAS-BLED (Bleeding Risk)"], ["qsofa", "qSOFA (Sepsis Screening)"],
+  ["bsa", "BSA (Mosteller)"], ["apri", "APRI (Liver Fibrosis)"],
+  ["childpugh", "Child-Pugh (Cirrhosis)"], ["meld", "MELD-Na (Liver Disease)"],
+  ["centor", "Centor (Strep Throat)"], ["heart", "HEART (Chest Pain)"],
+  ["perc", "PERC (PE Rule-Out)"],
+];
+
 export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertPrompt }) {
   const [activeTab, setActiveTab] = useState("bmi");
   const [copied, setCopied] = useState(false);
@@ -9,12 +47,16 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   onCloseRef.current = onClose;
 
   useEffect(() => {
+    if (isOpen) document.getElementById(`tab-${activeTab}`)?.scrollIntoView?.({ block: "nearest", inline: "center" });
+  }, [activeTab, isOpen]);
+
+  useEffect(() => {
     if (!isOpen) return;
     const previousFocus = document.activeElement;
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
       if (e.key === "Escape") { e.preventDefault(); onCloseRef.current(); return; }
-      const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart", "perc"];
+      const tabList = CALCULATORS.map(([id]) => id);
       const activeEl = document.activeElement;
       if (activeEl && activeEl.getAttribute("role") === "tab") {
         const curTabId = activeEl.id.replace(/^tab-/, "");
@@ -139,9 +181,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [hasbledAlcohol, setHasbledAlcohol] = useState(false);
 
   // qSOFA State
-  const [qsofaMental, setQsofaMental] = useState(false);
-  const [qsofaResp, setQsofaResp] = useState(false);
-  const [qsofaBp, setQsofaBp] = useState(false);
+  const [qsofaCriteria, setQsofaCriteria] = useState({});
 
   // BSA (Body Surface Area - Mosteller) State
   const [bsaUnit, setBsaUnit] = useState("metric"); // metric | imperial
@@ -170,28 +210,18 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [meldDialysis, setMeldDialysis] = useState(false); // Dialysis >= 2 times in prior 7 days
 
   // Modified Centor / McIsaac Score State
-  const [centorTonsils, setCentorTonsils] = useState(false);
-  const [centorNodes, setCentorNodes] = useState(false);
-  const [centorFever, setCentorFever] = useState(false);
-  const [centorNoCough, setCentorNoCough] = useState(false);
-  const [centorAgeGroup, setCentorAgeGroup] = useState("15to44"); // 3to14 | 15to44 | 45plus
+  const [centorCriteria, setCentorCriteria] = useState({});
+  const [centorAgeGroup, setCentorAgeGroup] = useState("unknown");
 
   // HEART Score State
-  const [heartHistory, setHeartHistory] = useState("moderate"); // slightly (0) | moderate (1) | highly (2)
-  const [heartEcg, setHeartEcg] = useState("normal"); // normal (0) | nonspecific (1) | st_deviation (2)
-  const [heartAge, setHeartAge] = useState("45to64"); // under45 (0) | 45to64 (1) | 65plus (2)
-  const [heartRisk, setHeartRisk] = useState("one_two"); // none (0) | one_two (1) | three_plus (2)
-  const [heartTroponin, setHeartTroponin] = useState("normal"); // normal (0) | one_to_three (1) | greater_three (2)
+  const [heartHistory, setHeartHistory] = useState("unknown");
+  const [heartEcg, setHeartEcg] = useState("unknown");
+  const [heartAge, setHeartAge] = useState("unknown");
+  const [heartRisk, setHeartRisk] = useState("unknown");
+  const [heartTroponin, setHeartTroponin] = useState("unknown");
 
-  // PERC Rule State (8 criteria)
-  const [percAge50, setPercAge50] = useState(false);
-  const [percHr100, setPercHr100] = useState(false);
-  const [percO2Sat, setPercO2Sat] = useState(false);
-  const [percPriorDvtPe, setPercPriorDvtPe] = useState(false);
-  const [percTraumaSurgery, setPercTraumaSurgery] = useState(false);
-  const [percHemoptysis, setPercHemoptysis] = useState(false);
-  const [percEstrogen, setPercEstrogen] = useState(false);
-  const [percLegSwelling, setPercLegSwelling] = useState(false);
+  // A missing answer must never be treated as an absent clinical criterion.
+  const [percCriteria, setPercCriteria] = useState({});
 
   const titleId = useId();
 
@@ -426,17 +456,9 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   }
 
   // 15. qSOFA (Quick Sepsis-related Organ Failure Assessment)
-  let qsofaScore = 0;
-  if (qsofaMental) qsofaScore += 1;
-  if (qsofaResp) qsofaScore += 1;
-  if (qsofaBp) qsofaScore += 1;
-
-  let qsofaStratification = "";
-  if (qsofaScore <= 1) {
-    qsofaStratification = "Not high risk for in-hospital sepsis mortality (continue clinical monitoring)";
-  } else {
-    qsofaStratification = "High risk for in-hospital sepsis mortality (prompt evaluation for acute organ dysfunction, blood cultures, lactate, and sepsis protocols recommended)";
-  }
+  const qsofaAssessed = QSOFA_CRITERIA.filter(({ id }) => qsofaCriteria[id] === "present" || qsofaCriteria[id] === "absent").length;
+  const qsofaComplete = qsofaAssessed === QSOFA_CRITERIA.length;
+  const qsofaScore = QSOFA_CRITERIA.filter(({ id }) => qsofaCriteria[id] === "present").length;
 
   // 16. Mosteller Body Surface Area (BSA)
   let bsaVal = null;
@@ -571,26 +593,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   }
 
   // 20. Modified Centor (McIsaac) Score for Pharyngitis
-  let centorScore = 0;
-  if (centorTonsils) centorScore += 1;
-  if (centorNodes) centorScore += 1;
-  if (centorFever) centorScore += 1;
-  if (centorNoCough) centorScore += 1;
+  const centorAssessed = CENTOR_CRITERIA.filter(({ id }) => centorCriteria[id] === "present" || centorCriteria[id] === "absent").length + (centorAgeGroup === "unknown" ? 0 : 1);
+  const centorComplete = centorAssessed === 5;
+  let centorScore = CENTOR_CRITERIA.filter(({ id }) => centorCriteria[id] === "present").length;
   if (centorAgeGroup === "3to14") centorScore += 1;
   else if (centorAgeGroup === "45plus") centorScore -= 1;
 
-  let centorStratification = "";
-  if (centorScore <= 1) {
-    centorStratification = "Low risk (1–10% streptococcal probability; throat culture or antibiotic typically not indicated)";
-  } else if (centorScore === 2) {
-    centorStratification = "Intermediate risk (11–17% probability; throat culture or rapid antigen test [RADT] recommended; treat only if positive)";
-  } else if (centorScore === 3) {
-    centorStratification = "Moderate to high risk (28–35% probability; throat culture or RADT recommended; treat only if positive)";
-  } else {
-    centorStratification = "High risk (51–53% probability; RADT or throat culture recommended; consider empiric antibiotic per clinical judgment)";
-  }
+  const centorStratification = centorScore <= 1 ? "−1 to 1 point band" : centorScore === 2 ? "2 point band" : centorScore === 3 ? "3 point band" : "4 to 5 point band";
 
   // 21. HEART Score for Major Adverse Cardiac Events (MACE)
+  const heartAssessed = [heartHistory, heartEcg, heartAge, heartRisk, heartTroponin].filter((value) => value !== "unknown").length;
+  const heartComplete = heartAssessed === 5;
   let heartScore = 0;
   if (heartHistory === "moderate") heartScore += 1;
   else if (heartHistory === "highly") heartScore += 2;
@@ -609,30 +622,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
   let heartStratification = "";
   if (heartScore <= 3) {
-    heartStratification = "Low risk (~0.9–1.7% 6-week MACE risk; early discharge / outpatient workup candidate)";
+    heartStratification = "0–3 point band";
   } else if (heartScore <= 6) {
-    heartStratification = "Intermediate risk (~12–16.6% 6-week MACE risk; observation and serial troponins recommended)";
+    heartStratification = "4–6 point band";
   } else {
-    heartStratification = "High risk (~50–65% 6-week MACE risk; urgent admission, cardiology consult, and early invasive angiography)";
+    heartStratification = "7–10 point band";
   }
 
   // 22. PERC Rule for Pulmonary Embolism Rule-out
-  let percScore = 0;
-  if (percAge50) percScore += 1;
-  if (percHr100) percScore += 1;
-  if (percO2Sat) percScore += 1;
-  if (percPriorDvtPe) percScore += 1;
-  if (percTraumaSurgery) percScore += 1;
-  if (percHemoptysis) percScore += 1;
-  if (percEstrogen) percScore += 1;
-  if (percLegSwelling) percScore += 1;
-
-  let percStratification = "";
-  if (percScore === 0) {
-    percStratification = "PERC Negative (0 criteria; PE ruled out in low-risk patients)";
-  } else {
-    percStratification = `PERC Positive (${percScore} ${percScore === 1 ? "criterion" : "criteria"} present; rule fails)`;
-  }
+  const percAssessed = PERC_CRITERIA.filter(({ id }) => percCriteria[id] === "present" || percCriteria[id] === "absent").length;
+  const percComplete = percAssessed === PERC_CRITERIA.length;
+  const percScore = PERC_CRITERIA.filter(({ id }) => percCriteria[id] === "present").length;
 
   // Handlers
   const handleCopy = (text) => {
@@ -666,7 +666,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           </button>
         </div>
 
-        <p className="muted small-text">Educational estimates only. The 4-2-1 fluid example is pediatric; other tools are for adults. These values cannot diagnose a condition or determine treatment. Confirm measurements and interpretation with a qualified clinician.</p>
+        <p className="muted small-text">Educational estimates only. Age ranges vary by tool; check the description for each one. These values cannot diagnose a condition or determine treatment. Confirm measurements and interpretation with a qualified clinician.</p>
+        <label className="calc-jump" htmlFor="calc-jump-select">
+          Jump to calculator
+          <select id="calc-jump-select" value={activeTab} onChange={(e) => setActiveTab(e.target.value)}>
+            {CALCULATORS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </label>
         <div className="calc-tabs" role="tablist" aria-label="Clinical calculator selector">
           <button
             type="button"
@@ -2130,50 +2136,41 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "qsofa" && (
             <div id="tabpanel-qsofa" role="tabpanel" aria-labelledby="tab-qsofa" className="calc-pane">
               <p className="small-text muted">
-                The Quick Sepsis-related Organ Failure Assessment (qSOFA) is an educational bedside screening tool used to identify adult patients with suspected infection outside the ICU who are at high risk of in-hospital mortality.
+                qSOFA is a bedside score for adults with suspected infection. Record each finding explicitly. It must not be used alone to screen for or exclude sepsis.
               </p>
-              <div style={{ display: "grid", gap: "10px", marginBottom: "14px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={qsofaMental}
-                    onChange={(e) => setQsofaMental(e.target.checked)}
-                  />
-                  <span><strong>Altered Mental Status</strong> (Glasgow Coma Scale &lt; 15) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={qsofaResp}
-                    onChange={(e) => setQsofaResp(e.target.checked)}
-                  />
-                  <span><strong>Tachypnea</strong> (Respiratory rate &ge; 22 breaths/min) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={qsofaBp}
-                    onChange={(e) => setQsofaBp(e.target.checked)}
-                  />
-                  <span><strong>Hypotension</strong> (Systolic blood pressure &le; 100 mmHg) (+1)</span>
-                </label>
+              <div className="settings-grid">
+                {QSOFA_CRITERIA.map(({ id, label }) => (
+                  <label htmlFor={`qsofa-${id}-select`} key={id}>
+                    {label}
+                    <select
+                      id={`qsofa-${id}-select`}
+                      value={qsofaCriteria[id] || "unknown"}
+                      onChange={(e) => setQsofaCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present</option>
+                    </select>
+                  </label>
+                ))}
               </div>
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>{qsofaScore} / 3 points</strong>
-                  <span className="badge">{qsofaStratification}</span>
+                  <strong>{qsofaComplete ? `${qsofaScore} / 3 points` : `${qsofaAssessed} of 3 findings assessed`}</strong>
+                  <span className="badge">{qsofaComplete ? "All findings recorded" : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  Educational screening estimate only. A positive qSOFA (&ge; 2 points) suggests a high risk of poor outcome in suspected infection, prompting immediate bedside clinical assessment for acute organ dysfunction, measuring serum lactate, obtaining blood cultures, and initiating timely sepsis management protocols. It is not a diagnostic test for sepsis or septic shock.
+                  A low qSOFA count does not exclude sepsis, and the score is not a diagnosis. If infection is suspected and someone is confused, breathless, faint, or rapidly worsening, seek urgent medical assessment regardless of this count. <a href="https://www.sccm.org/survivingsepsiscampaign/guidelines-and-resources/surviving-sepsis-campaign-adult-guidelines" target="_blank" rel="noopener noreferrer">Read current sepsis guidance</a>.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!qsofaComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how a qSOFA score of ${qsofaScore}/3 points (${qsofaStratification}) is interpreted according to the Sepsis-3 consensus guidelines, how qSOFA differs from the full SOFA score and SIRS criteria, and what immediate diagnostic and resuscitation steps are prioritized in suspected sepsis.`
+                        `For educational purposes, explain the qSOFA criteria and limitations using a record of ${qsofaScore}/3 points. Explain why a low count cannot exclude sepsis and why qSOFA should not be the sole screening tool. Do not make an individual diagnosis or treatment plan.`
                       )
                     }
                   >
@@ -2182,9 +2179,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!qsofaComplete}
                     onClick={() =>
                       handleCopy(
-                        `qSOFA sepsis screening estimate: ${qsofaScore}/3 points (${qsofaStratification}; educational screening estimate only; not diagnostic or treatment advice)`
+                        `qSOFA findings record: ${qsofaScore}/3 points; educational only; low count does not exclude sepsis`
                       )
                     }
                   >
@@ -2634,45 +2632,24 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "centor" && (
             <div id="tabpanel-centor" role="tabpanel" aria-labelledby="tab-centor" className="calc-pane">
               <p className="small-text muted">
-                The Modified Centor Score (McIsaac Criteria) stratifies the probability of Group A Streptococcal (GAS) pharyngitis in patients presenting with acute sore throat, helping guide decision-making on rapid antigen detection testing (RADT) or throat culture and reducing unnecessary antibiotic use.
+                The Modified Centor (McIsaac) criteria describe findings used by clinicians when evaluating a sore throat in people aged 3 and older. Record each finding explicitly. The score cannot diagnose strep throat or decide whether an individual needs testing or antibiotics.
               </p>
-              <div className="checkbox-grid" style={{ marginBottom: "16px" }}>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={centorTonsils}
-                    onChange={(e) => setCentorTonsils(e.target.checked)}
-                  />
-                  <span>Tonsillar exudate or swelling (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={centorNodes}
-                    onChange={(e) => setCentorNodes(e.target.checked)}
-                  />
-                  <span>Tender or swollen anterior cervical lymph nodes (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={centorFever}
-                    onChange={(e) => setCentorFever(e.target.checked)}
-                  />
-                  <span>History of fever &gt; 38°C (100.4°F) (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={centorNoCough}
-                    onChange={(e) => setCentorNoCough(e.target.checked)}
-                  />
-                  <span>Absence of cough (+1)</span>
-                </label>
-              </div>
-
-              <div style={{ marginBottom: "16px" }}>
-                <label htmlFor="centor-age-select" style={{ display: "block", marginBottom: "6px", fontWeight: "bold" }}>
+              <div className="settings-grid">
+                {CENTOR_CRITERIA.map(({ id, label }) => (
+                  <label htmlFor={`centor-${id}-select`} key={id}>
+                    {label}
+                    <select
+                      id={`centor-${id}-select`}
+                      value={centorCriteria[id] || "unknown"}
+                      onChange={(e) => setCentorCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present (+1 point)</option>
+                    </select>
+                  </label>
+                ))}
+                <label htmlFor="centor-age-select">
                   Age group (McIsaac criteria)
                   <select
                     id="centor-age-select"
@@ -2680,6 +2657,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={centorAgeGroup}
                     onChange={(e) => setCentorAgeGroup(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="3to14">3 to 14 years old (+1)</option>
                     <option value="15to44">15 to 44 years old (0)</option>
                     <option value="45plus">45 years and older (-1)</option>
@@ -2689,22 +2667,23 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>Score: {centorScore} {centorScore === 1 ? "point" : "points"}</strong>
-                  <span className="badge">{centorStratification}</span>
+                  <strong>{centorComplete ? `Score: ${centorScore} ${centorScore === 1 ? "point" : "points"}` : `${centorAssessed} of 5 inputs assessed`}</strong>
+                  <span className="badge">{centorComplete ? centorStratification : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  Scores range from -1 to 5. Antibiotic stewardship guidelines (IDSA / CDC) recommend microbiological confirmation (RADT or throat culture) before antibiotic therapy for scores &ge; 2, and no testing or antibiotic treatment for scores &le; 1 (viral etiology predominant).
+                  A clinician considers symptoms, examination, age, and local guidance before deciding on a throat test or treatment. Clinical findings alone cannot distinguish strep from viral sore throat when clear viral symptoms are absent. <a href="https://www.cdc.gov/group-a-strep/hcp/clinical-guidance/strep-throat.html" target="_blank" rel="noopener noreferrer">Read CDC guidance</a>.
                 </p>
                 <p className="small-text muted">
-                  Educational guidance only. Does not substitute for clinical examination or microbiological swab results. Patients younger than 3 years have low incidence of GAS pharyngitis and rheumatic fever, so criteria are validated for ages 3 and above.
+                  Educational record only. Do not use this score alone to start, avoid, or stop antibiotics. It does not replace examination or a test result.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!centorComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how a Modified Centor / McIsaac score of ${centorScore} points (${centorStratification}) is applied in the evaluation of acute pharyngitis, what the IDSA guidelines recommend regarding rapid antigen testing vs throat culture, and how antibiotic stewardship helps prevent overtreatment of viral pharyngitis.`
+                        `For educational purposes, explain the components and limitations of a Modified Centor / McIsaac score of ${centorScore} points (${centorStratification}). Explain why clinical examination alone cannot diagnose group A strep, without recommending testing or antibiotics for an individual.`
                       )
                     }
                   >
@@ -2713,9 +2692,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!centorComplete}
                     onClick={() =>
                       handleCopy(
-                        `Modified Centor (McIsaac) Strep Score: ${centorScore} points (${centorStratification}; educational estimate only; not diagnostic or treatment recommendation)`
+                        `Modified Centor (McIsaac) criteria record: ${centorScore} points (${centorStratification}; educational only; not a diagnosis or treatment decision)`
                       )
                     }
                   >
@@ -2741,6 +2721,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={heartHistory}
                     onChange={(e) => setHeartHistory(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="slightly">Slightly suspicious (0 points)</option>
                     <option value="moderate">Moderately suspicious (+1 point)</option>
                     <option value="highly">Highly suspicious (+2 points)</option>
@@ -2754,6 +2735,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={heartEcg}
                     onChange={(e) => setHeartEcg(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="normal">Normal (0 points)</option>
                     <option value="nonspecific">Non-specific repolarization / LBBB / PM (+1 point)</option>
                     <option value="st_deviation">Significant ST depression or elevation (+2 points)</option>
@@ -2767,6 +2749,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={heartAge}
                     onChange={(e) => setHeartAge(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="under45">&lt; 45 years old (0 points)</option>
                     <option value="45to64">45 to 64 years old (+1 point)</option>
                     <option value="65plus">&ge; 65 years old (+2 points)</option>
@@ -2780,6 +2763,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={heartRisk}
                     onChange={(e) => setHeartRisk(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="none">No known risk factors (0 points)</option>
                     <option value="one_two">1 or 2 risk factors (+1 point)</option>
                     <option value="three_plus">&ge; 3 risk factors or atherosclerotic disease (+2 points)</option>
@@ -2793,6 +2777,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={heartTroponin}
                     onChange={(e) => setHeartTroponin(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="normal">&le; Normal reference limit (0 points)</option>
                     <option value="one_to_three">1 to 3&times; normal limit (+1 point)</option>
                     <option value="greater_three">&gt; 3&times; normal limit (+2 points)</option>
@@ -2802,22 +2787,23 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
               <div className="calc-result" style={{ marginTop: "16px" }}>
                 <div className="calc-result-metric">
-                  <strong>Score: {heartScore} {heartScore === 1 ? "point" : "points"}</strong>
-                  <span className="badge">{heartStratification}</span>
+                  <strong>{heartComplete ? `Score: ${heartScore} ${heartScore === 1 ? "point" : "points"}` : `${heartAssessed} of 5 inputs assessed`}</strong>
+                  <span className="badge">{heartComplete ? heartStratification : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  Scores range from 0 to 10 points. Developed and validated to safely identify low-risk emergency patients who may be managed without urgent hospitalization, while identifying high-risk individuals requiring prompt coronary intervention.
+                  Scores range from 0 to 10 points. The point band is educational and cannot determine whether discharge, further testing, or treatment is safe. A clinician must assess the symptoms, ECG, troponin assay, and local pathway together.
                 </p>
                 <p className="small-text muted">
-                  Educational prognostic tool only. Any acute or crushing chest pain, diaphoresis, dyspnea, or suspected STEMI requires immediate emergency medical services (call 911). Never use this calculator to delay acute emergency care.
+                  If chest pain is new, severe, or accompanied by breathlessness, fainting, or sweating, seek urgent care through local emergency services. Do not use this calculator to delay care.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!heartComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how a HEART Score of ${heartScore} points (${heartStratification}) is interpreted in emergency chest pain triage, what clinical pathways are recommended for each risk tier, and how serial high-sensitivity troponin assays have influenced the HEART pathway.`
+                        `For educational purposes, explain the components and limitations of a HEART Score of ${heartScore} points (${heartStratification}). Do not recommend discharge, testing, or treatment for an individual from this score.`
                       )
                     }
                   >
@@ -2826,9 +2812,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!heartComplete}
                     onClick={() =>
                       handleCopy(
-                        `HEART Chest Pain MACE Score: ${heartScore} points (${heartStratification}; educational estimate only; not diagnostic or emergency triage advice)`
+                        `HEART Score: ${heartScore} points (${heartStratification}; educational estimate only; cannot determine safe discharge, testing, or treatment)`
                       )
                     }
                   >
@@ -2843,103 +2830,46 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "perc" && (
             <div id="tabpanel-perc" role="tabpanel" aria-labelledby="tab-perc" className="calc-pane">
               <p className="small-text muted">
-                The PERC (Pulmonary Embolism Rule-out Criteria) rule is an evidence-based clinical decision tool used ONLY in patients with a low pre-test clinical probability of pulmonary embolism (e.g., Wells score &le; 4 or clinical gestalt &lt; 15%). If all 8 criteria are negative (0 criteria present), PE is safely ruled out without blood testing (D-dimer) or CT pulmonary angiography (risk of PE &lt; 1.8%).
+                PERC is a clinical decision rule for emergency clinicians who have independently judged a patient to have low probability of pulmonary embolism. Record each criterion explicitly. This form cannot establish low pretest probability, rule out a clot, or decide whether testing is needed.
               </p>
-              <div className="checkbox-list">
-                <label className="checkbox-item" htmlFor="perc-age-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-age-cb"
-                    checked={percAge50}
-                    onChange={(e) => setPercAge50(e.target.checked)}
-                  />
-                  <span>Age &ge; 50 years</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-hr-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-hr-cb"
-                    checked={percHr100}
-                    onChange={(e) => setPercHr100(e.target.checked)}
-                  />
-                  <span>Heart rate &ge; 100 bpm</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-o2-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-o2-cb"
-                    checked={percO2Sat}
-                    onChange={(e) => setPercO2Sat(e.target.checked)}
-                  />
-                  <span>Pulse oximetry SaO₂ &lt; 95% on room air</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-prior-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-prior-cb"
-                    checked={percPriorDvtPe}
-                    onChange={(e) => setPercPriorDvtPe(e.target.checked)}
-                  />
-                  <span>Previous documented DVT or PE</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-trauma-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-trauma-cb"
-                    checked={percTraumaSurgery}
-                    onChange={(e) => setPercTraumaSurgery(e.target.checked)}
-                  />
-                  <span>Recent trauma or surgery (past 4 weeks requiring hospitalization / general anesthesia)</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-hemoptysis-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-hemoptysis-cb"
-                    checked={percHemoptysis}
-                    onChange={(e) => setPercHemoptysis(e.target.checked)}
-                  />
-                  <span>Hemoptysis (coughing up blood)</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-estrogen-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-estrogen-cb"
-                    checked={percEstrogen}
-                    onChange={(e) => setPercEstrogen(e.target.checked)}
-                  />
-                  <span>Exogenous estrogen use (oral contraceptives, hormone replacement, estrogen therapy)</span>
-                </label>
-                <label className="checkbox-item" htmlFor="perc-leg-cb">
-                  <input
-                    type="checkbox"
-                    id="perc-leg-cb"
-                    checked={percLegSwelling}
-                    onChange={(e) => setPercLegSwelling(e.target.checked)}
-                  />
-                  <span>Unilateral leg swelling (clinically asymmetrical edema)</span>
-                </label>
+              <div className="settings-grid">
+                {PERC_CRITERIA.map(({ id, label }) => (
+                  <label htmlFor={`perc-${id}-select`} key={id}>
+                    {label}
+                    <select
+                      id={`perc-${id}-select`}
+                      value={percCriteria[id] || "unknown"}
+                      onChange={(e) => setPercCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present</option>
+                    </select>
+                  </label>
+                ))}
               </div>
 
               <div className="calc-result" style={{ marginTop: "16px" }}>
                 <div className="calc-result-metric">
-                  <strong>Score: {percScore} {percScore === 1 ? "criterion" : "criteria"} present</strong>
-                  <span className="badge">{percStratification}</span>
+                  <strong>{percComplete ? `${percScore} of 8 criteria present` : `${percAssessed} of 8 criteria assessed`}</strong>
+                  <span className="badge">{percComplete ? "All criteria recorded" : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  {percScore === 0
-                    ? "All 8 PERC criteria are absent. In patients with low clinical probability of PE (e.g., Wells score \u2264 4), the risk of PE is < 1.8%, which is below the testing threshold. Neither D-dimer testing nor CT pulmonary angiography is indicated."
-                    : `Patient has ${percScore} risk ${percScore === 1 ? "criterion" : "criteria"} present. The PERC rule cannot be used to rule out PE. In patients with low pre-test probability, proceed with high-sensitivity D-dimer testing. If intermediate or high risk, proceed directly to diagnostic imaging (CTPA or V/Q scan).`}
+                  {percComplete
+                    ? "These recorded criteria are not a diagnosis or a rule-out decision. A clinician must establish pretest probability and interpret the findings in context."
+                    : "Select Present or Absent for every criterion before viewing a count. Unassessed criteria cannot be treated as absent."}
                 </p>
                 <p className="small-text muted">
-                  Educational guidance only. PERC must NEVER be applied in patients with intermediate or high pre-test probability, severe respiratory distress, or hemodynamic instability.
+                  If you have sudden breathlessness, chest pain, fainting, or cough up blood, seek urgent care through local emergency services. Do not use this tool to delay evaluation.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!percComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how the PERC Rule (Pulmonary Embolism Rule-out Criteria) with ${percScore} criteria present (${percStratification}) is applied in low-risk emergency department patients, why it must only be used when pre-test probability is low, and when D-dimer vs CT pulmonary angiography is indicated.`
+                        `For educational purposes, explain the eight PERC criteria and the limitations of a record with ${percScore} of 8 criteria present. Explain why a clinician must establish low pretest probability first. Do not give an individual rule-out, testing, or treatment recommendation.`
                       )
                     }
                   >
@@ -2948,9 +2878,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!percComplete}
                     onClick={() =>
                       handleCopy(
-                        `PERC Pulmonary Embolism Rule: ${percScore} criteria present (${percStratification}; educational estimate only; not diagnostic or emergency triage advice)`
+                        `PERC criteria record: ${percScore} of 8 present; educational only; not a diagnosis or rule-out decision`
                       )
                     }
                   >

@@ -24,7 +24,7 @@ The MedAssist AI Analytics Dashboard (`frontend/src/components/dashboard/Analyti
     │  - MongoDB Aggregation Pipeline: Scoped strictly to authenticated `owner: req.user._id`                        │
     │  - Daily UTC Bucket Generation: Groups by `$dateToString: { format: "%Y-%m-%d", date: "$createdAt" }`         │
     │  - Grounding Rate Metric: (Medical Answers with Sources / Total Medical Answers) * 100%                         │
-    │  - Interaction Aggregator: Counts occurrences of 19 FDA Black-Box Drug Interaction Pairs                        │
+    │  - Interaction Aggregator: Counts occurrences of 23 FDA Black-Box Drug Interaction Pairs                        │
     │  - Dataset Audit Parser: Ingests offline JSON reports (`dataset_analysis.json`, `dataset_audit.json`)          │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                  │
@@ -66,7 +66,7 @@ mindmap
       Safety Deflection Volume
       Provider Distribution (Gemini, Groq, Together)
     (04 Pharmacological Surveillance)
-      19 FDA Black-Box DDI Alert Counts
+      23 FDA Black-Box DDI Alert Counts
       Severity Badges (CRITICAL / HIGH)
     (05 Data Portability)
       JSON Export (medassist-analytics.json)
