@@ -1,0 +1,57 @@
+CODEBASE_AUDIT_2026-11-04.md
+CONTRIBUTING.md
+IMPROVEMENT_PLAN.md
+Model and Dataset/DATASET_CARD.md
+Model and Dataset/README.md
+Model and Dataset/lora/README.md
+Model and Dataset/lora/TRAINING_RUNBOOK.md
+Model and Dataset/reports/README.md
+Model and Dataset/reports/dataset_analysis.md
+Model and Dataset/reports/dataset_audit.md
+README.md
+backend/README.md
+backend/controllers/README.md
+backend/middleware/README.md
+backend/models/README.md
+backend/routes/README.md
+backend/services/README.md
+backend/test/README.md
+deploy/README.md
+docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md
+docs/AI_FINE_TUNING_AND_LORA_GUIDE.md
+docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md
+docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md
+docs/CURRENT_CAPABILITIES_AND_RELEASE_GATES.md
+docs/CURRENT_IMPLEMENTATION.md
+docs/DEEP_DIVE_AI_WORKING_PRINCIPLES.md
+docs/DEEP_DIVE_LORA_AND_FINE_TUNING.md
+docs/DEPLOYMENT_RUNBOOK.md
+docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md
+docs/EVALUATION_AND_INTEGRATION.md
+docs/IMPLEMENTATION_STATUS.md
+docs/ISSUES_AND_RISKS.md
+docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md
+docs/QA_2026-11-06.md
+docs/QA_2026-11-07.md
+docs/README.md
+docs/SECURITY_AND_MESSAGE_POLICY.md
+docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md
+frontend/README.md
+frontend/src/components/README.md
+frontend/src/components/auth/README.md
+frontend/src/components/chat/README.md
+frontend/src/components/dashboard/README.md
+frontend/src/components/tools/README.md
+frontend/src/context/README.md
+frontend/src/lib/README.md
+frontend/src/test/README.md
+frontend/src/utils/README.md
+output/project-review/CONTINUOUS_IMPROVEMENT_PROMPT.md
+output/project-review/PROJECT_ANALYSIS.md
+output/qa/2026-10-26/chat-desktop-dom.txt
+output/qa/2026-10-26/dashboard-dom.txt
+output/qa/2026-10-26/new-account-dom.txt
+output/qa/2026-10-26/save-failure-dom.txt
+output/qa/README.md
+output/qa/browser-unverified-preview.md
+scripts/README.md
