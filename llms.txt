@@ -1,0 +1,56 @@
+# MedAssist AI Documentation
+
+> MedAssist AI is a full-stack educational healthcare platform featuring an AI clinical assistant, 22 interactive clinical scoring calculators, deterministic FDA boxed warning drug interaction screening, and literature citation grounding via NCBI PubMed.
+
+## Getting Started & Tutorials
+
+- [Getting Started Tutorial](docs/tutorials/getting-started.md): 15-minute quickstart guide to clone, install, test, and build the project locally.
+- [Repository Overview](README.md): Top-level overview, quickstart instructions, and architecture summary.
+- [Contributing Guide](CONTRIBUTING.md): Developer setup, code standards, git workflow, and test requirements.
+- [Agent Developer Guide](AGENTS.md): Instructions, invariants, and directory map for AI coding agents.
+- [Security Policy](SECURITY.md): Private vulnerability reporting procedures, supported versions, and AI security scope.
+- [Support Policy](SUPPORT.md): Support channels, bug filing instructions, and scope definitions.
+- [Changelog](CHANGELOG.md): Historical release notes and unreleased improvements adhering to Keep a Changelog.
+- [Code of Conduct](CODE_OF_CONDUCT.md): Contributor Covenant v2.1 community pledge and enforcement standards.
+
+## Reference Specifications
+
+- [Configuration Reference](docs/reference/configuration.md): Exhaustive environment variable reference covering all 34 configuration keys.
+- [Database Architecture & MongoDB Schemas](docs/reference/database.md): Entity relationship model, collection schemas, indexes, and BSON size limits.
+- [Biomedical RAG Pipeline Reference](docs/reference/ai/rag-pipeline.md): End-to-end specification of PubMed literature retrieval, relevance ranking, and citation grounding.
+- [Clinical Prompt Registry & Directives](docs/reference/ai/prompts.md): System prompt directives, audience profile adaptations, and emergency intercepts.
+- [Service Level Objectives & Error Budgets](docs/reference/slo.md): Availability indicators, p95 latency targets, and budget depletion policies.
+- [Clinical Calculators Reference](frontend/src/components/tools/README.md): Reference formulas, risk tiers, and validation gates for all 22 clinical tools.
+- [Backend Services Reference](backend/services/README.md): Details on answer generation, safety filters, citation grounding, and crypto vaults.
+- [Coverage Matrix](docs/_meta/coverage-matrix.md): Exhaustive coverage matrix of HTTP endpoints, env variables, calculators, and DDI rules.
+
+## Architectural Records & Decisions
+
+- [ADR 0000: Use Markdown Architectural Decision Records](docs/records/decisions/0000-use-markdown-architectural-decision-records.md): Decision to adopt MADR format for architectural history.
+- [ADR 0001: In-Memory MongoDB for Isolated Backend Testing](docs/records/decisions/0001-use-in-memory-mongodb-for-isolated-backend-testing.md): Hermetic backend testing using MongoMemoryServer.
+- [ADR 0002: Deterministic Regex Drug Interaction Screener](docs/records/decisions/0002-implement-deterministic-regex-drug-interaction-screener.md): Zero-latency screening of 23 FDA boxed warning medication pairs.
+- [ADR 0003: Web Locks Mutex for Single-Flight JWT Renewal](docs/records/decisions/0003-use-web-locks-mutex-for-single-flight-jwt-renewal.md): Preventing token refresh race conditions across concurrent requests and browser tabs.
+- [ADR 0004: Two-Phase Chat Generation and Persistence Handshake](docs/records/decisions/0004-two-phase-chat-generation-and-persistence-handshake.md): Decoupling LLM generation from database writes with exchange idempotency.
+- [ADR 0005: Unassessed Defaults and Complete Record Gating for Clinical Calculators](docs/records/decisions/0005-unassessed-defaults-and-complete-record-gating-for-clinical-calculators.md): Clinical safety invariants across all 22 interactive clinical tools.
+
+## Threat Models & Model Cards
+
+- [System STRIDE Threat Model](docs/records/threat-models/system.md): STRIDE threat assessment across client, ingress, API, database, and external providers.
+- [OWASP Top 10 for LLMs 2025 Threat Model](docs/records/threat-models/ai.md): Defensive evaluations against prompt injection, sensitive data leakage, hallucination, and excessive agency.
+- [Multi-Provider System Card](docs/records/model-cards/system-card.md): Model details, intended use, clinical safety controls, and multi-tier verification metrics.
+
+## Operations & Runbooks
+
+- [Operational Runbooks Directory](docs/runbooks/index.md): On-call severity matrix, alert triggers, and incident checklists.
+- [High API Error Rate Runbook](docs/runbooks/api-error-rate-high.md): Triage and resolution for 5xx spikes on backend routes.
+- [Database Connection Saturation Runbook](docs/runbooks/db-connection-saturation.md): Diagnosis and recovery for MongoDB connection pool exhaustion or failover.
+- [LLM Provider Outage or Rate Limit Runbook](docs/runbooks/llm-provider-outage-or-rate-limit.md): Mitigation procedures for external AI 429/503 errors and multi-provider failover.
+- [Drug Interaction Screener Alert Runbook](docs/runbooks/drug-interaction-screener-alert.md): Handling false positive reports and maintaining the 23 FDA boxed warning rules.
+- [Production Deployment Runbook](docs/DEPLOYMENT_RUNBOOK.md): Container orchestration, TLS ingress, and production deployment procedures.
+
+## Architecture Explanations
+
+- [Trust Boundaries & Network Isolation](docs/explanation/security/trust-boundaries.md): Deep dive into the 4 security trust boundaries, CORS, cookie flags, and AES vaults.
+- [System Architecture Deep Dive](docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md): Exhaustive breakdown of component contracts, message lifecycles, and database schemas.
+- [Verification Log](docs/_meta/verification-log.md): Verified execution log of the 228 automated check suite.
+- [Acceptance Report](docs/_meta/acceptance-report.md): Formal verification report evaluating tests T1 through T7.
