@@ -5,6 +5,9 @@ const root = path.resolve(__dirname, ".."); const output = path.join(root, "outp
 const python = process.env.PYTHON_BIN || "python";
 const node = process.execPath;
 const checks = [
+  ["docs-preservation", node, ["scripts/docs/check-no-deletions.cjs"], "."],
+  ["docs-coverage", node, ["scripts/docs/check-config-coverage.cjs"], "."],
+  ["docs-freshness", node, ["scripts/docs/doc-freshness.cjs"], "."],
   ["backend", node, ["--test", "--test-concurrency=1", "--test-reporter=tap"], "backend"],
   ["frontend-lint", node, ["node_modules/eslint/bin/eslint.js", "."], "frontend"],
   ["frontend-tests", node, ["node_modules/vitest/vitest.mjs", "run", "--reporter=json", "--outputFile=" + path.join(output, "frontend-results.json")], "frontend"],

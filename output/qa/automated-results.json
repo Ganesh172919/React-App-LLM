@@ -1,12 +1,36 @@
 {
-  "completedAt": "2026-11-08T06:55:02.870Z",
+  "completedAt": "2026-11-08T07:28:00.839Z",
   "node": "v24.16.0",
   "checks": [
+    {
+      "name": "docs-preservation",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 59,
+      "error": null,
+      "log": "docs-preservation.log"
+    },
+    {
+      "name": "docs-coverage",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 50,
+      "error": null,
+      "log": "docs-coverage.log"
+    },
+    {
+      "name": "docs-freshness",
+      "passed": true,
+      "exitCode": 0,
+      "durationMs": 79,
+      "error": null,
+      "log": "docs-freshness.log"
+    },
     {
       "name": "backend",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 13938,
+      "durationMs": 13585,
       "error": null,
       "log": "backend.log"
     },
@@ -14,7 +38,7 @@
       "name": "frontend-lint",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 2765,
+      "durationMs": 2387,
       "error": null,
       "log": "frontend-lint.log"
     },
@@ -22,7 +46,7 @@
       "name": "frontend-tests",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 21767,
+      "durationMs": 19695,
       "error": null,
       "log": "frontend-tests.log"
     },
@@ -30,7 +54,7 @@
       "name": "frontend-build",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 4051,
+      "durationMs": 2796,
       "error": null,
       "log": "frontend-build.log"
     },
@@ -38,7 +62,7 @@
       "name": "dataset-tests",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 458,
+      "durationMs": 328,
       "error": null,
       "log": "dataset-tests.log"
     },
@@ -46,7 +70,7 @@
       "name": "lora-tests",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 247,
+      "durationMs": 219,
       "error": null,
       "log": "lora-tests.log"
     },
@@ -54,7 +78,7 @@
       "name": "lora-dry-run",
       "passed": true,
       "exitCode": 0,
-      "durationMs": 278,
+      "durationMs": 276,
       "error": null,
       "log": "lora-dry-run.log"
     },

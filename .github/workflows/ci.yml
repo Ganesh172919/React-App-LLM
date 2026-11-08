@@ -9,6 +9,20 @@ permissions:
   contents: read
 
 jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify baseline documentation preservation (Rule R1)
+        run: node scripts/docs/check-no-deletions.cjs
+      - name: Verify configuration coverage
+        run: node scripts/docs/check-config-coverage.cjs
+      - name: Verify link freshness across documentation
+        run: node scripts/docs/doc-freshness.cjs
+
   backend:
     runs-on: ubuntu-latest
     defaults:
