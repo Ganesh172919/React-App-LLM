@@ -962,9 +962,8 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
     (Race-Free Standard)              * 0.9938^Age * (1.012 if female)                   Scr: 0.2-15.0 mg/dL
                                (κ = 0.7 F / 0.9 M; α = -0.241 F / -0.302 M)
 
-    CHA2DS2-VASc               Points: CHF (+1), HTN (+1), Age >=75 (+2), Diabetes (+1), Age: 18-120 years
-    (Stroke Risk in AFib)      Stroke/TIA (+2), Vascular Disease (+1), Age 65-74 (+1),   Binary clinical flags
-                               Female Sex (+1). Range: 0 to 9 points.
+    CHA2DS2-VASc               Five clinical findings, age category, sex category.       Seven explicit inputs;
+    (AFib Factor Count)        Count 0-9 only after every input is assessed.              no treatment direction
 
     Mean Arterial Pressure     MAP = DBP + 1/3 * (SBP - DBP)                             SBP: 50-260 mmHg
     (MAP Hemodynamics)                                                                   DBP: 30-160 mmHg
@@ -987,22 +986,20 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
     Maintenance Fluids (4-2-1) Total Rate = 4 mL (1-10kg) + 2 mL (11-20kg) + 1 mL (>20kg)Weight: 1-150 kg
                                Holliday-Segar basal hydration formula                    Hourly and 24h rates
 
-    Wells Criteria for PE      Clinical DVT (+3), PE #1 diagnosis (+3), HR >100 (+1.5),  Binary clinical flags
-                               Immobilization/Surgery (+1.5), Prior DVT/PE (+1.5),       PE unlikely <= 4
-                               Hemoptysis (+1), Malignancy (+1). Range: 0 to 12.5.       PE likely > 4
+    Wells Criteria for PE      Seven NICE PE findings, counted after full assessment.    Each: unassessed, absent,
+                               Range: 0 to 12.5; no individual diagnostic claim.        or present; NICE bands
 
-    CURB-65 Pneumonia Score    Confusion (+1), Urea > 19 mg/dL (+1), RR >= 30 (+1),      Binary clinical flags
-                               Low BP SBP < 90 or DBP <= 60 (+1), Age >= 65 (+1).       0-1: Low, 2: Int, 3-5: High
+    CURB-65 Pneumonia Score    Five clinician-assessed findings for diagnosed CAP.       Each finding: unassessed,
+                               Count only after all five findings are recorded.         absent, or present; 0-5
 
-    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
-                               Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
+    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6).             Each response: unassessed,
+                               No total if a component is unassessed or not testable.   not testable, or numeric
 
-    HAS-BLED Bleeding Risk     Sum of HTN (+1), Renal (+1), Liver (+1), Stroke (+1),     9 binary flags (0-9)
-                               Bleeding (+1), Labile INR (+1), Age >65 (+1), Drugs (+1), Low: 0-1, Mod: 2,
-                               Alcohol (+1). Range: 0 to 9 points.                       High: >=3 (>=3.7% / yr)
+    HAS-BLED Bleeding Factors  Nine assessed factors, including labile INR for          Each: unassessed, absent,
+                               vitamin K antagonist use. Count only when complete.      present; INR may be N/A
 
-    qSOFA Sepsis Screening     Altered mental status (GCS <15) + Tachypnea (RR >=22) +   3 binary flags (0-3)
-                               Hypotension (SBP <=100 mmHg).                             >=2: High in-hospital risk
+    qSOFA Sepsis Screening     Altered mental status (GCS <15) + Tachypnea (RR >=22) +   3 explicitly assessed
+                               Hypotension (SBP <=100 mmHg); no diagnostic rule-out.     findings; 0-3 points
 
     Mosteller BSA              BSA = sqrt(Height_cm * Weight_kg / 3600)                  Height: 30-250 cm
                                Imperial: sqrt(Height_in * Weight_lbs / 3131)             Weight: 2-350 kg
@@ -1014,9 +1011,9 @@ The `frontend/src/components/tools/ClinicalCalculatorsModal.jsx` module implemen
                                + Ascites (1-3) + Encephalopathy (1-3)                   Class A: 5-6 (Compensated)
                                Class B: 7-9 (Moderate); Class C: 10-15 (Decompensated)  Mortality: 10% / 30% / 70-80%
 
-    MELD-Na Score              MELD = 9.57*ln(Cr) + 3.78*ln(Bili) + 11.2*ln(INR) + 6.43  Bilirubin: 1.0-50.0 mg/dL
-    (End-Stage Liver Disease)  MELD-Na = MELD + 1.32*(137 - Na) - [0.033*MELD*(137-Na)]  Creatinine: 1.0-4.0 mg/dL
-                               Bounded: Na [125, 137] mEq/L, score capped at 40.         INR: 1.0-20.0, Na: 110-150
+    Historical 2016 MELD-Na    MELD = 9.57*ln(Cr) + 3.78*ln(Bili) + 11.2*ln(INR) + 6.43  Complete inputs required;
+    (Teaching Equation)        MELD-Na = MELD + 1.32*(137 - Na) - [0.033*MELD*(137-Na)]  6-40 point band only.
+                               Not the current OPTN MELD 3.0 allocation score.           No mortality estimate.
 
     Modified Centor (McIsaac)  Tonsillar exudate (+1), Tender anterior cervical nodes (+1), Binary criteria + Age
     (Strep Pharyngitis Risk)   Fever history (+1), Absence of cough (+1), Age modifier:  0-1: 1-10% (no swab)

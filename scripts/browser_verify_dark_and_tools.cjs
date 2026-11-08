@@ -45,6 +45,20 @@ async function main() {
   const modal = page.getByRole("dialog", { name: "Health calculators" });
   await modal.waitFor();
   console.log("PASS clinical tools modal opened via Alt+c keyboard shortcut");
+  await page.getByRole("tab", { name: "CHA₂DS₂-VASc" }).click();
+  await page.getByText("0 of 7 findings assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this score" }).isDisabled(), true);
+  const chadsInputs = page.getByRole("tabpanel", { name: "CHA₂DS₂-VASc" }).locator("select");
+  for (let index = 0; index < 5; index += 1) await chadsInputs.nth(index).selectOption("absent");
+  await page.getByLabel("Age category").selectOption("75plus");
+  await page.getByLabel("Sex category used by this score").selectOption("male");
+  await page.getByLabel(/Prior stroke, TIA/).selectOption("present");
+  await page.getByText("Score: 4", { exact: true }).waitFor();
+  await page.getByLabel(/Prior stroke, TIA/).selectOption("unknown");
+  await page.getByText("6 of 7 findings assessed", { exact: true }).waitFor();
+  await page.getByLabel(/Prior stroke, TIA/).selectOption("present");
+  await page.screenshot({ path: path.join(output, "chads-dark-modal.png") });
+  console.log("PASS CHA₂DS₂-VASc requires seven explicitly assessed inputs");
   await page.getByRole("tab", { name: "Corrected Calcium" }).click();
   await page.getByText(/Payne equation for hypoalbuminemia/).waitFor();
   await page.getByText("9.2 mg/dL", { exact: true }).waitFor();
@@ -90,48 +104,63 @@ async function main() {
   // Test 3f: Wells' Criteria for PE Tab in Clinical Calculators
   await page.getByRole("tab", { name: /Wells' Criteria/i }).click();
   await page.getByText(/A low score alone cannot rule out PE/).waitFor();
-  await page.getByText("0 points", { exact: true }).waitFor();
-  await page.getByText("NICE score band: 4 or less").waitFor();
-  // Check DVT symptoms (+3.0) and Heart rate > 100 bpm (+1.5)
-  await page.getByLabel(/Clinical signs and symptoms of DVT/).check();
-  await page.getByLabel(/Heart rate > 100 beats\/min/).check();
+  await page.getByText("0 of 7 findings assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this Wells score" }).isDisabled(), true);
+  await page.getByLabel(/Clinical signs and symptoms of DVT/).selectOption("present");
+  await page.getByLabel(/Heart rate > 100 beats\/min/).selectOption("present");
+  const wellsInputs = page.getByRole("tabpanel", { name: "Wells' Criteria (PE)" }).locator("select");
+  for (let index = 0; index < 7; index += 1) {
+    if (await wellsInputs.nth(index).inputValue() === "unknown") await wellsInputs.nth(index).selectOption("absent");
+  }
   await page.getByText("4.5 points", { exact: true }).waitFor();
   await page.getByText("NICE score band: above 4").waitFor();
   await page.screenshot({ path: path.join(output, "wells-dark-modal.png") });
-  console.log("PASS Wells' criteria for PE calculator verified and captured in dark styles");
+  console.log("PASS Wells' criteria requires seven assessed findings before displaying a score");
 
   // Test 3g: CURB-65 Pneumonia Severity Score Tab in Clinical Calculators
   await page.getByRole("tab", { name: /CURB-65/i }).click();
-  await page.getByText(/assessing 30-day mortality in adults with community-acquired pneumonia/).waitFor();
-  await page.getByText("0 / 5 points", { exact: true }).waitFor();
-  await page.getByText("Low risk (30-day mortality < 3%)").waitFor();
-  // Check Confusion (+1) and Respiratory rate (+1)
-  await page.getByLabel(/Confusion \(new mental confusion/).check();
-  await page.getByLabel(/Respiratory rate ≥ 30 breaths\/min/).check();
+  await page.getByText(/adults with diagnosed community-acquired pneumonia/).waitFor();
+  await page.getByText("0 of 5 findings assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this CURB-65 score" }).isDisabled(), true);
+  await page.getByLabel(/New confusion or AMTS/).selectOption("present");
+  await page.getByLabel(/Respiratory rate ≥ 30 breaths\/min/).selectOption("present");
+  await page.getByLabel(/Blood urea nitrogen/).selectOption("absent");
+  await page.getByLabel(/Systolic BP/).selectOption("absent");
+  await page.getByLabel(/Age ≥ 65 years/).selectOption("absent");
   await page.getByText("2 / 5 points", { exact: true }).waitFor();
-  await page.getByText("Moderate risk (30-day mortality ~9%)").waitFor();
+  await page.getByText("2 point band", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "curb65-dark-modal.png") });
-  console.log("PASS CURB-65 pneumonia severity calculator verified and captured in dark styles");
+  console.log("PASS CURB-65 requires five assessed findings without mortality prediction");
 
   // Test 3h: Glasgow Coma Scale (GCS) Tab in Clinical Calculators
   await page.getByRole("tab", { name: /GCS \(Coma Scale\)/i }).click();
-  await page.getByText(/objective evaluation of level of consciousness/).waitFor();
+  await page.getByText(/Select a response only when it has been observed/).waitFor();
+  await page.getByText("0 of 3 responses assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this GCS score" }).isDisabled(), true);
+  await page.getByLabel(/Verbal Response \(V\)/).selectOption("not_testable");
+  await page.getByText("Total unavailable: component not testable", { exact: true }).waitFor();
+  await page.getByLabel(/Eye Opening Response \(E\)/).selectOption("4");
+  await page.getByLabel(/Verbal Response \(V\)/).selectOption("5");
+  await page.getByLabel(/Motor Response \(M\)/).selectOption("6");
   await page.getByText("15 / 15 points (E4V5M6)", { exact: true }).waitFor();
-  await page.getByText("Mild brain injury / Alert (13–15)").waitFor();
+  await page.getByText("13–15 point band", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "gcs-dark-modal.png") });
-  console.log("PASS Glasgow Coma Scale calculator verified and captured in dark styles");
+  console.log("PASS GCS requires assessed responses and does not score a non-testable component");
 
   // Test 3i: HAS-BLED Bleeding Risk Score Tab in Clinical Calculators
   await page.getByRole("tab", { name: /HAS-BLED \(Bleeding Risk\)/i }).click();
-  await page.getByText(/assesses 1-year major bleeding risk in patients receiving anticoagulation/).waitFor();
-  await page.getByText("0 / 9 points", { exact: true }).waitFor();
-  await page.getByText(/Low bleeding risk/).waitFor();
-  await page.getByLabel(/H: Hypertension/).check();
-  await page.getByLabel(/A: Abnormal renal function/).check();
+  await page.getByText(/records factors clinicians consider/).waitFor();
+  await page.getByText("0 of 9 findings assessed", { exact: true }).waitFor();
+  assert.equal(await page.getByRole("button", { name: "Ask MedAssist about this HAS-BLED score" }).isDisabled(), true);
+  const hasbledInputs = page.getByRole("tabpanel", { name: "HAS-BLED (Bleeding Risk)" }).locator("select");
+  for (let index = 0; index < 9; index += 1) await hasbledInputs.nth(index).selectOption("absent");
+  await page.getByLabel(/Labile INR/).selectOption("not_applicable");
+  await page.getByLabel(/Uncontrolled hypertension/).selectOption("present");
+  await page.getByLabel(/Abnormal renal function/).selectOption("present");
   await page.getByText("2 / 9 points", { exact: true }).waitFor();
-  await page.getByText(/Moderate bleeding risk/).waitFor();
+  await page.getByText("2 point band", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "hasbled-dark-modal.png") });
-  console.log("PASS HAS-BLED bleeding risk calculator verified and captured in dark styles");
+  console.log("PASS HAS-BLED requires nine assessed findings without individual risk prediction");
 
   // Test 3j: qSOFA Sepsis Screening Tab in Clinical Calculators
   await page.getByRole("tab", { name: /qSOFA \(Sepsis Screening\)/i }).click();
@@ -162,22 +191,31 @@ async function main() {
 
   // Test 3l: APRI (Liver Fibrosis) Tab in Clinical Calculators
   await page.getByRole("tab", { name: "APRI (Liver Fibrosis)" }).click();
-  await page.getByText(/AST to Platelet Ratio Index \(APRI\) is a non-invasive biomarker index/).waitFor();
-  await page.getByText("Score: 0.75", { exact: true }).waitFor();
-  await page.getByText(/Indeterminate \/ intermediate fibrosis probability/).waitFor();
-  // Change AST to 120 -> Score: 2.00, High probability of cirrhosis
+  await page.getByText(/APRI is a laboratory index/).waitFor();
+  assert.equal(await page.getByText(/Score: /).count(), 0);
+  await page.getByRole("spinbutton", { name: "AST Upper Limit of Normal (ULN) (U/L)" }).fill("40");
+  await page.getByRole("spinbutton", { name: "Platelet Count (10⁹/L or ×10³/µL)" }).fill("150");
+  assert.equal(await page.getByText(/Score: /).count(), 0);
+  // AST 120 -> APRI 2.00 without a fibrosis diagnosis.
   await page.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }).fill("120");
   await page.getByText("Score: 2.00", { exact: true }).waitFor();
-  await page.getByText(/High probability of cirrhosis/).waitFor();
+  await page.getByText("Laboratory index", { exact: true }).waitFor();
+  assert.equal(await page.getByText(/High probability of cirrhosis/).count(), 0);
   await page.screenshot({ path: path.join(output, "apri-dark-modal.png") });
-  console.log("PASS APRI liver fibrosis calculator verified and captured in dark styles");
+  console.log("PASS APRI requires entered labs and avoids automatic cirrhosis diagnosis");
 
   // Test 3m: Child-Pugh (Cirrhosis) Tab in Clinical Calculators
   await page.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" }).click();
-  await page.getByText(/prognostic system for assessing the severity of cirrhosis/i).waitFor();
+  await page.getByText(/classifies cirrhosis using three laboratory results/i).waitFor();
+  assert.equal(await page.getByText("Score: 5 points", { exact: true }).count(), 0);
+  await page.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }).fill("1.5");
+  await page.getByRole("spinbutton", { name: "Serum Albumin (g/dL)" }).fill("3.8");
+  await page.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }).fill("1.1");
+  await page.getByLabel("Ascites").selectOption("none");
+  assert.equal(await page.getByText("Score: 5 points", { exact: true }).count(), 0);
+  await page.getByLabel("Hepatic Encephalopathy").selectOption("none");
   await page.getByText("Score: 5 points", { exact: true }).waitFor();
   await page.getByText("Class A (5–6 points)", { exact: true }).waitFor();
-  await page.getByText(/Well-compensated cirrhosis/i).waitFor();
 
   // Change to severe values -> Bilirubin 4.0, Albumin 2.5, INR 2.5, Ascites moderate, Encephalopathy grade3_4
   await page.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }).fill("4.0");
@@ -188,15 +226,22 @@ async function main() {
 
   await page.getByText("Score: 15 points", { exact: true }).waitFor();
   await page.getByText("Class C (10–15 points)", { exact: true }).waitFor();
-  await page.getByText(/Decompensated cirrhosis/i).waitFor();
+  assert.equal(await page.getByText(/1-year survival|perioperative abdominal mortality/i).count(), 0);
   await page.screenshot({ path: path.join(output, "childpugh-dark-modal.png") });
-  console.log("PASS Child-Pugh cirrhosis mortality calculator verified and captured in dark styles");
+  console.log("PASS Child-Pugh classification requires complete assessment and avoids personal mortality claims");
 
   // Test 3n: MELD-Na (Liver Disease) Tab in Clinical Calculators
   await page.getByRole("tab", { name: "MELD-Na (Liver Disease)" }).click();
-  await page.getByText(/OPTN 2016/i).waitFor();
+  await page.getByText(/OPTN adopted MELD 3.0 for allocation in 2023/).waitFor();
+  assert.equal(await page.getByText("Score: 15 points", { exact: true }).count(), 0);
+  await page.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }).fill("1.5");
+  await page.getByRole("spinbutton", { name: "Serum Creatinine (mg/dL)" }).fill("1.2");
+  await page.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }).fill("1.3");
+  await page.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }).fill("135");
+  assert.equal(await page.getByText("Score: 15 points", { exact: true }).count(), 0);
+  await page.getByLabel(/Two or more dialysis treatments/).selectOption("no");
   await page.getByText("Score: 15 points", { exact: true }).waitFor();
-  await page.getByText("Intermediate risk (~6.0% 90-day mortality)", { exact: true }).waitFor();
+  await page.getByText("10–19 point band", { exact: true }).waitFor();
 
   // Severe values -> Bilirubin 4.0, Creatinine 3.5, INR 2.8, Sodium 128
   await page.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }).fill("4.0");
@@ -205,13 +250,13 @@ async function main() {
   await page.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }).fill("128");
 
   await page.getByText("Score: 36 points", { exact: true }).waitFor();
-  await page.getByText("Very high risk (~52.6% 90-day mortality)", { exact: true }).waitFor();
+  await page.getByText("30–39 point band", { exact: true }).waitFor();
 
-  // Check dialysis checkbox
-  await page.getByLabel(/Dialysis history/i).check();
+  // Check the historical dialysis substitution.
+  await page.getByLabel(/Two or more dialysis treatments/).selectOption("yes");
   await page.getByText("Score: 37 points", { exact: true }).waitFor();
   await page.screenshot({ path: path.join(output, "meld-dark-modal.png") });
-  console.log("PASS MELD-Na liver disease prognostic calculator verified and captured in dark styles");
+  console.log("PASS historical MELD-Na requires all inputs and avoids current allocation claims");
 
   // Test 3o: Centor (Strep Throat) Tab in Clinical Calculators
   await page.getByRole("tab", { name: "Centor (Strep Throat)" }).click();

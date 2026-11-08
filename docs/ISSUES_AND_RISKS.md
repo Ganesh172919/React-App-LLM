@@ -12,19 +12,22 @@ MedAssist AI operates at the intersection of generative language models, automat
 > [!WARNING]
 > **Regulatory Boundary**: MedAssist AI has not undergone FDA 510(k) clearance, CE Mark Software as a Medical Device (SaMD) certification, or formal clinical trials. It is strictly an educational research platform. Under no circumstances should it be utilized as a diagnostic decision-support engine or automated prescribing system.
 
-### Current prioritized findings (30 October 2026)
+### Current prioritized findings (7 November 2026)
 
 | Priority | Finding | Status |
 | --- | --- | --- |
 | Critical | Generated medical claims, retrieval relevance, medication pairs, and calculator outputs lack independent clinical validation. | Open; qualified clinical review and a held-out evaluation set are required before real-world patient use. |
+| Critical | Historical 2016 MELD-Na was presented as the current OPTN allocation score with prefilled values and mortality percentages. | Fixed in the UI: complete inputs and explicit dialysis status are required; output is labeled historical, links to OPTN, and omits personal mortality. Current allocation scoring remains outside this tool. |
+| High | Child-Pugh showed a default class with individual-sounding survival and surgical mortality percentages. | Fixed in the UI: all five components require assessment and the result contains only an educational class. |
+| High | APRI showed a prefilled index and a universal cirrhosis probability label despite context-dependent thresholds. | Fixed in the UI: measured labs are required and the result is a numeric index without a diagnostic band. |
 | Critical | Bundled nginx serves HTTP; real deployment also needs external HTTPS, secret management, backup restoration, monitoring, and a retention policy. | Open; see the deployment runbook. |
-| High | The 4-2-1 formula appeared as an adult patient rate; Wells showed personal-sounding risk percentages and an unassessed zero score as “PE unlikely”; FeNa/FeUrea labels asserted injury patterns. | Fixed in the UI as educational examples and numeric score bands. Verified with component tests and the inbuilt-browser mobile review. Clinical validity remains open. |
+| High | The 4-2-1 formula appeared as an adult patient rate; Wells showed personal-sounding risk percentages and an unassessed zero score as “PE unlikely”; FeNa/FeUrea labels asserted injury patterns. | Fixed in the UI as educational examples and numeric score bands. Wells now requires all seven findings before showing a score or enabling export. Verified with component tests and the in-app browser at desktop and 320 px. Clinical validity remains open. |
 | Medium | At 320 px, header actions squeezed “Sign out” and the last starter prompt was clipped. | Fixed with a two-row header and compact empty-chat layout; verified in the inbuilt browser and headless regression. |
 | Medium | Repeated QA runs hit the expected 15-minute recovery rate limit and made the smoke suite fail. | The suite now checks either generic success or visible rate-limit feedback; fresh-instance success remains covered by the first run. |
 | Medium | A local JSON export could display forged verification and PubMed source metadata as if MedAssist had checked it; the old import label also implied the file was saved. | Fixed: bounded local preview strips evidence metadata, marks imported answers unverified, disables sending, and states that it is not saved or used as model context. Browser and component regressions cover this path. |
 | Medium | A Markdown export of an imported file still claimed to be a MedAssist evidence report and retained active Markdown image syntax from untrusted text. | Fixed: preview downloads carry an unverified label; all conversation text is emitted in literal Markdown fences, and saved-chat reference links are constructed only from numeric PubMed IDs. Export and render regressions cover this path. |
 
-The integrated working tree passed 77 backend, 59 frontend, 19 Python, 7 built HTTP, and 63 browser checks (21 core browser and 42 dark/tools browser checks) — totaling 225 locally verified automated checks. A single-worker rerun passed all test files cleanly. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
+The integrated working tree passed 77 backend, 61 frontend, 19 Python, 8 built HTTP, and 63 browser checks (21 core browser and 42 dark/tools browser checks) — totaling 228 locally verified automated checks. A single-worker rerun passed all test files cleanly. The LoRA dry run passed against the existing prepared dataset; training remains blocked until clinical and license review. These fixture-based results do not establish live-provider reliability or clinical safety.
 
 ```
 ========================================================================================================================

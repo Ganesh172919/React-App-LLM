@@ -7,7 +7,7 @@ Developed by **J Ganesh kumar reddy**
 
 ## 1. Executive QA Overview & Artifact Topology
 
-The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 225 automated verification checks.
+The quality assurance output directory (`output/qa/`) stores automated verification logs, JSON metric reports, and high-resolution Playwright browser screenshots generated during CI runs and local pre-release testing. These artifacts provide auditability, visual evidence of accessibility across desktop and mobile viewports, and regression tracking across all 228 automated verification checks.
 
 ```
 ========================================================================================================================
@@ -21,8 +21,8 @@ The quality assurance output directory (`output/qa/`) stores automated verificat
     │                                TIER 1: STRUCTURED JSON VERIFICATION LOGS                                       │
     │  - automated-results.json: Aggregate code-check metrics (backend, frontend, python, build)                     │
     │  - browser-results.json: Results of 21 core browser workflows and scenarios                                   │
-    │  - build-serving-results.json: 7 HTTP ingress assertions (cache headers, SPA routing, proxying)               │
-    │  - frontend-results.json: Vitest JSON output covering 59 component and unit tests                             │
+    │  - build-serving-results.json: 8 HTTP ingress assertions (cache headers, SPA routing, proxying)               │
+    │  - frontend-results.json: Vitest JSON output covering 61 component and unit tests                             │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                                                 │
                                                 ▼
@@ -49,12 +49,12 @@ mindmap
     ::icon(fa fa-clipboard-check)
     (01 Structured Metrics)
       automated-results.json
-        225 Master Checks
+        228 Master Checks
         Duration & Timestamp
       browser-results.json
         21 Smoke Workflows
       build-serving-results.json
-        7 HTTP Assertions
+        8 HTTP Assertions
     (02 Visual Evidence)
       Mobile 320px & 390px
         No Horizontal Overflow
@@ -82,7 +82,7 @@ mindmap
 
 | Artifact File | Category | Source Script | Description |
 |:---|:---:|:---:|:---|
-| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 225 locally observed software checks across all suites. |
+| `automated-results.json` | Report | `verify_project.cjs` | Master summary of 228 locally observed software checks across all suites. |
 | `browser-results.json` | Report | `browser_smoke.cjs` | Verification logs for 21 browser end-to-end user workflows. |
 | `build-serving-results.json` | Report | `check_build_serving.cjs` | HTTP response header assertions (immutable cache, CSP, SPA fallbacks). |
 | `calculators-dark-modal.png` | Visual | `browser_verify_dark_and_tools.cjs` | Dark theme rendering of clinical calculators modal and tablist (22 tools). |

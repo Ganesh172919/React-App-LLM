@@ -183,9 +183,9 @@ frontend/
     ├── utils/
     │   └── medicalDetector.js           # Client-side heuristic medical keyword classifier
     │
-    └── test/                            # Vitest Component & Unit Tests (59 Passing across 6 suites)
+    └── test/                            # Vitest Component & Unit Tests (61 Passing across 6 suites)
         ├── api.test.js                  # Web Locks refresh and fetch interceptor tests
-        ├── clinicalCalculators.test.jsx # 22 calculator math & accessibility tests (20 tests)
+        ├── clinicalCalculators.test.jsx # 22 calculator math & accessibility tests (22 tests)
         ├── conversationImport.test.js   # JSON import bounding and anti-spoofing tests
         ├── medicalDetector.test.js      # Medical entity & suggestion chip classification
         ├── tabStorage.test.js           # sessionStorage fallback & TTL cache tests
@@ -532,7 +532,7 @@ npm ci
 # 2. Run ESLint across all components and libraries
 npm run lint
 
-# 3. Execute Vitest automated unit and component test suite (59 tests across 6 suites)
+# 3. Execute Vitest automated unit and component test suite (61 tests across 6 suites)
 npm test
 
 # 4. Compile optimized production distribution bundle

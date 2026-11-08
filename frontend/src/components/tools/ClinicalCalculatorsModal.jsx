@@ -24,6 +24,44 @@ const CENTOR_CRITERIA = [
   { id: "noCough", label: "Absence of cough" },
 ];
 
+const CURB_CRITERIA = [
+  { id: "confusion", label: "New confusion or AMTS ≤ 8" },
+  { id: "urea", label: "Blood urea nitrogen > 19 mg/dL (urea > 7 mmol/L)" },
+  { id: "respiratory", label: "Respiratory rate ≥ 30 breaths/min" },
+  { id: "bp", label: "Systolic BP < 90 mmHg or diastolic BP ≤ 60 mmHg" },
+  { id: "age", label: "Age ≥ 65 years" },
+];
+
+const HASBLED_CRITERIA = [
+  { id: "htn", label: "Uncontrolled hypertension (systolic BP > 160 mmHg)" },
+  { id: "renal", label: "Abnormal renal function (dialysis, transplant, or creatinine ≥ 2.26 mg/dL)" },
+  { id: "liver", label: "Abnormal liver function (cirrhosis or abnormal bilirubin and enzymes)" },
+  { id: "stroke", label: "Prior stroke" },
+  { id: "bleeding", label: "Bleeding history or predisposition" },
+  { id: "labileInr", label: "Labile INR on vitamin K antagonist therapy" },
+  { id: "elderly", label: "Age > 65 years" },
+  { id: "drugs", label: "Concomitant antiplatelet or NSAID use" },
+  { id: "alcohol", label: "Alcohol excess (≥ 8 drinks per week)" },
+];
+
+const WELLS_CRITERIA = [
+  { id: "dvtSymptoms", label: "Clinical signs and symptoms of DVT (leg swelling and deep vein tenderness)", points: 3 },
+  { id: "peLikely", label: "An alternative diagnosis is less likely than PE", points: 3 },
+  { id: "tachycardia", label: "Heart rate > 100 beats/min", points: 1.5 },
+  { id: "immobilization", label: "Immobilisation for more than 3 days or surgery in the previous 4 weeks", points: 1.5 },
+  { id: "priorDvtPe", label: "Previous DVT or PE", points: 1.5 },
+  { id: "hemoptysis", label: "Haemoptysis (coughing up blood)", points: 1 },
+  { id: "malignancy", label: "Malignancy (on treatment, treated in the last 6 months, or palliative)", points: 1 },
+];
+
+const CHADS_CRITERIA = [
+  { id: "chf", label: "Heart failure or left ventricular dysfunction", points: 1 },
+  { id: "htn", label: "Hypertension history or treatment", points: 1 },
+  { id: "dm", label: "Diabetes mellitus", points: 1 },
+  { id: "stroke", label: "Prior stroke, TIA, or thromboembolism", points: 2 },
+  { id: "vascular", label: "Vascular disease (prior MI, PAD, or aortic plaque)", points: 1 },
+];
+
 const CALCULATORS = [
   ["bmi", "BMI"], ["egfr", "eGFR (CKD-EPI)"], ["chads", "CHA₂DS₂-VASc"],
   ["map", "MAP / Perfusion"], ["crcl", "CrCl (Cockcroft-Gault)"],
@@ -106,13 +144,9 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [egfrScr, setEgfrScr] = useState("1.1"); // mg/dL
 
   // CHA2DS2-VASc State
-  const [chadsChf, setChadsChf] = useState(false);
-  const [chadsHtn, setChadsHtn] = useState(false);
-  const [chadsAgeGroup, setChadsAgeGroup] = useState("under65"); // under65 | 65to74 | 75plus
-  const [chadsDm, setChadsDm] = useState(false);
-  const [chadsStroke, setChadsStroke] = useState(false);
-  const [chadsVascular, setChadsVascular] = useState(false);
-  const [chadsSex, setChadsSex] = useState("female"); // female | male
+  const [chadsCriteria, setChadsCriteria] = useState({});
+  const [chadsAgeGroup, setChadsAgeGroup] = useState("unknown"); // under65 | 65to74 | 75plus
+  const [chadsSex, setChadsSex] = useState("unknown"); // female | male
 
   // MAP State
   const [mapSbp, setMapSbp] = useState("120");
@@ -149,36 +183,18 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [fluidWeightKg, setFluidWeightKg] = useState("20");
 
   // Wells' Criteria for PE State
-  const [wellsDvtSymptoms, setWellsDvtSymptoms] = useState(false);
-  const [wellsPeLikely, setWellsPeLikely] = useState(false);
-  const [wellsTachycardia, setWellsTachycardia] = useState(false);
-  const [wellsImmobilization, setWellsImmobilization] = useState(false);
-  const [wellsPriorDvtPe, setWellsPriorDvtPe] = useState(false);
-  const [wellsHemoptysis, setWellsHemoptysis] = useState(false);
-  const [wellsMalignancy, setWellsMalignancy] = useState(false);
+  const [wellsCriteria, setWellsCriteria] = useState({});
 
   // CURB-65 State
-  const [curbConfusion, setCurbConfusion] = useState(false);
-  const [curbUrea, setCurbUrea] = useState(false);
-  const [curbRespiratory, setCurbRespiratory] = useState(false);
-  const [curbBp, setCurbBp] = useState(false);
-  const [curbAge65, setCurbAge65] = useState(false);
+  const [curbCriteria, setCurbCriteria] = useState({});
 
   // GCS (Glasgow Coma Scale) State
-  const [gcsEye, setGcsEye] = useState("4");
-  const [gcsVerbal, setGcsVerbal] = useState("5");
-  const [gcsMotor, setGcsMotor] = useState("6");
+  const [gcsEye, setGcsEye] = useState("unknown");
+  const [gcsVerbal, setGcsVerbal] = useState("unknown");
+  const [gcsMotor, setGcsMotor] = useState("unknown");
 
   // HAS-BLED State
-  const [hasbledHtn, setHasbledHtn] = useState(false);
-  const [hasbledRenal, setHasbledRenal] = useState(false);
-  const [hasbledLiver, setHasbledLiver] = useState(false);
-  const [hasbledStroke, setHasbledStroke] = useState(false);
-  const [hasbledBleeding, setHasbledBleeding] = useState(false);
-  const [hasbledLabileInr, setHasbledLabileInr] = useState(false);
-  const [hasbledElderly, setHasbledElderly] = useState(false);
-  const [hasbledDrugs, setHasbledDrugs] = useState(false);
-  const [hasbledAlcohol, setHasbledAlcohol] = useState(false);
+  const [hasbledCriteria, setHasbledCriteria] = useState({});
 
   // qSOFA State
   const [qsofaCriteria, setQsofaCriteria] = useState({});
@@ -191,23 +207,23 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   const [bsaWeightLbs, setBsaWeightLbs] = useState("154");
 
   // APRI (AST to Platelet Ratio Index) State
-  const [apriAst, setApriAst] = useState("45"); // U/L
-  const [apriAstUln, setApriAstUln] = useState("40"); // U/L
-  const [apriPlatelets, setApriPlatelets] = useState("150"); // 10^9/L or x10^3/uL
+  const [apriAst, setApriAst] = useState(""); // U/L
+  const [apriAstUln, setApriAstUln] = useState(""); // U/L
+  const [apriPlatelets, setApriPlatelets] = useState(""); // 10^9/L or x10^3/uL
 
   // Child-Pugh Score State
-  const [cpBilirubin, setCpBilirubin] = useState("1.5"); // mg/dL
-  const [cpAlbumin, setCpAlbumin] = useState("3.8"); // g/dL
-  const [cpInr, setCpInr] = useState("1.1");
-  const [cpAscites, setCpAscites] = useState("none"); // none | mild | moderate
-  const [cpEncephalopathy, setCpEncephalopathy] = useState("none"); // none | grade1_2 | grade3_4
+  const [cpBilirubin, setCpBilirubin] = useState(""); // mg/dL
+  const [cpAlbumin, setCpAlbumin] = useState(""); // g/dL
+  const [cpInr, setCpInr] = useState("");
+  const [cpAscites, setCpAscites] = useState("unknown"); // unknown | none | mild | moderate
+  const [cpEncephalopathy, setCpEncephalopathy] = useState("unknown"); // unknown | none | grade1_2 | grade3_4
 
   // MELD-Na Score State
-  const [meldBilirubin, setMeldBilirubin] = useState("1.5"); // mg/dL
-  const [meldCreatinine, setMeldCreatinine] = useState("1.2"); // mg/dL
-  const [meldInr, setMeldInr] = useState("1.3");
-  const [meldSodium, setMeldSodium] = useState("135"); // mEq/L
-  const [meldDialysis, setMeldDialysis] = useState(false); // Dialysis >= 2 times in prior 7 days
+  const [meldBilirubin, setMeldBilirubin] = useState(""); // mg/dL
+  const [meldCreatinine, setMeldCreatinine] = useState(""); // mg/dL
+  const [meldInr, setMeldInr] = useState("");
+  const [meldSodium, setMeldSodium] = useState(""); // mEq/L
+  const [meldDialysis, setMeldDialysis] = useState("unknown"); // unknown | no | yes
 
   // Modified Centor / McIsaac Score State
   const [centorCriteria, setCentorCriteria] = useState({});
@@ -278,15 +294,12 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   }
 
   // 3. CHA2DS2-VASc
-  let chadsScore = 0;
-  if (chadsChf) chadsScore += 1;
-  if (chadsHtn) chadsScore += 1;
-  if (chadsAgeGroup === "75plus") chadsScore += 2;
-  else if (chadsAgeGroup === "65to74") chadsScore += 1;
-  if (chadsDm) chadsScore += 1;
-  if (chadsStroke) chadsScore += 2;
-  if (chadsVascular) chadsScore += 1;
-  if (chadsSex === "female") chadsScore += 1;
+  const chadsAssessed = CHADS_CRITERIA.filter(({ id }) => chadsCriteria[id] === "present" || chadsCriteria[id] === "absent").length
+    + (chadsAgeGroup !== "unknown" ? 1 : 0) + (chadsSex !== "unknown" ? 1 : 0);
+  const chadsComplete = chadsAssessed === 7;
+  const chadsScore = CHADS_CRITERIA.reduce((sum, { id, points }) => sum + (chadsCriteria[id] === "present" ? points : 0), 0)
+    + (chadsAgeGroup === "75plus" ? 2 : chadsAgeGroup === "65to74" ? 1 : 0)
+    + (chadsSex === "female" ? 1 : 0);
 
   // 4. MAP
   let mapVal = null;
@@ -390,70 +403,33 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   }
 
   // 11. Wells' Criteria for PE
-  let wellsScore = 0;
-  if (wellsDvtSymptoms) wellsScore += 3.0;
-  if (wellsPeLikely) wellsScore += 3.0;
-  if (wellsTachycardia) wellsScore += 1.5;
-  if (wellsImmobilization) wellsScore += 1.5;
-  if (wellsPriorDvtPe) wellsScore += 1.5;
-  if (wellsHemoptysis) wellsScore += 1.0;
-  if (wellsMalignancy) wellsScore += 1.0;
-
+  const wellsAssessed = WELLS_CRITERIA.filter(({ id }) => wellsCriteria[id] === "present" || wellsCriteria[id] === "absent").length;
+  const wellsComplete = wellsAssessed === WELLS_CRITERIA.length;
+  const wellsScore = WELLS_CRITERIA.reduce((sum, { id, points }) => sum + (wellsCriteria[id] === "present" ? points : 0), 0);
   const wellsFormatted = Number.isInteger(wellsScore) ? String(wellsScore) : wellsScore.toFixed(1);
   const wellsScoreBand = wellsScore <= 4.0 ? "NICE score band: 4 or less" : "NICE score band: above 4";
 
   // 12. CURB-65 Pneumonia Severity Score
-  let curbScore = 0;
-  if (curbConfusion) curbScore += 1;
-  if (curbUrea) curbScore += 1;
-  if (curbRespiratory) curbScore += 1;
-  if (curbBp) curbScore += 1;
-  if (curbAge65) curbScore += 1;
-
-  let curbStratification = "";
-  if (curbScore <= 1) {
-    curbStratification = "Low risk (30-day mortality < 3%)";
-  } else if (curbScore === 2) {
-    curbStratification = "Moderate risk (30-day mortality ~9%)";
-  } else {
-    curbStratification = `High / severe risk (30-day mortality ${curbScore === 3 ? "15–20%" : "30–40%"})`;
-  }
+  const curbAssessed = CURB_CRITERIA.filter(({ id }) => curbCriteria[id] === "present" || curbCriteria[id] === "absent").length;
+  const curbComplete = curbAssessed === CURB_CRITERIA.length;
+  const curbScore = CURB_CRITERIA.filter(({ id }) => curbCriteria[id] === "present").length;
+  const curbScoreBand = curbScore <= 1 ? "0–1 point band" : curbScore === 2 ? "2 point band" : "3–5 point band";
 
   // 13. Glasgow Coma Scale (GCS)
-  const eyeNum = parseInt(gcsEye, 10) || 4;
-  const verbalNum = parseInt(gcsVerbal, 10) || 5;
-  const motorNum = parseInt(gcsMotor, 10) || 6;
-  const gcsScore = eyeNum + verbalNum + motorNum;
-
-  let gcsStratification = "";
-  if (gcsScore <= 8) {
-    gcsStratification = "Severe brain injury / Coma (3–8)";
-  } else if (gcsScore <= 12) {
-    gcsStratification = "Moderate brain injury (9–12)";
-  } else {
-    gcsStratification = "Mild brain injury / Alert (13–15)";
-  }
+  const gcsResponses = [gcsEye, gcsVerbal, gcsMotor];
+  const gcsAssessed = gcsResponses.filter((value) => /^\d$/.test(value)).length;
+  const gcsNotTestable = gcsResponses.includes("not_testable");
+  const gcsComplete = gcsAssessed === 3;
+  const gcsScore = gcsComplete ? gcsResponses.reduce((sum, value) => sum + Number(value), 0) : null;
+  const gcsScoreBand = !gcsComplete ? "" : gcsScore <= 8 ? "3–8 point band" : gcsScore <= 12 ? "9–12 point band" : "13–15 point band";
 
   // 14. HAS-BLED Bleeding Risk Score
-  let hasbledScore = 0;
-  if (hasbledHtn) hasbledScore += 1;
-  if (hasbledRenal) hasbledScore += 1;
-  if (hasbledLiver) hasbledScore += 1;
-  if (hasbledStroke) hasbledScore += 1;
-  if (hasbledBleeding) hasbledScore += 1;
-  if (hasbledLabileInr) hasbledScore += 1;
-  if (hasbledElderly) hasbledScore += 1;
-  if (hasbledDrugs) hasbledScore += 1;
-  if (hasbledAlcohol) hasbledScore += 1;
-
-  let hasbledStratification = "";
-  if (hasbledScore <= 1) {
-    hasbledStratification = "Low bleeding risk (~1.0–1.5% annual risk)";
-  } else if (hasbledScore === 2) {
-    hasbledStratification = "Moderate bleeding risk (~1.9% annual risk)";
-  } else {
-    hasbledStratification = "High bleeding risk (≥ 3.7% annual risk; close clinical monitoring & addressing reversible risk factors recommended)";
-  }
+  const hasbledAssessed = HASBLED_CRITERIA.filter(({ id }) =>
+    hasbledCriteria[id] === "present" || hasbledCriteria[id] === "absent" || (id === "labileInr" && hasbledCriteria[id] === "not_applicable")
+  ).length;
+  const hasbledComplete = hasbledAssessed === HASBLED_CRITERIA.length;
+  const hasbledScore = HASBLED_CRITERIA.filter(({ id }) => hasbledCriteria[id] === "present").length;
+  const hasbledScoreBand = hasbledScore <= 1 ? "0–1 point band" : hasbledScore === 2 ? "2 point band" : "3–9 point band";
 
   // 15. qSOFA (Quick Sepsis-related Organ Failure Assessment)
   const qsofaAssessed = QSOFA_CRITERIA.filter(({ id }) => qsofaCriteria[id] === "present" || qsofaCriteria[id] === "absent").length;
@@ -478,29 +454,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
   // 17. AST to Platelet Ratio Index (APRI)
   let apriVal = null;
-  let apriStratification = "";
   const ast = parseFloat(apriAst);
   const astUln = parseFloat(apriAstUln);
   const platelets = parseFloat(apriPlatelets);
   if (ast >= 5 && ast <= 2000 && astUln >= 10 && astUln <= 100 && platelets >= 10 && platelets <= 1000) {
     const calc = ((ast / astUln) / platelets) * 100;
     apriVal = calc.toFixed(2);
-    const valNum = parseFloat(apriVal);
-    if (valNum <= 0.50) {
-      apriStratification = "Low probability of significant fibrosis (APRI ≤ 0.50; high negative predictive value)";
-    } else if (valNum <= 1.00) {
-      apriStratification = "Indeterminate / intermediate fibrosis probability (0.50 < APRI ≤ 1.00)";
-    } else if (valNum <= 1.50) {
-      apriStratification = "High probability of significant fibrosis (APRI > 1.00; METAVIR F2–F4)";
-    } else {
-      apriStratification = "High probability of cirrhosis (APRI > 1.50; METAVIR F4)";
-    }
   }
 
-  // 18. Child-Pugh Score for Cirrhosis Mortality
+  // 18. Child-Pugh cirrhosis classification
   let cpScore = null;
   let cpClass = "";
-  let cpInterpretation = "";
   const cpBiliNum = parseFloat(cpBilirubin);
   const cpAlbNum = parseFloat(cpAlbumin);
   const cpInrNum = parseFloat(cpInr);
@@ -508,7 +472,8 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
   if (
     !isNaN(cpBiliNum) && cpBiliNum >= 0.1 && cpBiliNum <= 50 &&
     !isNaN(cpAlbNum) && cpAlbNum >= 0.5 && cpAlbNum <= 6.0 &&
-    !isNaN(cpInrNum) && cpInrNum >= 0.5 && cpInrNum <= 10.0
+    !isNaN(cpInrNum) && cpInrNum >= 0.5 && cpInrNum <= 10.0 &&
+    cpAscites !== "unknown" && cpEncephalopathy !== "unknown"
   ) {
     let points = 0;
     // Bilirubin points (<2.0: 1, 2.0-3.0: 2, >3.0: 3)
@@ -539,19 +504,16 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
     cpScore = points;
     if (cpScore <= 6) {
       cpClass = "Class A (5–6 points)";
-      cpInterpretation = "Well-compensated cirrhosis (1-year survival ~100%, 2-year survival ~85%, perioperative abdominal mortality ~10%)";
     } else if (cpScore <= 9) {
       cpClass = "Class B (7–9 points)";
-      cpInterpretation = "Significant functional compromise (1-year survival ~80%, 2-year survival ~60%, perioperative abdominal mortality ~30%)";
     } else {
       cpClass = "Class C (10–15 points)";
-      cpInterpretation = "Decompensated cirrhosis (1-year survival ~45%, 2-year survival ~35%, perioperative abdominal mortality ~70–80%)";
     }
   }
 
-  // 19. MELD-Na Score for End-Stage Liver Disease (OPTN/UNOS)
+  // 19. Historical 2016 MELD-Na equation (not the current OPTN allocation formula)
   let meldScore = null;
-  let meldMortality = "";
+  let meldBand = "";
   const meldBiliNum = parseFloat(meldBilirubin);
   const meldCrNum = parseFloat(meldCreatinine);
   const meldInrNum = parseFloat(meldInr);
@@ -559,11 +521,12 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
   if (
     !isNaN(meldBiliNum) && meldBiliNum >= 0.1 && meldBiliNum <= 50.0 &&
-    (meldDialysis || (!isNaN(meldCrNum) && meldCrNum >= 0.1 && meldCrNum <= 15.0)) &&
+    (meldDialysis === "yes" || (!isNaN(meldCrNum) && meldCrNum >= 0.1 && meldCrNum <= 15.0)) &&
     !isNaN(meldInrNum) && meldInrNum >= 0.5 && meldInrNum <= 10.0 &&
-    !isNaN(meldNaNum) && meldNaNum >= 100 && meldNaNum <= 160
+    !isNaN(meldNaNum) && meldNaNum >= 100 && meldNaNum <= 160 &&
+    meldDialysis !== "unknown"
   ) {
-    const crCalc = meldDialysis ? 4.0 : Math.max(1.0, Math.min(4.0, meldCrNum));
+    const crCalc = meldDialysis === "yes" ? 4.0 : Math.max(1.0, Math.min(4.0, meldCrNum));
     const biliCalc = Math.max(1.0, meldBiliNum);
     const inrCalc = Math.max(1.0, meldInrNum);
 
@@ -579,17 +542,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
     meldScore = Math.max(6, Math.min(40, calculatedMeld));
 
-    if (meldScore <= 9) {
-      meldMortality = "Low risk (~1.9% 90-day mortality)";
-    } else if (meldScore <= 19) {
-      meldMortality = "Intermediate risk (~6.0% 90-day mortality)";
-    } else if (meldScore <= 29) {
-      meldMortality = "High risk (~19.6% 90-day mortality)";
-    } else if (meldScore <= 39) {
-      meldMortality = "Very high risk (~52.6% 90-day mortality)";
-    } else {
-      meldMortality = "Critical risk (~71.3% 90-day mortality)";
-    }
+    meldBand = meldScore <= 9 ? "6–9 point band" : meldScore <= 19 ? "10–19 point band" : meldScore <= 29 ? "20–29 point band" : meldScore <= 39 ? "30–39 point band" : "40 point band";
   }
 
   // 20. Modified Centor (McIsaac) Score for Pharyngitis
@@ -1102,60 +1055,36 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "chads" && (
             <div id="tabpanel-chads" role="tabpanel" aria-labelledby="tab-chads" className="calc-pane">
               <p className="small-text muted">
-                CHA₂DS₂-VASc is one input used in atrial fibrillation risk discussions. This score alone does not estimate a person&apos;s annual stroke risk or determine medication.
+                CHA₂DS₂-VASc records factors used in clinician-confirmed atrial fibrillation risk discussions. Select each finding explicitly. This count alone does not estimate a person&apos;s annual stroke risk or determine medication.
               </p>
-              <div className="chads-checklist">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={chadsChf}
-                    onChange={(e) => setChadsChf(e.target.checked)}
-                  />
-                  <span><strong>C</strong>ongestive heart failure or LVEF ≤ 40% (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={chadsHtn}
-                    onChange={(e) => setChadsHtn(e.target.checked)}
-                  />
-                  <span><strong>H</strong>ypertension history or treatment (+1)</span>
-                </label>
-                <label>
-                  <strong>A</strong>ge Category
-                  <select value={chadsAgeGroup} onChange={(e) => setChadsAgeGroup(e.target.value)}>
+              <div className="settings-grid">
+                {CHADS_CRITERIA.map(({ id, label, points }) => (
+                  <label htmlFor={`chads-${id}-select`} key={id}>
+                    {label} (+{points})
+                    <select
+                      id={`chads-${id}-select`}
+                      value={chadsCriteria[id] || "unknown"}
+                      onChange={(e) => setChadsCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present</option>
+                    </select>
+                  </label>
+                ))}
+                <label htmlFor="chads-age-select">
+                  Age category
+                  <select id="chads-age-select" value={chadsAgeGroup} onChange={(e) => setChadsAgeGroup(e.target.value)}>
+                    <option value="unknown">Not assessed</option>
                     <option value="under65">&lt; 65 years (+0)</option>
                     <option value="65to74">65–74 years (+1)</option>
                     <option value="75plus">≥ 75 years (+2)</option>
                   </select>
                 </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={chadsDm}
-                    onChange={(e) => setChadsDm(e.target.checked)}
-                  />
-                  <span><strong>D</strong>iabetes mellitus (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={chadsStroke}
-                    onChange={(e) => setChadsStroke(e.target.checked)}
-                  />
-                  <span><strong>S</strong>troke, TIA, or prior thromboembolism (+2)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={chadsVascular}
-                    onChange={(e) => setChadsVascular(e.target.checked)}
-                  />
-                  <span><strong>V</strong>ascular disease (prior MI, PAD, aortic plaque) (+1)</span>
-                </label>
-                <label>
-                  <strong>S</strong>ex Category
-                  <select value={chadsSex} onChange={(e) => setChadsSex(e.target.value)}>
+                <label htmlFor="chads-sex-select">
+                  Sex category used by this score
+                  <select id="chads-sex-select" value={chadsSex} onChange={(e) => setChadsSex(e.target.value)}>
+                    <option value="unknown">Not assessed</option>
                     <option value="female">Female (+1)</option>
                     <option value="male">Male (+0)</option>
                   </select>
@@ -1164,19 +1093,20 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>Score: {chadsScore}</strong>
-                  <span className="badge">Risk factors counted</span>
+                  <strong>{chadsComplete ? `Score: ${chadsScore}` : `${chadsAssessed} of 7 findings assessed`}</strong>
+                  <span className="badge">{chadsComplete ? "Factors counted" : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text muted">
-                  Treatment decisions depend on the full clinical picture, bleeding risk, and patient preferences. <a href="https://www.ahajournals.org/doi/10.1161/CIR.0000000000001193" target="_blank" rel="noopener noreferrer">ACC/AHA guideline</a>.
+                  Unassessed findings cannot be counted as absent. Treatment decisions depend on the full clinical picture, bleeding risk, and patient preferences. <a href="https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2023/11/27/19/46/2023-acc-guideline-for-af-gl-af" target="_blank" rel="noopener noreferrer">ACC/AHA guideline summary</a>.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!chadsComplete}
                     onClick={() =>
                       insertAndClose(
-                          `For educational purposes, explain what a CHA2DS2-VASc score of ${chadsScore} represents, its limits, and what a clinician considers when discussing stroke prevention.`
+                          `For educational purposes, explain what a complete CHA2DS2-VASc findings record of ${chadsScore} points represents in atrial fibrillation, its limits, and what a clinician considers when discussing stroke prevention. Do not estimate individual risk or recommend treatment.`
                       )
                     }
                   >
@@ -1185,8 +1115,9 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!chadsComplete}
                     onClick={() =>
-                        handleCopy(`CHA2DS2-VASc score: ${chadsScore} (risk factors counted; not an individual risk estimate or treatment recommendation)`)
+                        handleCopy(`CHA2DS2-VASc findings record: ${chadsScore} points (all seven inputs assessed; not an individual risk estimate or treatment recommendation)`)
                     }
                   >
                     {copied ? "Copied" : "Copy result"}
@@ -1730,80 +1661,39 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
               <p className="small-text muted">
                 Wells&apos; Criteria is a clinician-assessed score used in adult pulmonary embolism (PE) pathways. A low score alone cannot rule out PE. If PE is suspected, seek urgent medical evaluation regardless of this result.
               </p>
-              <div className="chads-checklist">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsDvtSymptoms}
-                    onChange={(e) => setWellsDvtSymptoms(e.target.checked)}
-                  />
-                  <span>Clinical signs and symptoms of DVT (leg swelling and pain with palpation) (+3.0)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsPeLikely}
-                    onChange={(e) => setWellsPeLikely(e.target.checked)}
-                  />
-                  <span>An alternative diagnosis is less likely than PE (+3.0)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsTachycardia}
-                    onChange={(e) => setWellsTachycardia(e.target.checked)}
-                  />
-                  <span>Heart rate &gt; 100 beats/min (tachycardia) (+1.5)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsImmobilization}
-                    onChange={(e) => setWellsImmobilization(e.target.checked)}
-                  />
-                  <span>Immobilization (≥ 3 days bed rest) or surgery in previous 4 weeks (+1.5)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsPriorDvtPe}
-                    onChange={(e) => setWellsPriorDvtPe(e.target.checked)}
-                  />
-                  <span>Previous objectively diagnosed PE or DVT (+1.5)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsHemoptysis}
-                    onChange={(e) => setWellsHemoptysis(e.target.checked)}
-                  />
-                  <span>Hemoptysis (coughing up blood) (+1.0)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={wellsMalignancy}
-                    onChange={(e) => setWellsMalignancy(e.target.checked)}
-                  />
-                  <span>Malignancy (active treatment within 6 months or palliative) (+1.0)</span>
-                </label>
+              <div className="settings-grid">
+                {WELLS_CRITERIA.map(({ id, label, points }) => (
+                  <label htmlFor={`wells-${id}-select`} key={id}>
+                    {label} (+{points})
+                    <select
+                      id={`wells-${id}-select`}
+                      value={wellsCriteria[id] || "unknown"}
+                      onChange={(e) => setWellsCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present</option>
+                    </select>
+                  </label>
+                ))}
               </div>
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>{wellsFormatted} points</strong>
-                  <span className="badge">{wellsScoreBand}</span>
+                  <strong>{wellsComplete ? `${wellsFormatted} points` : `${wellsAssessed} of 7 findings assessed`}</strong>
+                  <span className="badge">{wellsComplete ? wellsScoreBand : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
                   The score band is a reference to the NICE two-level pathway, not a personal risk percentage or a diagnosis.
                 </p>
                 <p className="small-text muted">
-                  An unchecked item means only that it was not selected; it does not mean the finding is absent. A clinician must assess the criteria and decide on further testing. Suspected PE is a potential medical emergency. <a href="https://www.nice.org.uk/guidance/ng158/chapter/Recommendations" target="_blank" rel="noopener noreferrer">Read the NICE PE pathway</a>.
+                  Unassessed findings cannot be counted as absent. A clinician must assess the criteria and decide on further testing. Suspected PE is a potential medical emergency. <a href="https://www.nice.org.uk/guidance/ng158/chapter/recommendations" target="_blank" rel="noopener noreferrer">Read the NICE PE pathway</a>.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!wellsComplete}
                     onClick={() =>
                       insertAndClose(
                         `For educational purposes, explain the adult Wells' PE score criteria and limitations using an example score of ${wellsFormatted} points. A clinician must assess the criteria and decide on further testing. Do not rule out PE or give a personal probability from this example.`
@@ -1815,9 +1705,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!wellsComplete}
                     onClick={() =>
                       handleCopy(
-                        `Wells' PE teaching example: ${wellsFormatted} points (${wellsScoreBand}; unchecked items are unassessed, not absent; not diagnostic guidance)`
+                        `Wells' PE findings record: ${wellsFormatted} points (${wellsScoreBand}; all seven findings assessed; not diagnostic guidance)`
                       )
                     }
                   >
@@ -1832,69 +1723,44 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "curb65" && (
             <div id="tabpanel-curb65" role="tabpanel" aria-labelledby="tab-curb65" className="calc-pane">
               <p className="small-text muted">
-                CURB-65 is an established risk-stratification score assessing 30-day mortality in adults with community-acquired pneumonia (CAP).
+                CURB-65 records five findings used by clinicians for adults with diagnosed community-acquired pneumonia. It does not diagnose pneumonia or decide where someone should receive care.
               </p>
-              <div className="chads-checklist">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={curbConfusion}
-                    onChange={(e) => setCurbConfusion(e.target.checked)}
-                  />
-                  <span><strong>C</strong>onfusion (new mental confusion or AMTS ≤ 8) (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={curbUrea}
-                    onChange={(e) => setCurbUrea(e.target.checked)}
-                  />
-                  <span><strong>U</strong>rea &gt; 19 mg/dL (&gt; 7 mmol/L / BUN &gt; 19 mg/dL) (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={curbRespiratory}
-                    onChange={(e) => setCurbRespiratory(e.target.checked)}
-                  />
-                  <span><strong>R</strong>espiratory rate ≥ 30 breaths/min (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={curbBp}
-                    onChange={(e) => setCurbBp(e.target.checked)}
-                  />
-                  <span><strong>B</strong>lood pressure low (SBP &lt; 90 mmHg OR DBP ≤ 60 mmHg) (+1)</span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={curbAge65}
-                    onChange={(e) => setCurbAge65(e.target.checked)}
-                  />
-                  <span>Age ≥ <strong>65</strong> years (+1)</span>
-                </label>
+              <div className="settings-grid">
+                {CURB_CRITERIA.map(({ id, label }) => (
+                  <label htmlFor={`curb-${id}-select`} key={id}>
+                    {label}
+                    <select
+                      id={`curb-${id}-select`}
+                      value={curbCriteria[id] || "unknown"}
+                      onChange={(e) => setCurbCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present</option>
+                    </select>
+                  </label>
+                ))}
               </div>
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>{curbScore} / 5 points</strong>
-                  <span className="badge">{curbStratification}</span>
+                  <strong>{curbComplete ? `${curbScore} / 5 points` : `${curbAssessed} of 5 findings assessed`}</strong>
+                  <span className="badge">{curbComplete ? curbScoreBand : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  Educational risk stratification only. CURB-65 does not determine clinical disposition, triage, or antimicrobial therapy.
+                  This is an educational count, not an individual mortality prediction. Clinical judgement, oxygen levels, other conditions, and support at home also matter. <a href="https://www.nice.org.uk/guidance/NG250/chapter/recommendations" target="_blank" rel="noopener noreferrer">Read NICE pneumonia guidance</a>.
                 </p>
                 <p className="small-text muted">
-                  An unchecked item indicates it was not selected, not that it has been ruled out. Clinicians evaluate oxygen saturation, social support, and clinical stability alongside CURB-65. Respiratory distress, hypoxia, or sepsis is a medical emergency. <a href="https://www.brit-thoracic.org.uk" target="_blank" rel="noopener noreferrer">BTS guidelines</a>.
+                  Unassessed findings cannot be counted as absent. If someone has severe breathlessness, confusion, or rapid deterioration, seek urgent care regardless of this count.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!curbComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how a CURB-65 pneumonia score of ${curbScore}/5 points (${curbStratification}) is interpreted in clinical guidelines, its limitations, and what clinical factors beyond CURB-65 guide hospital admission decisions.`
+                        `For educational purposes, explain the CURB-65 findings and limitations using a complete record of ${curbScore}/5 points (${curbScoreBand}). Do not estimate individual mortality or recommend admission, discharge, or treatment from this score.`
                       )
                     }
                   >
@@ -1903,9 +1769,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!curbComplete}
                     onClick={() =>
                       handleCopy(
-                        `CURB-65 pneumonia score estimate: ${curbScore}/5 points (${curbStratification}; educational risk stratification only; not diagnostic or admission advice)`
+                        `CURB-65 findings record: ${curbScore}/5 points (${curbScoreBand}); educational only; not a mortality prediction or care decision`
                       )
                     }
                   >
@@ -1920,7 +1787,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "gcs" && (
             <div id="tabpanel-gcs" role="tabpanel" aria-labelledby="tab-gcs" className="calc-pane">
               <p className="small-text muted">
-                The Glasgow Coma Scale (GCS) provides a standardized, objective evaluation of level of consciousness following acute neurological injury.
+                The Glasgow Coma Scale (GCS) records eye, verbal, and motor responses during a clinical assessment. Select a response only when it has been observed. A component that cannot be tested must not be assigned a numeric score.
               </p>
               <div style={{ marginBottom: "14px" }}>
                 <label htmlFor="gcs-eye-select">
@@ -1931,6 +1798,8 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onChange={(e) => setGcsEye(e.target.value)}
                     style={{ width: "100%", marginTop: "6px" }}
                   >
+                    <option value="unknown">Not assessed</option>
+                    <option value="not_testable">Not testable</option>
                     <option value="4">4 — Spontaneous (open before stimulus)</option>
                     <option value="3">3 — To sound (open after spoken request)</option>
                     <option value="2">2 — To pressure (open after tactile pressure/pain)</option>
@@ -1948,6 +1817,8 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onChange={(e) => setGcsVerbal(e.target.value)}
                     style={{ width: "100%", marginTop: "6px" }}
                   >
+                    <option value="unknown">Not assessed</option>
+                    <option value="not_testable">Not testable</option>
                     <option value="5">5 — Orientated (correctly answers name, place, date)</option>
                     <option value="4">4 — Confused (not orientated but coherent speech)</option>
                     <option value="3">3 — Inappropriate words (random or exclamatory words)</option>
@@ -1966,6 +1837,8 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     onChange={(e) => setGcsMotor(e.target.value)}
                     style={{ width: "100%", marginTop: "6px" }}
                   >
+                    <option value="unknown">Not assessed</option>
+                    <option value="not_testable">Not testable</option>
                     <option value="6">6 — Obeys commands (follows 2-step command)</option>
                     <option value="5">5 — Localising to pain (brings hand above clavicle to stimulus)</option>
                     <option value="4">4 — Normal flexion (rapid withdrawal from painful stimulus)</option>
@@ -1978,22 +1851,23 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>{gcsScore} / 15 points (E{gcsEye}V{gcsVerbal}M{gcsMotor})</strong>
-                  <span className="badge">{gcsStratification}</span>
+                  <strong>{gcsComplete ? `${gcsScore} / 15 points (E${gcsEye}V${gcsVerbal}M${gcsMotor})` : gcsNotTestable ? "Total unavailable: component not testable" : `${gcsAssessed} of 3 responses assessed`}</strong>
+                  <span className="badge">{gcsComplete ? gcsScoreBand : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  Educational tracking score only. GCS does not replace formal neurological assessment, pupillary exam, airway evaluation, or neuroimaging.
+                  This educational record cannot diagnose the cause or severity of a neurological condition, predict an outcome, or replace a clinical examination.
                 </p>
                 <p className="small-text muted">
-                  Assess for confounders prior to scoring: intubation (often documented as V1T), sedation, paralytics, orbital trauma, hypothermia, shock, or language barriers. A GCS ≤ 8 signals critical loss of airway reflexes and severe brain injury. An acute decrease of ≥ 2 points is a medical emergency. <a href="https://www.glasgowcomascale.org" target="_blank" rel="noopener noreferrer">Glasgow Coma Scale guidelines</a>.
+                  Intubation, sedation, paralysis, eye injury, and language barriers can prevent a valid component score. If consciousness changes suddenly or someone is difficult to wake, seek urgent medical care. <a href="https://www.glasgowcomascale.org/faq/" target="_blank" rel="noopener noreferrer">Read GCS assessment guidance</a>.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!gcsComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how a Glasgow Coma Scale (GCS) score of ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor} - ${gcsStratification}) is interpreted in emergency neurotrauma triage, the clinical significance of a GCS score ≤ 8 regarding airway protection, and how clinicians document confounding factors like intubation and sedation.`
+                        `For educational purposes, explain the Glasgow Coma Scale components and limitations using a complete record of ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor}; ${gcsScoreBand}). Do not diagnose injury severity or recommend individual triage or treatment.`
                       )
                     }
                   >
@@ -2002,9 +1876,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!gcsComplete}
                     onClick={() =>
                       handleCopy(
-                        `Glasgow Coma Scale (GCS) estimate: ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor}; ${gcsStratification}; educational reference only; not diagnostic or triage advice)`
+                        `GCS responses record: ${gcsScore}/15 (E${gcsEye}V${gcsVerbal}M${gcsMotor}; ${gcsScoreBand}); educational only; not a diagnosis or triage decision`
                       )
                     }
                   >
@@ -2019,98 +1894,42 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "hasbled" && (
             <div id="tabpanel-hasbled" role="tabpanel" aria-labelledby="tab-hasbled" className="calc-pane">
               <p className="small-text muted">
-                The HAS-BLED score assesses 1-year major bleeding risk in patients receiving anticoagulation for non-valvular atrial fibrillation to identify and correct modifiable bleeding risk factors.
+                HAS-BLED records factors clinicians consider when discussing bleeding risk in atrial fibrillation. Record each finding explicitly; this form cannot predict personal risk or decide whether to use anticoagulation.
               </p>
-              <div style={{ display: "grid", gap: "8px", marginBottom: "14px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledHtn}
-                    onChange={(e) => setHasbledHtn(e.target.checked)}
-                  />
-                  <span><strong>H: Hypertension</strong> (uncontrolled, systolic BP &gt; 160 mmHg) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledRenal}
-                    onChange={(e) => setHasbledRenal(e.target.checked)}
-                  />
-                  <span><strong>A: Abnormal renal function</strong> (dialysis, renal transplant, or Cr &ge; 2.26 mg/dL / 200 &mu;mol/L) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledLiver}
-                    onChange={(e) => setHasbledLiver(e.target.checked)}
-                  />
-                  <span><strong>A: Abnormal liver function</strong> (cirrhosis or bilirubin &gt; 2&times; ULN with AST/ALT/ALP &gt; 3&times; ULN) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledStroke}
-                    onChange={(e) => setHasbledStroke(e.target.checked)}
-                  />
-                  <span><strong>S: Stroke history</strong> (prior ischemic or hemorrhagic stroke) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledBleeding}
-                    onChange={(e) => setHasbledBleeding(e.target.checked)}
-                  />
-                  <span><strong>B: Bleeding history or predisposition</strong> (prior major bleeding, severe anemia, thrombocytopenia) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledLabileInr}
-                    onChange={(e) => setHasbledLabileInr(e.target.checked)}
-                  />
-                  <span><strong>L: Labile INRs</strong> (unstable, high, or time in therapeutic range TTR &lt; 60% on VKA) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledElderly}
-                    onChange={(e) => setHasbledElderly(e.target.checked)}
-                  />
-                  <span><strong>E: Elderly</strong> (age &gt; 65 years) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledDrugs}
-                    onChange={(e) => setHasbledDrugs(e.target.checked)}
-                  />
-                  <span><strong>D: Drugs concomitantly</strong> (antiplatelets, NSAIDs) (+1)</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <input
-                    type="checkbox"
-                    checked={hasbledAlcohol}
-                    onChange={(e) => setHasbledAlcohol(e.target.checked)}
-                  />
-                  <span><strong>D: Alcohol excess</strong> (&ge; 8 alcoholic drinks per week) (+1)</span>
-                </label>
+              <div className="settings-grid">
+                {HASBLED_CRITERIA.map(({ id, label }) => (
+                  <label htmlFor={`hasbled-${id}-select`} key={id}>
+                    {label}
+                    <select
+                      id={`hasbled-${id}-select`}
+                      value={hasbledCriteria[id] || "unknown"}
+                      onChange={(e) => setHasbledCriteria((current) => ({ ...current, [id]: e.target.value }))}
+                    >
+                      <option value="unknown">Not assessed</option>
+                      <option value="absent">Absent</option>
+                      <option value="present">Present</option>
+                      {id === "labileInr" && <option value="not_applicable">Not applicable (no vitamin K antagonist)</option>}
+                    </select>
+                  </label>
+                ))}
               </div>
 
               <div className="calc-result">
                 <div className="calc-result-metric">
-                  <strong>{hasbledScore} / 9 points</strong>
-                  <span className="badge">{hasbledStratification}</span>
+                  <strong>{hasbledComplete ? `${hasbledScore} / 9 points` : `${hasbledAssessed} of 9 findings assessed`}</strong>
+                  <span className="badge">{hasbledComplete ? hasbledScoreBand : "Assessment incomplete"}</span>
                 </div>
                 <p className="small-text">
-                  Educational risk estimate only. A high HAS-BLED score (&ge; 3) is not an absolute reason to withhold oral anticoagulation; rather, it prompts identification and correction of modifiable bleeding risk factors and schedules more frequent clinical follow-up.
+                  An educational count cannot determine personal bleeding risk or whether to start, stop, or withhold anticoagulation. A clinician should assess stroke risk, bleeding factors, and treatment together. <a href="https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2023/11/27/19/46/2023-acc-guideline-for-af-gl-af" target="_blank" rel="noopener noreferrer">Read AF guideline summary</a>.
                 </p>
                 <div className="actions">
                   <button
                     type="button"
                     className="button small"
+                    disabled={!hasbledComplete}
                     onClick={() =>
                       insertAndClose(
-                        `For educational purposes, explain how a HAS-BLED score of ${hasbledScore}/9 points (${hasbledStratification}) is interpreted in atrial fibrillation anticoagulation management, which modifiable bleeding risk factors clinicians target, and why guidelines emphasize that high bleeding risk scores should not automatically lead to withholding needed stroke thromboprophylaxis.`
+                        `For educational purposes, explain the HAS-BLED factors and limitations using a complete record of ${hasbledScore}/9 points (${hasbledScoreBand}). Explain why bleeding scores should not decide anticoagulation alone. Do not recommend treatment for an individual.`
                       )
                     }
                   >
@@ -2119,9 +1938,10 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   <button
                     type="button"
                     className="button secondary small"
+                    disabled={!hasbledComplete}
                     onClick={() =>
                       handleCopy(
-                        `HAS-BLED bleeding risk score estimate: ${hasbledScore}/9 points (${hasbledStratification}; educational risk estimate only; not diagnostic or prescriptive advice)`
+                        `HAS-BLED findings record: ${hasbledScore}/9 points (${hasbledScoreBand}); educational only; not an individual risk prediction or treatment decision`
                       )
                     }
                   >
@@ -2317,7 +2137,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "apri" && (
             <div id="tabpanel-apri" role="tabpanel" aria-labelledby="tab-apri" className="calc-pane">
               <p className="small-text muted">
-                The AST to Platelet Ratio Index (APRI) is a non-invasive biomarker index for assessing hepatic fibrosis and cirrhosis in patients with chronic liver disease (e.g., chronic hepatitis C, NAFLD/MASLD): [(AST / AST ULN) / Platelet Count (10⁹/L)] × 100.
+                APRI is a laboratory index used in some liver-disease evaluations: [(AST / AST ULN) / Platelet Count (10⁹/L)] × 100. Enter measured values and your laboratory’s AST upper limit. Its interpretation varies by condition and setting; the index alone cannot diagnose or exclude fibrosis or cirrhosis.
               </p>
               <div className="settings-grid">
                 <label>
@@ -2359,13 +2179,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                 <div className="calc-result">
                   <div className="calc-result-metric">
                     <strong>Score: {apriVal}</strong>
-                    <span className="badge">{apriStratification}</span>
+                    <span className="badge">Laboratory index</span>
                   </div>
                   <p className="small-text">
-                    APRI ≤ 0.50 offers high negative predictive value to rule out significant fibrosis; APRI &gt; 1.00 indicates high probability of significant fibrosis (METAVIR F2–F4); APRI &gt; 1.50 indicates high probability of cirrhosis (METAVIR F4).
+                    The displayed number is the calculated index, not a fibrosis stage or a diagnosis. Published decision thresholds differ across liver conditions and care settings.
                   </p>
                   <p className="small-text muted">
-                    Educational screening estimate only. APRI does not replace liver biopsy, transient elastography (FibroScan), or direct clinical evaluation by a gastroenterologist/hepatologist.
+                    Discuss interpretation and any further testing with a clinician. <a href="https://www.aasld.org/liver-fellow-network/core-series/why-series/why-are-non-invasive-risk-scores-such-fib-4-used" target="_blank" rel="noopener noreferrer">Read the AASLD overview of non-invasive fibrosis scores</a>.
                   </p>
                   <div className="actions">
                     <button
@@ -2373,7 +2193,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                       className="button small"
                       onClick={() =>
                         insertAndClose(
-                          `For educational purposes, explain how an AST to Platelet Ratio Index (APRI) score of ${apriVal} (${apriStratification}) is interpreted in chronic liver disease evaluation, how APRI compares to FIB-4 and transient elastography (FibroScan), and which clinical follow-up is indicated.`
+                          `For educational purposes, explain how an AST to Platelet Ratio Index (APRI) value of ${apriVal} is calculated and why interpretation depends on the liver condition and clinical setting. Compare its limitations with FIB-4 and transient elastography without diagnosing an individual or recommending a personal follow-up plan.`
                         )
                       }
                     >
@@ -2384,7 +2204,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                       className="button secondary small"
                       onClick={() =>
                         handleCopy(
-                          `AST to Platelet Ratio Index (APRI) estimate: score ${apriVal} (${apriStratification}; educational estimate only; not diagnostic or treatment advice)`
+                          `AST to Platelet Ratio Index (APRI): ${apriVal}; calculated laboratory index only, not a fibrosis diagnosis or individual risk prediction`
                         )
                       }
                     >
@@ -2400,11 +2220,11 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
             </div>
           )}
 
-          {/* TAB 18: Child-Pugh Score for Cirrhosis Mortality */}
+          {/* TAB 18: Child-Pugh cirrhosis classification */}
           {activeTab === "childpugh" && (
             <div id="tabpanel-childpugh" role="tabpanel" aria-labelledby="tab-childpugh" className="calc-pane">
               <p className="small-text muted">
-                The Child-Pugh (Child-Turcotte-Pugh / CTP) score is a classic clinical staging and prognostic system for assessing the severity of cirrhosis, 1- to 2-year survival probability, and perioperative surgical mortality risk.
+                Child-Pugh (Child-Turcotte-Pugh / CTP) classifies cirrhosis using three laboratory results and two clinical assessments. Enter current findings for all five components. A class alone cannot predict an individual’s survival or surgical risk.
               </p>
               <div className="settings-grid">
                 <label htmlFor="cp-bilirubin">
@@ -2451,6 +2271,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={cpAscites}
                     onChange={(e) => setCpAscites(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="none">None (+1)</option>
                     <option value="mild">Slight / Controlled by diuretics (+2)</option>
                     <option value="moderate">Moderate to severe / Refractory (+3)</option>
@@ -2464,6 +2285,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     value={cpEncephalopathy}
                     onChange={(e) => setCpEncephalopathy(e.target.value)}
                   >
+                    <option value="unknown">Not assessed</option>
                     <option value="none">None (+1)</option>
                     <option value="grade1_2">Grade 1–2 (Mild confusion, sleep inversion, asterixis) (+2)</option>
                     <option value="grade3_4">Grade 3–4 (Severe confusion, somnolence, coma) (+3)</option>
@@ -2477,9 +2299,8 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                     <strong>Score: {cpScore} points</strong>
                     <span className="badge">{cpClass}</span>
                   </div>
-                  <p className="small-text">{cpInterpretation}</p>
                   <p className="small-text muted">
-                    Educational prognostic estimate only. Ascites and encephalopathy assessments involve clinical subjectivity. Organ allocation for liver transplantation in the US (UNOS) is primarily directed by the MELD-Na score rather than Child-Pugh alone.
+                    Educational classification only. Ascites and encephalopathy assessments require clinical judgment. Do not use this class alone for prognosis, surgery, or transplant decisions. US liver allocation uses an updated MELD formula.
                   </p>
                   <div className="actions">
                     <button
@@ -2487,7 +2308,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                       className="button small"
                       onClick={() =>
                         insertAndClose(
-                          `For educational purposes, explain how a Child-Pugh score of ${cpScore} points (${cpClass}: ${cpInterpretation}) is interpreted in chronic liver disease prognosis, how it guides elective surgery risk evaluation, and why MELD-Na is preferred for transplant prioritization.`
+                          `For educational purposes, explain the five components of a Child-Pugh score of ${cpScore} points (${cpClass}), its limitations for an individual patient, and how clinicians assess cirrhosis alongside current transplant-allocation criteria. Do not infer personal survival or surgical mortality from this class.`
                         )
                       }
                     >
@@ -2498,7 +2319,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                       className="button secondary small"
                       onClick={() =>
                         handleCopy(
-                          `Child-Pugh Cirrhosis Mortality Score: ${cpScore} points (${cpClass}; educational estimate only; not clinical or surgical advice)`
+                          `Child-Pugh classification: ${cpScore} points (${cpClass}; educational only; not an individual prognosis or surgical decision)`
                         )
                       }
                     >
@@ -2508,7 +2329,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                 </div>
               ) : (
                 <p className="muted small-text" style={{ marginTop: "12px" }}>
-                  Please enter valid Bilirubin (0.1–50 mg/dL), Albumin (0.5–6.0 g/dL), and INR (0.5–10.0).
+                  Enter valid Bilirubin (0.1–50 mg/dL), Albumin (0.5–6.0 g/dL), INR (0.5–10.0), and assess ascites and encephalopathy to calculate a class.
                 </p>
               )}
             </div>
@@ -2518,7 +2339,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
           {activeTab === "meld" && (
             <div id="tabpanel-meld" role="tabpanel" aria-labelledby="tab-meld" className="calc-pane">
               <p className="small-text muted">
-                The Model for End-Stage Liver Disease with Sodium (MELD-Na / OPTN 2016) is the standard objective prognostic score used for liver transplant allocation and estimating 90-day pre-transplant mortality in adult patients with end-stage chronic liver disease.
+                This tool reproduces the historical 2016 MELD-Na equation for education. OPTN adopted MELD 3.0 for allocation in 2023. This result is not a current allocation score or a personal mortality prediction. <a href="https://optn.transplant.hrsa.gov/data/allocation-calculators/meld-calculator/" target="_blank" rel="noopener noreferrer">View the current OPTN calculator</a>.
               </p>
               <div className="settings-grid">
                 <label htmlFor="meld-bilirubin">
@@ -2537,14 +2358,17 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                   Serum Creatinine (mg/dL)
                   <input
                     id="meld-creatinine"
+                    aria-label="Serum Creatinine (mg/dL)"
+                    aria-describedby={meldDialysis === "yes" ? "meld-creatinine-note" : undefined}
                     type="number"
                     step="0.1"
                     min="0.1"
                     max="15.0"
                     value={meldCreatinine}
-                    disabled={meldDialysis}
+                    disabled={meldDialysis === "yes"}
                     onChange={(e) => setMeldCreatinine(e.target.value)}
                   />
+                  {meldDialysis === "yes" && <span id="meld-creatinine-note" className="small-text muted">The historical equation uses 4.0 mg/dL here; the entered laboratory value is not used.</span>}
                 </label>
                 <label htmlFor="meld-inr">
                   INR (Prothrombin Time / INR)
@@ -2573,13 +2397,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
               </div>
 
               <div style={{ marginTop: "12px", marginBottom: "8px" }}>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={meldDialysis}
-                    onChange={(e) => setMeldDialysis(e.target.checked)}
-                  />
-                  <span>Dialysis history: 2 or more dialysis treatments in the past 7 days (sets creatinine to 4.0 mg/dL per UNOS policy)</span>
+                <label htmlFor="meld-dialysis-select">
+                  Two or more dialysis treatments in the prior 7 days (historical equation)
+                  <select id="meld-dialysis-select" value={meldDialysis} onChange={(e) => setMeldDialysis(e.target.value)}>
+                    <option value="unknown">Not assessed</option>
+                    <option value="no">No</option>
+                    <option value="yes">Yes (2016 equation uses creatinine 4.0 mg/dL)</option>
+                  </select>
                 </label>
               </div>
 
@@ -2587,13 +2411,13 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                 <div className="calc-result">
                   <div className="calc-result-metric">
                     <strong>Score: {meldScore} points</strong>
-                    <span className="badge">{meldMortality}</span>
+                    <span className="badge">{meldBand}</span>
                   </div>
                   <p className="small-text">
-                    Calculated using standard UNOS/OPTN MELD-Na equation (scores 6 to 40). Lower serum sodium reflects refractory ascites and hypervolemic hyponatremia, elevating estimated mortality risk when initial MELD &gt; 11.
+                    Historical 2016 equation, with a 6–40 point output. The sodium term applies when the initial MELD result exceeds 11. This point count cannot determine current transplant priority.
                   </p>
                   <p className="small-text muted">
-                    Educational prognostic estimate only. Organ allocation priority and MELD exception points (e.g. for hepatocellular carcinoma, hepatopulmonary syndrome, or refractory encephalopathy) are governed strictly by the OPTN/UNOS review board and require formal clinical listing.
+                    Current OPTN MELD 3.0 uses additional inputs and different coefficients. Do not compare this historical value with a current listing score or use it for a care decision.
                   </p>
                   <div className="actions">
                     <button
@@ -2601,7 +2425,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                       className="button small"
                       onClick={() =>
                         insertAndClose(
-                          `For educational purposes, explain how a MELD-Na score of ${meldScore} points (${meldMortality}) is interpreted in end-stage liver disease prognosis, how UNOS/OPTN utilizes MELD-Na for liver transplant waitlist prioritization, and why serum sodium was incorporated into the classic MELD score.`
+                          `For educational purposes, explain the historical 2016 MELD-Na equation using a complete input record that produces ${meldScore} points (${meldBand}). Explain how it differs from the current OPTN MELD 3.0 allocation formula. Do not predict individual mortality or transplant priority.`
                         )
                       }
                     >
@@ -2612,7 +2436,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                       className="button secondary small"
                       onClick={() =>
                         handleCopy(
-                          `MELD-Na Liver Disease Prognosis Score: ${meldScore} points (${meldMortality}; UNOS/OPTN educational estimate; not clinical transplant listing guidance)`
+                          `Historical 2016 MELD-Na teaching equation: ${meldScore} points (${meldBand}); not a current OPTN allocation score or personal mortality prediction`
                         )
                       }
                     >
@@ -2622,7 +2446,7 @@ export default function ClinicalCalculatorsModal({ isOpen, onClose, onInsertProm
                 </div>
               ) : (
                 <p className="muted small-text" style={{ marginTop: "12px" }}>
-                  Please enter valid Bilirubin (0.1–50 mg/dL), Creatinine (0.1–15 mg/dL), INR (0.5–10.0), and Sodium (100–160 mEq/L).
+                  Enter bilirubin (0.1–50 mg/dL), {meldDialysis === "yes" ? "dialysis status" : "creatinine (0.1–15 mg/dL)"}, INR (0.5–10.0), sodium (100–160 mEq/L), and an explicit dialysis answer to view the historical point count.
                 </p>
               )}
             </div>

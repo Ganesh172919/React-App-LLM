@@ -17,7 +17,7 @@ This guide provides developers with a step-by-step engineering blueprint to exte
 5. **Client Concurrency & Resilience**: Working with the Web Locks API, storage fault tolerance, and IME composition safety.
 6. **ML Research & LoRA SFT**: Training adapters, compiling instruction datasets, and running parameter audits.
 7. **Production Deployment & Operations**: Multi-container Docker orchestration, TLS termination, CSP headers, and health monitoring.
-8. **Automated Quality Assurance**: Executing and adding to the 225 automated software verification suites.
+8. **Automated Quality Assurance**: Executing and adding to the 228 automated software verification suites.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0284c7', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#0369a1', 'lineColor': '#0284c7', 'secondaryColor': '#0d9488', 'tertiaryColor': '#6366f1' }}}%%
@@ -86,11 +86,11 @@ mindmap
         PyTorch PEFT Rank 8
     (07 Master QA Suite)
       ::icon(fa fa-check-double)
-      225 Automated Checks
+      228 Automated Checks
         77 Backend Tests (10 files)
-        59 Frontend Vitest Tests (6 files)
+        61 Frontend Vitest Tests (6 files)
         19 Python ML Tests
-        7 Gateway Assertions
+        8 Gateway Assertions
         63 Playwright Browser Flows
 ```
 
@@ -1042,7 +1042,7 @@ MedAssist AI enforces a rigorous **225-check automated verification suite** acro
 
 ```
 ========================================================================================================================
-                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (225 CHECKS)
+                            MEDASSIST AI — MASTER TEST SUITE INVENTORY (228 CHECKS)
 ========================================================================================================================
 
     SUITE / SUBSYSTEM                   HARNESS / RUNNER                TEST COUNT        STATUS
@@ -1059,9 +1059,9 @@ MedAssist AI enforces a rigorous **225-check automated verification suite** acro
        - chatTitle.test.js              Chat Auto-Naming Heuristics      1 Test           PASSED
        - providerCredentials.test.js    Keyring Rotation & Fallback      1 Test           PASSED
 
-    2. Frontend React Components        Vitest + jsdom                  59 Tests          100% PASSED
+    2. Frontend React Components        Vitest + jsdom                  61 Tests          100% PASSED
        - ui.test.jsx                    Workspace, Modals, Forms        25 Tests          PASSED
-       - clinicalCalculators.test.jsx   22 Calculator Logic & ARIA      20 Tests          PASSED
+       - clinicalCalculators.test.jsx   22 Calculator Logic & ARIA      22 Tests          PASSED
        - api.test.js                    Web Locks & Token Refresh        5 Tests          PASSED
        - medicalDetector.test.js        Client Query Classifier          5 Tests          PASSED
        - conversationImport.test.js     Untrusted JSON Import Contract   2 Tests          PASSED
@@ -1075,15 +1075,15 @@ MedAssist AI enforces a rigorous **225-check automated verification suite** acro
        - test_lora_tools.py             147,456 Params Math Verification 3 Tests          PASSED
        - test_release_lora.py           Adapter Metadata & Config Check  3 Tests          PASSED
 
-    4. Built-Output HTTP Gateway        check_build_serving.cjs          7 Tests          100% PASSED
-       - Cache headers, CSP, SPA routing, /api/* reverse proxying        7 Tests          PASSED
+    4. Built-Output HTTP Gateway        check_build_serving.cjs          8 Tests          100% PASSED
+       - Cache headers, CSP, SPA routing, /api/* reverse proxying        8 Tests          PASSED
 
     5. Playwright Headless Browser      Chromium Headless               63 Tests          100% PASSED
        - browser_smoke.cjs              E2E Auth, Chat, Save, Export    21 Tests          PASSED
        - browser_verify_dark_and_tools  WCAG Dark Mode, 22 Tools, DDI   42 Tests          PASSED
 
     =================================================================================================================
-    MASTER AUTOMATED VERIFICATION TOTAL                                225 CHECKS         100% PASSED
+    MASTER AUTOMATED VERIFICATION TOTAL                                228 CHECKS         100% PASSED
 ========================================================================================================================
 ```
 
@@ -1099,7 +1099,7 @@ Or execute individual suites:
 # Backend unit & integration suite (77 tests across 10 test files)
 npm test --prefix backend
 
-# Frontend Vitest component & unit suite (59 tests across 6 test files)
+# Frontend Vitest component & unit suite (61 tests across 6 test files)
 npm test --prefix frontend
 
 # Python ML & dataset audit suite (19 tests)
@@ -1170,4 +1170,4 @@ When contributing new code to MedAssist AI:
 2. **Safe Regex Invariant**: Ensure all medication and symptom regexes include word boundaries (`\b`) and avoid exponential backtracking.
 3. **WAI-ARIA Invariant**: Ensure every new interactive modal or widget supports full keyboard navigation (`Tab`, `Escape`, arrow keys) and has proper ARIA labels.
 4. **Zero-Persistence Secrets Invariant**: Never persist unencrypted provider API keys in MongoDB or client-side storage.
-5. **Quality Gate Invariant**: All 225 automated verification checks must pass before opening a pull request.
+5. **Quality Gate Invariant**: All 228 automated verification checks must pass before opening a pull request.

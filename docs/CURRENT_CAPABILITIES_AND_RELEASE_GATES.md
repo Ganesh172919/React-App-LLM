@@ -1,6 +1,6 @@
 # Current Capabilities and Release Gates
 
-**Status date:** 6 November 2026
+**Status date:** 7 November 2026
 **Authority:** This is the current operational source of truth. Historical architecture guides are explanatory material and must not be used as evidence that an unimplemented integration, compliance program, or clinical validation exists.
 
 ## What the application does
@@ -10,7 +10,10 @@
 - Checks whether numeric citations point to the supplied source-number range. This is a **format/range check**, not proof that a claim is entailed by a source or that an answer is clinically correct.
 - Supplies deterministic first-line emergency, self-harm, harmful-instruction, prompt-injection, and limited name-pair medication-interaction responses. These are heuristic safeguards, not clinical triage or medication reconciliation.
 - Provides 22 educational calculators. They are not validated for patient care and must not be used to diagnose, prescribe, triage, or make treatment decisions.
-- PERC, HEART, qSOFA, and Modified Centor now require explicit findings before showing a point count or generating a prompt. Their completed views avoid individual rule-out and treatment conclusions. Other calculator defaults and risk wording still need clinical review; see `QA_2026-11-06.md`.
+- PERC, HEART, qSOFA, Modified Centor, Wells' PE, CURB-65, CHA₂DS₂-VASc, HAS-BLED, and GCS now require explicit findings or observed responses before showing a point count or generating a prompt. GCS with a non-testable component has no total. Their completed views avoid individual rule-out, mortality, bleeding, or treatment conclusions. Other calculator defaults and risk wording still need clinical review; see `QA_2026-11-07.md`.
+- The MELD-Na tool reproduces the historical 2016 point equation only after complete inputs. It is not the current OPTN MELD 3.0 allocation score and does not show personal mortality estimates.
+- The Child-Pugh tool requires all five components before showing an educational class. It does not present an individual survival or surgical mortality prediction.
+- The APRI tool requires measured AST, the reporting lab’s AST upper limit, and platelets. It reports the numeric index without assigning a fibrosis stage or cirrhosis diagnosis.
 
 ## Data handling controls now in code
 

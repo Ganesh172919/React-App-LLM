@@ -168,7 +168,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## 5. Step-by-Step Developer Implementation Walkthroughs
 
 > [!TIP]
-> For an exhaustive, end-to-end production blueprint with step-by-step code walkthroughs for adding high-risk DDI rules (23 rules), clinical calculators (22 tools), multi-provider adapters, and running the 225 automated verification checks, consult the dedicated **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)**.
+> For an exhaustive, end-to-end production blueprint with step-by-step code walkthroughs for adding high-risk DDI rules (23 rules), clinical calculators (22 tools), multi-provider adapters, and running the 228 automated verification checks, consult the dedicated **[`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md)**.
 
 ### 5.1 Guide A: Adding a Custom AI Model Provider / Gateway
 
@@ -322,7 +322,7 @@ python "Model and Dataset/lora/validate_lora_setup.py"
 
 ## 6. Verification Harness & Pull Request Checklist
 
-Before submitting a Pull Request, run the automated verification suite to guarantee 100% compliance across all 225 test checks:
+Before submitting a Pull Request, run the automated verification suite to guarantee 100% compliance across all 228 test checks:
 
 ```powershell
 # Execute the unified multi-tier verification runner
@@ -332,10 +332,10 @@ node scripts/verify_project.cjs
 ### Pull Request Checklist:
 - [ ] Only `.md` files modified (if documentation PR) OR code modified with corresponding unit tests.
 - [ ] All 77 backend integration tests pass across 10 test files (`npm test --prefix backend`).
-- [ ] All 59 frontend Vitest tests pass across 6 test files (`npm test --prefix frontend`).
+- [ ] All 61 frontend Vitest tests pass across 6 test files (`npm test --prefix frontend`).
 - [ ] ESLint passes with 0 warnings (`npm run lint --prefix frontend`).
 - [ ] Vite production bundle compiles cleanly (`npm run build --prefix frontend`).
 - [ ] All 19 Python research unit tests pass (`python -m unittest discover -s "Model and Dataset"`).
-- [ ] Built HTTP server passes all 7 ingress probes (`node scripts/check_build_serving.cjs`).
+- [ ] Built HTTP server passes all 8 ingress probes (`node scripts/check_build_serving.cjs`).
 - [ ] All 63 Playwright browser workflows pass (21 smoke in `node scripts/browser_smoke.cjs` and 42 assertions in `node scripts/browser_verify_dark_and_tools.cjs`).
 - [ ] No secrets, keys, or `.env` files committed.

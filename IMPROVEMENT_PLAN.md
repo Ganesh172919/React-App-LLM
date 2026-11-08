@@ -105,7 +105,7 @@ mindmap
 - [x] **Untrusted Conversation JSON Import Sandbox**: Client-side preview parser (`conversationImport.js`) with hard byte limit ($\le 512\text{ KB}$), max 100 Q&A pairs (200 messages), max 20,000 characters per text, alternating turn validation, anti-forgery metadata stripping (dropping all `verification`, `modelReview`, and `references` tags), synthetic IDs (`import-${index}`), composer submission lock, and zero network persistence.
 - [x] **Offline Data Quarantine**: Isolation of 1,437 ambiguous question groups and zero-leakage SHA-256 modulo 100 splitting.
 - [x] **Analytical LoRA Validation**: Closed-form estimation confirming $147,456$ trainable parameters ($0.281$ MB FP16 footprint).
-- [x] **Automated Verification Matrix**: All 77 backend integration tests across 10 suites, 59 Vitest component tests across 6 suites, 19 Python research tests, 7 build-serving checks, 21 Playwright core smoke workflows, and 42 dark mode/tools accessibility workflows (225 automated verification checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
+- [x] **Automated Verification Matrix**: All 77 backend integration tests across 10 suites, 61 Vitest component tests across 6 suites, 19 Python research tests, 8 build-serving checks, 21 Playwright core smoke workflows, and 42 dark mode/tools accessibility workflows (228 automated verification checks) passed in the master verification harness with zero reported production dependency vulnerabilities.
 
 ### 3.2 Target Host Deployment Checklist (Pending Host Cutover)
 - [ ] **Docker Engine Verification**: Ensure Docker 24.0+ and Docker Compose v2.20+ are installed on the deployment host.
@@ -355,7 +355,7 @@ To transition from local staging to a hardened production host, the platform uti
                                      PRODUCTION HOST ZERO-DOWNTIME CUTOVER PIPELINE
 ========================================================================================================================
 
-    [ Staging Host Verification ] ──► node scripts/verify_project.cjs (225 Checks Green)
+    [ Staging Host Verification ] ──► node scripts/verify_project.cjs (228 Checks Green)
                                                 │
                                                 ▼
     [ Target Host Provisioning ]  ──► 1. Clone repository to /opt/medassist
@@ -458,8 +458,8 @@ To facilitate collaborative engineering and enable external contributors to buil
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
     │                                TIER 2: LOCAL REGRESSION & COMPONENT TESTS                                      │
     │  - Backend Tests: `node --test backend/tests/<name>.test.js` (77 tests across 10 test files)                  │
-    │  - Frontend Vitest: `npm test --prefix frontend -- <name>.test.jsx` (59 tests across 6 test files)             │
-    │  - Master Verification: `node scripts/verify_project.cjs` (All 225 verification checks must pass)              │
+    │  - Frontend Vitest: `npm test --prefix frontend -- <name>.test.jsx` (61 tests across 6 test files)             │
+    │  - Master Verification: `node scripts/verify_project.cjs` (All 228 verification checks must pass)              │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
                        │
                        │ 3. Automated Browser Smoke & Accessibility Run

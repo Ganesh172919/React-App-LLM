@@ -128,22 +128,22 @@ mindmap
       22 Clinical Tools
         Adult BMI Metric and Imperial
         CKD-EPI 2021 eGFR Race-Free
-        CHA2DS2-VASc Stroke Risk
+        CHA2DS2-VASc Factors
         Mean Arterial Pressure MAP
         Cockcroft-Gault CrCl
         Payne Corrected Calcium
         Serum Anion Gap
         FeNa and FeUrea
         Holliday-Segar 4-2-1 Fluids
-        Wells PE Pre-Test Probability
+        Wells PE Findings Record
         CURB-65 Pneumonia Severity
         Glasgow Coma Scale GCS
         HAS-BLED Bleeding Risk
         qSOFA Sepsis Mortality Screening
         Mosteller Body Surface Area BSA
-        APRI Liver Fibrosis and Cirrhosis
-        Child-Pugh Cirrhosis Mortality Score
-        MELD-Na Liver Disease Prognosis
+        APRI Laboratory Index
+        Child-Pugh Cirrhosis Classification
+        Historical MELD-Na Teaching Equation
         Modified Centor McIsaac Strep
         HEART Score Chest Pain MACE
         PERC Rule PE Rule-Out
@@ -173,7 +173,7 @@ The platform includes a comprehensive 22-calculator clinical suite implemented i
 |:---|:---|:---|:---:|:---|
 | **Body Mass Index (BMI)** | $\text{BMI} = \frac{\text{Weight (kg)}}{\text{Height (m)}^2}$ or $\frac{\text{lbs}}{\text{in}^2} \times 703$ | Weight (kg/lbs), Height (cm/in) | Weight: 20–300 kg<br>Height: 50–250 cm | Underweight (<18.5), Normal (18.5–24.9), Overweight (25–29.9), Obese (≥30). |
 | **CKD-EPI 2021 eGFR** | $142 \times \min(S_{\text{cr}}/\kappa, 1)^\alpha \times \max(S_{\text{cr}}/\kappa, 1)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$ | Age, Sex, Serum Creatinine (mg/dL) | Age: 18–120 yr<br>Cr: 0.1–20 mg/dL | G1 (≥90), G2 (60–89), G3a (45–59), G3b (30–44), G4 (15–29), G5 (<15 Kidney Failure). |
-| **CHA₂DS₂-VASc** | Sum of risk factors (CHF, HTN, Age ≥75 [2], DM, Stroke/TIA [2], Vascular, Age 65–74, Sex Female) | Point toggles (0–9 scale) | Binary toggles | Score 0 (Men) / 1 (Women): Low risk.<br>Score ≥2 (Men) / ≥3 (Women): Anticoagulation recommended. |
+| **CHA₂DS₂-VASc** | Sum of seven explicitly assessed factors (0–9 points) | Five findings plus age and sex category | Complete record only | Educational factor count; no personal stroke estimate or anticoagulation recommendation. |
 | **Mean Arterial Pressure (MAP)** | $\text{MAP} = \text{DBP} + \frac{1}{3}(\text{SBP} - \text{DBP}) = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | Systolic BP, Diastolic BP (mmHg) | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock criterion. |
 | **Cockcroft-Gault CrCl** | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age, Sex, Weight (kg), Serum Cr | Age: 18–120 yr<br>Weight: 30–250 kg | Standard renal dosage adjustment metric for DOACs and antimicrobials. |
 | **Payne Corrected Calcium** | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Calcium (mg/dL), Albumin (g/dL) | Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts total calcium in hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
@@ -181,15 +181,15 @@ The platform includes a comprehensive 22-calculator clinical suite implemented i
 | **Fractional Excretion of Sodium (FeNa)** | $\text{FeNa} = \frac{U_{\text{Na}} \times S_{\text{cr}}}{S_{\text{Na}} \times U_{\text{cr}}} \times 100\%$ | Serum & Urine Na, Serum & Urine Cr | Cr: 0.1–20 mg/dL<br>Na: 5–200 mEq/L | <1%: Prerenal azotemia.<br>>2%: Acute Tubular Necrosis (ATN). |
 | **Fractional Excretion of Urea (FeUrea)** | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | Serum BUN, Urine Urea, Serum/Urine Cr | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking diuretics.<br>>50%: Intrinsic AKI. |
 | **Maintenance Fluids (4-2-1 Rule)** | $4 \text{ mL/kg/hr (1-10kg)} + 2 \text{ mL/kg/hr (11-20kg)} + 1 \text{ mL/kg/hr (>20kg)}$ | Patient Weight (kg) | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
-| **Wells' Criteria for PE** | Point summation across 7 clinical criteria (DVT signs, alternative less likely, HR >100, etc.) | Clinical criteria checkboxes (0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Check D-dimer).<br>>4.0: PE Likely (Proceed to CT Pulmonary Angiography). |
-| **CURB-65 Pneumonia Score** | $\text{CURB-65} = C + U + R + B + 65$ (Confusion, Urea >19, RR ≥30, SBP <90 or DBP ≤60, Age ≥65) | 5 clinical checkboxes (0–5 points) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient).<br>2: Intermediate risk (~9% mortality, short stay).<br>3–5: High risk (15–40% mortality, urgent admission/ICU). |
-| **Glasgow Coma Scale (GCS)** | $\text{GCS} = E (1–4) + V (1–5) + M (1–6)$ (Eye, Verbal, Motor responses) | 3 ordinal dropdown selectors (3–15 points) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway reflexes). |
-| **HAS-BLED Bleeding Risk** | Sum of risk factors: HTN, Abnormal renal/liver (1-2), Stroke, Bleeding, Labile INR, Elderly >65, Drugs/Alcohol (1-2) | 9 clinical checkboxes (0–9 points) | Binary toggles | 0–1: Low risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; review modifiable risks). |
+| **Wells' Criteria for PE** | Point summation across 7 clinical findings | Explicit not assessed / absent / present for each finding | Complete record only | NICE point band: 4 or less, or above 4; no personal diagnosis or testing recommendation. |
+| **CURB-65 Pneumonia Score** | Confusion, blood urea nitrogen, respiratory rate, blood pressure, age | 5 explicit Present/Absent/Not assessed selectors | 0–5 points after all findings are assessed | Point bands only; no individual mortality estimate or admission decision. |
+| **Glasgow Coma Scale (GCS)** | Eye, verbal, and motor responses | 3 selectors starting Not assessed, with Not testable available | 3–15 points only when all components can be scored | Point band only; no injury diagnosis or airway decision. |
+| **HAS-BLED Bleeding Risk** | Hypertension, renal/liver function, stroke, bleeding, INR, age, drugs, alcohol | 9 explicit finding selectors; INR may be Not applicable without VKA | 0–9 points after all findings are assessed | Point bands only; no individual bleeding prediction or anticoagulation decision. |
 | **qSOFA Sepsis Screening** | Altered mental status, respiratory rate, systolic blood pressure | 3 explicit Present/Absent/Not assessed selectors | 0–3 points after all findings are assessed | A low count does not exclude sepsis; never use qSOFA as the sole screening tool. |
 | **Body Surface Area (BSA - Mosteller)** | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height (cm/in), Weight (kg/lbs) | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Adult reference norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
-| **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
-| **Child-Pugh Cirrhosis Score** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant functional compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated cirrhosis (~45% 1-yr survival). |
-| **MELD-Na Liver Disease Prognosis** | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bilirubin, Creatinine, INR, Sodium, Dialysis | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
+| **AST to Platelet Ratio Index (APRI)** | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST (U/L), local AST ULN (U/L), Platelets (10⁹/L); all required | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Plt: 10–1000 ×10⁹/L | Numeric laboratory index only. Interpretation depends on liver condition and clinical setting; no automated fibrosis or cirrhosis diagnosis. |
+| **Child-Pugh Cirrhosis Classification** | $\text{Points} = \text{Bilirubin} (1–3) + \text{Albumin} (1–3) + \text{INR} (1–3) + \text{Ascites} (1–3) + \text{Encephalopathy} (1–3)$ | Total Bilirubin, Albumin, INR, Ascites, Encephalopathy; all required | Bili: 0.1–50 mg/dL<br>Alb: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A: 5–6; B: 7–9; C: 10–15 points. Educational class only; no individual mortality estimate. |
+| **Historical 2016 MELD-Na equation** | 2016 MELD-Na point formula for education | Bilirubin, creatinine, INR, sodium, explicit dialysis history | Valid complete inputs only; 6–40 points | Not the current OPTN allocation formula or a personal mortality prediction. [Current OPTN calculator](https://optn.transplant.hrsa.gov/data/allocation-calculators/meld-calculator/). |
 | **Modified Centor (McIsaac) Strep Score** | Exudate, tender nodes, fever, absence of cough, and age group | 4 explicit finding selectors plus age group | −1 to 5 points after all inputs are assessed | Shows point bands only; cannot diagnose strep throat or decide testing or antibiotics. |
 | **HEART Chest Pain MACE Score** | History, ECG, age, risk factors, troponin | 5 categorical selectors starting Not assessed | 0–10 points after all inputs are assessed | Shows point bands only; cannot determine discharge, testing, or treatment. |
 | **PERC Criteria Record** | Age, heart rate, oxygen saturation, leg swelling, hemoptysis, trauma/surgery, prior VTE, estrogen use | 8 explicit Present/Absent/Not assessed selectors | Count shown only after all findings are assessed | Does not establish low pretest probability, rule out PE, or decide testing. |
@@ -326,22 +326,13 @@ function assessCitationGrounding(text, sourceCount) {
 
 ```jsx
 // frontend/src/components/tools/ClinicalCalculatorsModal.jsx
-// GCS Calculator State & Scoring Model
-const [gcsEye, setGcsEye] = useState("4");
-const [gcsVerbal, setGcsVerbal] = useState("5");
-const [gcsMotor, setGcsMotor] = useState("6");
-
-const gcsEyeScore = parseInt(gcsEye, 10) || 4;
-const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
-const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
-const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
-
-let gcsStratification = "Mild brain injury / Alert (13–15)";
-if (gcsScore <= 8) {
-  gcsStratification = "Severe brain injury / Coma (3–8)";
-} else if (gcsScore <= 12) {
-  gcsStratification = "Moderate brain injury (9–12)";
-}
+// GCS: no total is inferred from missing or non-testable responses.
+const [gcsEye, setGcsEye] = useState("unknown");
+const [gcsVerbal, setGcsVerbal] = useState("unknown");
+const [gcsMotor, setGcsMotor] = useState("unknown");
+const gcsResponses = [gcsEye, gcsVerbal, gcsMotor];
+const gcsComplete = gcsResponses.every((value) => /^\d$/.test(value));
+const gcsScore = gcsComplete ? gcsResponses.reduce((sum, value) => sum + Number(value), 0) : null;
 
 // WAI-ARIA Arrow Key Tab Navigation (22 Clinical Tools)
 const tabList = ["bmi", "egfr", "chads", "map", "crcl", "calcium", "aniongap", "fena", "feurea", "fluids", "wells", "curb65", "gcs", "hasbled", "qsofa", "bsa", "apri", "childpugh", "meld", "centor", "heart", "perc"];
@@ -409,16 +400,16 @@ The repository verification harness (`scripts/verify_project.cjs`) asserts quali
     [ TEST SUITE ]                              [ ENVIRONMENT ]               [ TESTS PASSED ]       [ STATUS ]
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
     Backend Unit & Integration Tests            Node 24 + In-Memory MongoDB       77 Passed          PASSED
-    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       59 Passed          PASSED
+    Frontend Vitest Component Tests             Vitest 5 + jsdom (6 suites)       61 Passed          PASSED
     Python Dataset Profiling & Split Tests      Python 3.10+ unittest (stdlib)    13 Passed          PASSED
     Python LoRA Parameter & Math Tests          Python 3.10+ unittest (stdlib)     6 Passed          PASSED
-    Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     7 Passed          PASSED
+    Production Bundle HTTP Gateway Checks       Express + Nginx Static Serving     8 Passed          PASSED
     Headless Browser Smoke Test Suite           Playwright Chromium Headless      21 Passed          PASSED
     Headless Browser Dark Mode & Tools Suite    Playwright Chromium Headless      42 Passed          PASSED
     Backend Production Dependency Audit         npm audit (0 vulnerabilities)      0 Advisories      PASSED
     Frontend Production Dependency Audit        npm audit (0 vulnerabilities)      0 Advisories      PASSED
     ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-    LOCALLY OBSERVED TOTAL                                                       225 Passed         PASSED
+    LOCALLY OBSERVED TOTAL                                                       228 Passed         PASSED
 ========================================================================================================================
 ```
 
@@ -439,12 +430,12 @@ For deep-dive technical specifications, mathematical derivations, and operationa
 | **07** | [`docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPLETE_FILE_DIRECTORY_REFERENCE.md) | Complete file-by-file technical catalog and exported symbol/function inventory. |
 | **08** | [`docs/DEPLOYMENT_RUNBOOK.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEPLOYMENT_RUNBOOK.md) | Container mesh operations, host TLS 1.3 Nginx setup, secret generation, and backups. |
 | **09** | [`docs/EVALUATION_AND_INTEGRATION.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/EVALUATION_AND_INTEGRATION.md) | Paired case ablation scoring tools, strict matrix evaluation, and air-gapped search. |
-| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 225 test assertion inventory. |
+| **10** | [`docs/IMPLEMENTATION_STATUS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/IMPLEMENTATION_STATUS.md) | Comprehensive engineering verification matrix with 228 test assertion inventory. |
 | **11** | [`docs/ISSUES_AND_RISKS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/ISSUES_AND_RISKS.md) | Prioritized risk register, threat model, heuristic limitations, and mitigations. |
 | **12** | [`docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_ARCHITECTURE_AND_WORKING_PRINCIPLES.md) | Concise grounding summary, algorithmic rules, and secondary consensus verifier. |
 | **13** | [`docs/AI_FINE_TUNING_AND_LORA_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/AI_FINE_TUNING_AND_LORA_GUIDE.md) | Concise LoRA setup guide, parameter estimation benchmarks, and dataset hygiene. |
 | **14** | [`docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/COMPREHENSIVE_CODEBASE_ANALYSIS.md) | Line-by-line subsystem analysis, architectural patterns, and file inventory. |
-| **15** | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, and running 225 tests. |
+| **15** | [`docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md) | Complete developer onboarding and extension blueprint: step-by-step instructions for adding DDI rules, clinical calculators, AI providers, and running 228 tests. |
 | **16** | [`docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/Medical_LLM_System_Architecture_and_Interview_Mastery.pdf) | Comprehensive production architectural specification, clinical interview mastery, mathematical derivations, and technical tradeoff defense generated by `scripts/generate_interview_mastery_pdf.py`. |
 | **17** | [`docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md`](file:///c:/Users/RAVIPRAKASH/React-App-LLM/docs/PRODUCTION_DEVELOPER_BUILD_GUIDE.md) | All-in-one production developer build guide, master topology, complete 23 DDI and 22 calculator tables, and copy-paste recipes for extending the platform. |
 

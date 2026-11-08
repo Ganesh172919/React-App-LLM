@@ -100,7 +100,7 @@ mindmap
 - **Calculators Implemented (22 Tools)**:
   1. **Body Mass Index (BMI)**: Metric ($kg/m^2$) and Imperial ($lbs \times 703 / in^2$).
   2. **eGFR (CKD-EPI 2021)**: Race-free glomerular filtration rate estimation.
-  3. **CHA2DS2-VASc**: Stroke risk stratification in non-valvular atrial fibrillation (0-9).
+  3. **CHA2DS2-VASc**: Seven explicitly assessed inputs and an educational 0–9 point count for atrial fibrillation discussions.
   4. **Mean Arterial Pressure (MAP)**: $\text{MAP} = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ and pulse pressure.
   5. **Creatinine Clearance (Cockcroft-Gault)**: Clamped weight and age bounds ($0.85$ female multiplier).
   6. **Corrected Calcium (Payne Formula)**: $\text{Corrected Ca} = \text{Total Ca} + 0.8 \times (4.0 - \text{Albumin})$.
@@ -108,15 +108,15 @@ mindmap
   8. **Fractional Excretion of Sodium (FeNa)**: Acute kidney injury etiology ($<1\%$ vs $>2\%$).
   9. **Fractional Excretion of Urea (FeUrea)**: Diuretic-tolerant renal assessment ($<35\%$).
   10. **Maintenance Fluids (4-2-1 Rule)**: Pediatric and adult hourly and 24-hour rate estimation.
-  11. **Wells' Criteria for Pulmonary Embolism**: Clinical probability scoring ($\le 4$ vs $> 4$).
-  12. **CURB-65**: Community-acquired pneumonia 30-day mortality risk stratification (0-5).
-  13. **Glasgow Coma Scale (GCS)**: Eye (1-4), verbal (1-5), and motor (1-6) neurological response (3-15).
-  14. **HAS-BLED Bleeding Risk**: Risk factor scoring in atrial fibrillation (0-9).
+  11. **Wells' Criteria for Pulmonary Embolism**: Seven explicitly assessed findings; educational NICE point band ($\le 4$ vs $> 4$) shown only when complete.
+  12. **CURB-65**: Five explicitly assessed pneumonia findings; point bands are educational and do not determine admission.
+  13. **Glasgow Coma Scale (GCS)**: Eye, verbal, and motor responses; no total when a component is unassessed or not testable.
+  14. **HAS-BLED Bleeding Risk**: Nine explicitly assessed factors in atrial fibrillation; no personal risk or anticoagulation decision.
   15. **qSOFA Sepsis Screening**: Bedside evaluation for sepsis mortality risk (0-3).
   16. **Mosteller Body Surface Area (BSA)**: $\text{BSA} = \sqrt{\frac{\text{Ht (cm)} \times \text{Wt (kg)}}{3600}}$ (or $\sqrt{\frac{\text{Ht (in)} \times \text{Wt (lbs)}}{3131}}$).
-  17. **APRI Liver Fibrosis**: $\text{APRI} = \frac{(\text{AST} / \text{AST}_{\text{ULN}}) \times 100}{\text{Platelets } (10^9/\text{L})}$.
-  18. **Child-Pugh Score for Cirrhosis Mortality**: Points sum ($5-15$) across Bilirubin, Albumin, INR, Ascites, and Encephalopathy; stratifies into Class A (5-6, well-compensated), Class B (7-9, moderate), and Class C (10-15, decompensated liver disease).
-  19. **MELD-Na Liver Prognosis**: UNOS standard model for end-stage liver disease mortality and transplant priority (6-40).
+  17. **APRI Laboratory Index**: $\text{APRI} = \frac{(\text{AST} / \text{AST}_{\text{ULN}}) \times 100}{\text{Platelets } (10^9/\text{L})}$.
+  18. **Child-Pugh Cirrhosis Classification**: Points sum ($5-15$) across Bilirubin, Albumin, INR, Ascites, and Encephalopathy; reports educational Class A (5-6), Class B (7-9), and Class C (10-15) point bands without individual mortality percentages.
+  19. **Historical 2016 MELD-Na Teaching Equation**: Educational point band (6-40) requiring complete inputs and explicit dialysis history; not the current OPTN allocation formula or a personal mortality prediction.
   20. **Modified Centor (McIsaac) Criteria**: Pediatric and adult sore throat evaluation for group A strep pharyngitis (-1 to 5).
   21. **HEART Score for Chest Pain**: Emergency department risk stratification for 6-week major adverse cardiac events (0-10).
   22. **PERC Criteria Record**: 8 explicitly assessed findings; the UI does not rule out PE or decide whether testing is needed.

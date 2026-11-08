@@ -29,7 +29,7 @@ This document details the engineering implementation status and test verificatio
     │  - Framework: Node.js   │   │  - Framework: Vitest    │   │  - Framework: unittest  │
     │    test runner          │   │  - Environment: jsdom   │   │  - Zero GPU / stdlib    │
     │  - MongoMemoryServer    │   │  - React 19 Hooks       │   │  - Dataset & LoRA tests │
-    │  - 77 Unit/Integ Tests  │   │  - 59 Component Tests   │   │  - 19 Unit Tests        │
+    │  - 77 Unit/Integ Tests  │   │  - 61 Component Tests   │   │  - 19 Unit Tests        │
     └─────────────────────────┘   └─────────────────────────┘   └─────────────────────────┘
                  │                             │                             │
                  └─────────────────────────────┼─────────────────────────────┘
@@ -39,7 +39,7 @@ This document details the engineering implementation status and test verificatio
     │                      PRODUCTION BUILD & SERVING VERIFICATION                        │
     │  - ESLint 9 Zero-Warning Clean Sweep                                                │
     │  - Vite 6 Production Bundle Compilation (index.html, JS, CSS, SVG Assets)           │
-    │  - Built-Output HTTP Gateway Checks: 7 Passed (node scripts/check_build_serving.cjs)│
+    │  - Built-Output HTTP Gateway Checks: 8 Passed (node scripts/check_build_serving.cjs)│
     └─────────────────────────────────────────────────────────────────────────────────────┘
                                                │
                                                ▼
@@ -80,7 +80,7 @@ mindmap
       Deterministic Citation Bracket Auditor
       23 High-Risk Drug Interaction Rules
     (02 Frontend Verification)
-      59 Passing Vitest Tests
+      61 Passing Vitest Tests
       Web Locks Single-Flight Refresh
       tabStorage Fault-Tolerant Cache
       IME Composition Guard
@@ -107,7 +107,7 @@ mindmap
 
 ## 3. Comprehensive Verification Summary Matrix
 
-The local verification runs reported 225 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
+The local verification runs reported 228 passing checks or workflows across Node.js, Vitest, Python, built HTTP, and separately executed Playwright suites. This is a software regression count, not a clinical or accessibility certification:
 
 | Test Suite / Quality Layer | Target Subsystem / Files | Assertion Count | Execution Environment | Status |
 | :--- | :--- | :---: | :--- | :---: |
@@ -126,7 +126,7 @@ The local verification runs reported 225 passing checks or workflows across Node
 | • `api.test.js` | Web Locks single-flight refresh, error codes, exports | 5 | jsdom + Mock Fetch | **PASSED** |
 | • `tabStorage.test.js` | `sessionStorage` fallback, draft recovery, TTL expiry | 2 | jsdom Storage Mock | **PASSED** |
 | • `medicalDetector.test.js`| Lexicon match, prefixes, suggestion chip support | 5 | jsdom | **PASSED** |
-| • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na, Centor, HEART, PERC) | 20 | jsdom React Render | **PASSED** |
+| • `clinicalCalculators.test.jsx`| Form math (BMI, eGFR, CHA2DS2, Wells, CURB-65, GCS, HAS-BLED, qSOFA, BSA, APRI, Child-Pugh, MELD-Na, Centor, HEART, PERC) | 22 | jsdom React Render | **PASSED** |
 | • `conversationImport.test.js`| Sanitizes imported JSON, strips forged verification | 2 | jsdom Vitest | **PASSED** |
 | • `ui.test.jsx` | Auth, chat composer, copy button, ARIA tab cycling | 25 | jsdom React Render | **PASSED** |
 | **Python Dataset Suite** | `Model and Dataset/test_*.py` | **13** | Python 3.10+ `unittest` | **PASSED** |
@@ -140,7 +140,7 @@ The local verification runs reported 225 passing checks or workflows across Node
 | **Production Build & Serving** | `scripts/check_build_serving.cjs` | **7** | Production Nginx / Express | **PASSED** |
 | **Playwright Browser Smoke** | `scripts/browser_smoke.cjs` | **21** | Headless Chromium (Built App) | **PASSED** |
 | **Playwright Dark & Tools** | `scripts/browser_verify_dark_and_tools.cjs`| **42** | Headless Chromium (Built App) | **PASSED** |
-| **Locally Observed Total** | **Separately run software checks** | **225** | **Isolated fixture environment** | **PASSED** |
+| **Locally Observed Total** | **Separately run software checks** | **228** | **Isolated fixture environment** | **PASSED** |
 
 ---
 

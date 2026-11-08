@@ -39,7 +39,7 @@ The MedAssist AI frontend test harness (`frontend/src/test/`) verifies React 19 
                                                  │
                                                  ▼
     ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-    │                                59 TESTS PASSED ACROSS 6 TEST FILES (100% PASS RATE)                            │
+    │                                61 TESTS PASSED ACROSS 6 TEST FILES (100% PASS RATE)                            │
     │  - Verified Invariants: 22 Calculator physiological bounds, Web Locks single-flight refresh, tab recovery      │
     │  - Accessibility Verification: WAI-ARIA tabpanel cycling, Escape key dismiss, and focus restoration           │
     └────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -63,7 +63,7 @@ mindmap
         Unsaved Answer Recovery on Remount
         Dark/Light Mode Theme Toggle
     (02 Clinical Calculators)
-      clinicalCalculators.test.jsx (20 tests)
+      clinicalCalculators.test.jsx (22 tests)
         22 Evidence-Based Tools Form Math
         Physiological Bounds Clamping
         Mosteller BSA Metric & Imperial
@@ -101,7 +101,7 @@ mindmap
 | `medicalDetector.test.js` | Vitest | **5** | Clinical keyword detection, negation handling, non-medical inquiry passthrough. |
 | `conversationImport.test.js` | Vitest | **2** | JSON export sanitization, anti-spoofing evidence strip, `importPreview: true` composer lock. |
 | `tabStorage.test.js` | Vitest | **2** | Resilient `sessionStorage` wrapper, transparent in-memory Map fallback. |
-| **TOTAL** | — | **59 Tests** | **100% Passing** |
+| **TOTAL** | — | **61 Tests** | **100% Passing** |
 
 ---
 

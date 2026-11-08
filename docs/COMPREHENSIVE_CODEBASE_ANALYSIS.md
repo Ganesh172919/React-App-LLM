@@ -1059,11 +1059,11 @@ test("detects high-risk Warfarin + Aspirin interaction", () => {
 4. **Zero Partition Leakage**: Training, validation, and test splits are partitioned strictly on SHA-256 hashes of normalized question keys, ensuring identical questions never appear across different evaluation partitions.
 5. **Full Suite Verification Status**: 100% of tests are passing in local and CI environments:
    - **Backend**: 77 passed in-memory MongoDB tests across 10 test files (`node --test`)
-   - **Frontend**: 59 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
+   - **Frontend**: 61 passed Vitest component tests across 6 suites (`npm test --prefix frontend`)
    - **Python Suites**: 19 passed unit tests (13 dataset + 6 LoRA)
-   - **Built-Output Gateway**: 7 passed HTTP serving checks
+   - **Built-Output Gateway**: 8 passed HTTP serving checks
    - **Headless Browser Workflows**: 63 passed Playwright workflows (21 smoke + 42 dark mode/tools)
-   - **Master Automated Total**: 225 passed software checks across all execution layers
+   - **Master Automated Total**: 228 passed software checks across all execution layers
    - **Production Dependencies**: 0 reported critical runtime vulnerabilities
 
 ---
@@ -1552,7 +1552,7 @@ Before opening a pull request or cutting a production release, run the unified v
 # 1. Run backend MongoDB and session lifecycle tests (77 tests across 10 test files)
 npm test --prefix backend
 
-# 2. Run frontend React component and accessibility tests (59 tests across 6 test files)
+# 2. Run frontend React component and accessibility tests (61 tests across 6 test files)
 npm test --prefix frontend
 
 # 3. Run ESLint across frontend components

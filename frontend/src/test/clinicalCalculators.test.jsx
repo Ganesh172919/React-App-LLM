@@ -16,13 +16,39 @@ it("treats a single eGFR as an estimate and rejects out-of-range age", () => {
 it("keeps score and pressure calculators free of treatment conclusions", () => {
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={vi.fn()} />);
   fireEvent.click(screen.getByRole("tab", { name: "CHA₂DS₂-VASc" }));
-  expect(screen.getByText("Score: 1")).toBeTruthy();
+  expect(screen.getByText("0 of 7 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this score" }).disabled).toBe(true);
   expect(screen.getByText(/does not estimate a person's annual stroke risk/)).toBeTruthy();
   expect(screen.queryByText(/benefit from oral anticoagulation/)).toBeNull();
   fireEvent.click(screen.getByRole("tab", { name: "MAP / Perfusion" }));
   expect(screen.getByText(/cannot establish organ perfusion/)).toBeTruthy();
   fireEvent.click(screen.getByRole("tab", { name: "CrCl (Cockcroft-Gault)" }));
   expect(screen.getByText(/cannot determine a medication dose/)).toBeTruthy();
+});
+
+it("requires all CHA₂DS₂-VASc findings before scoring or inserting a prompt", () => {
+  const onInsertPrompt = vi.fn();
+  render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
+  fireEvent.click(screen.getByRole("tab", { name: "CHA₂DS₂-VASc" }));
+  const pane = screen.getByRole("tabpanel", { name: "CHA₂DS₂-VASc" });
+  const fields = pane.querySelectorAll("select");
+  expect(fields).toHaveLength(7);
+  fireEvent.change(screen.getByLabelText(/Sex category used by this score/), { target: { value: "female" } });
+  expect(screen.getByText("1 of 7 findings assessed")).toBeTruthy();
+  expect(screen.queryByText("Score: 1")).toBeNull();
+  for (const field of fields) {
+    if (field.value === "unknown") fireEvent.change(field, { target: { value: field.id === "chads-age-select" ? "under65" : "absent" } });
+  }
+  expect(screen.getByText("Score: 1")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText(/Age category/), { target: { value: "75plus" } });
+  fireEvent.change(screen.getByLabelText(/Prior stroke, TIA/), { target: { value: "present" } });
+  expect(screen.getByText("Score: 5")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText(/Prior stroke, TIA/), { target: { value: "unknown" } });
+  expect(screen.getByText("6 of 7 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Copy result" }).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText(/Prior stroke, TIA/), { target: { value: "present" } });
+  fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this score" }));
+  expect(onInsertPrompt).toHaveBeenCalledWith(expect.stringContaining("5 points"));
 });
 
 it("calculates corrected calcium without clinical diagnostic claims", () => {
@@ -90,21 +116,40 @@ it("calculates Wells' Criteria for Pulmonary Embolism without diagnostic claims 
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "Wells' Criteria (PE)" }));
   expect(screen.getByText(/A low score alone cannot rule out PE/)).toBeTruthy();
-  expect(screen.getByText("0 points")).toBeTruthy();
-  expect(screen.getByText("NICE score band: 4 or less")).toBeTruthy();
-  expect(screen.getByText(/An unchecked item means only that it was not selected/)).toBeTruthy();
+  expect(screen.getByText("0 of 7 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this Wells score" }).disabled).toBe(true);
+  expect(screen.getByRole("button", { name: "Copy result" }).disabled).toBe(true);
+  expect(screen.getByText(/Unassessed findings cannot be counted as absent/)).toBeTruthy();
   expect(screen.queryByText(/3.6% PE risk/)).toBeNull();
 
-  // Toggle DVT symptoms (+3.0) and Heart rate > 100 bpm (+1.5)
-  fireEvent.click(screen.getByLabelText(/Clinical signs and symptoms of DVT/));
-  fireEvent.click(screen.getByLabelText(/Heart rate > 100 beats\/min/));
+  const fields = screen.getByRole("tabpanel", { name: "Wells' Criteria (PE)" }).querySelectorAll("select");
+  for (const field of fields) fireEvent.change(field, { target: { value: "absent" } });
+  expect(screen.getByText("0 points")).toBeTruthy();
+  expect(screen.getByText("NICE score band: 4 or less")).toBeTruthy();
+
+  fireEvent.change(screen.getByLabelText(/Clinical signs and symptoms of DVT/), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Heart rate > 100 beats\/min/), { target: { value: "present" } });
   expect(screen.getByText("4.5 points")).toBeTruthy();
   expect(screen.getByText("NICE score band: above 4")).toBeTruthy();
 
-  // Toggle alternative diagnosis less likely (+3.0) -> total 7.5
-  fireEvent.click(screen.getByLabelText(/An alternative diagnosis is less likely than PE/));
+  fireEvent.change(screen.getByLabelText(/An alternative diagnosis is less likely than PE/), { target: { value: "present" } });
   expect(screen.getByText("7.5 points")).toBeTruthy();
   expect(screen.queryByText(/66.7% PE risk/)).toBeNull();
+
+  for (const field of fields) fireEvent.change(field, { target: { value: "present" } });
+  expect(screen.getByText("12.5 points")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText(/An alternative diagnosis is less likely than PE/), { target: { value: "absent" } });
+  expect(screen.getByText("9.5 points")).toBeTruthy();
+
+  fireEvent.change(screen.getByLabelText(/Heart rate > 100 beats\/min/), { target: { value: "unknown" } });
+  expect(screen.getByText("6 of 7 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Copy result" }).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText(/Heart rate > 100 beats\/min/), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Immobilisation for more than 3 days/), { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/Previous DVT or PE/), { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/Haemoptysis/), { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/Malignancy/), { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/An alternative diagnosis is less likely than PE/), { target: { value: "present" } });
 
   // Check prompt insertion
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this Wells score" }));
@@ -118,63 +163,76 @@ it("calculates CURB-65 Pneumonia Severity Score without diagnostic claims and up
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "CURB-65 (Pneumonia)" }));
-  expect(screen.getByText(/assessing 30-day mortality in adults with community-acquired pneumonia/)).toBeTruthy();
-  expect(screen.getByText("0 / 5 points")).toBeTruthy();
-  expect(screen.getByText(/Low risk \(30-day mortality < 3%\)/)).toBeTruthy();
-  expect(screen.getByText(/does not determine clinical disposition/)).toBeTruthy();
+  expect(screen.getByText(/adults with diagnosed community-acquired pneumonia/)).toBeTruthy();
+  expect(screen.getByText("0 of 5 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this CURB-65 score" }).disabled).toBe(true);
 
-  // Toggle Confusion (+1) and Respiratory rate (+1)
-  fireEvent.click(screen.getByLabelText(/Confusion \(new mental confusion/));
-  fireEvent.click(screen.getByLabelText(/Respiratory rate ≥ 30 breaths\/min/));
+  fireEvent.change(screen.getByLabelText(/New confusion or AMTS/), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Respiratory rate ≥ 30 breaths\/min/), { target: { value: "present" } });
+  expect(screen.getByText("2 of 5 findings assessed")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText(/Blood urea nitrogen/), { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/Systolic BP/), { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/Age ≥ 65 years/), { target: { value: "absent" } });
   expect(screen.getByText("2 / 5 points")).toBeTruthy();
-  expect(screen.getByText(/Moderate risk \(30-day mortality ~9%\)/)).toBeTruthy();
+  expect(screen.getByText("2 point band")).toBeTruthy();
 
-  // Toggle Urea (+1) and Age >= 65 (+1) -> total 4 / 5
-  fireEvent.click(screen.getByLabelText(/Urea > 19 mg\/dL/));
-  fireEvent.click(screen.getByLabelText(/Age ≥ 65 years/));
+  fireEvent.change(screen.getByLabelText(/Blood urea nitrogen/), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Age ≥ 65 years/), { target: { value: "present" } });
   expect(screen.getByText("4 / 5 points")).toBeTruthy();
-  expect(screen.getByText(/High \/ severe risk/)).toBeTruthy();
+  expect(screen.getByText("3–5 point band")).toBeTruthy();
+
+  fireEvent.change(screen.getByLabelText(/Blood urea nitrogen/), { target: { value: "unknown" } });
+  expect(screen.getByText("4 of 5 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Copy result" }).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText(/Blood urea nitrogen/), { target: { value: "present" } });
 
   // Check prompt insertion
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this CURB-65 score" }));
   expect(onInsertPrompt).toHaveBeenCalled();
   const promptCall = onInsertPrompt.mock.calls[0][0];
   expect(promptCall).toContain("4/5 points");
-  expect(promptCall).toContain("CURB-65 pneumonia score");
+  expect(promptCall).toContain("CURB-65 findings and limitations");
 });
 
 it("calculates Glasgow Coma Scale (GCS) without diagnostic claims and updates score dynamically", () => {
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "GCS (Coma Scale)" }));
-  expect(screen.getByText(/objective evaluation of level of consciousness/)).toBeTruthy();
+  expect(screen.getByText(/Select a response only when it has been observed/)).toBeTruthy();
+  expect(screen.getByText("0 of 3 responses assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this GCS score" }).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText(/Verbal Response \(V\)/), { target: { value: "not_testable" } });
+  expect(screen.getByText("Total unavailable: component not testable")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText(/Eye Opening Response \(E\)/), { target: { value: "4" } });
+  fireEvent.change(screen.getByLabelText(/Verbal Response \(V\)/), { target: { value: "5" } });
+  fireEvent.change(screen.getByLabelText(/Motor Response \(M\)/), { target: { value: "6" } });
   expect(screen.getByText("15 / 15 points (E4V5M6)")).toBeTruthy();
-  expect(screen.getByText("Mild brain injury / Alert (13–15)")).toBeTruthy();
-  expect(screen.getByText(/GCS does not replace formal neurological assessment/)).toBeTruthy();
+  expect(screen.getByText("13–15 point band")).toBeTruthy();
+  expect(screen.getByText(/cannot diagnose the cause or severity/)).toBeTruthy();
 
   // Change Eye to 1 (None), Verbal to 1 (None), Motor to 1 (None)
   fireEvent.change(screen.getByLabelText(/Eye Opening Response \(E\)/), { target: { value: "1" } });
   fireEvent.change(screen.getByLabelText(/Verbal Response \(V\)/), { target: { value: "1" } });
   fireEvent.change(screen.getByLabelText(/Motor Response \(M\)/), { target: { value: "1" } });
   expect(screen.getByText("3 / 15 points (E1V1M1)")).toBeTruthy();
-  expect(screen.getByText("Severe brain injury / Coma (3–8)")).toBeTruthy();
+  expect(screen.getByText("3–8 point band")).toBeTruthy();
 
   // Change Motor to 5 (Localising) -> total 7 / 15
   fireEvent.change(screen.getByLabelText(/Motor Response \(M\)/), { target: { value: "5" } });
   expect(screen.getByText("7 / 15 points (E1V1M5)")).toBeTruthy();
-  expect(screen.getByText("Severe brain injury / Coma (3–8)")).toBeTruthy();
+  expect(screen.getByText("3–8 point band")).toBeTruthy();
 
   // Change Verbal to 4 (Confused), Eye to 3 (To sound) -> total 3+4+5 = 12 / 15 -> Moderate
   fireEvent.change(screen.getByLabelText(/Eye Opening Response \(E\)/), { target: { value: "3" } });
   fireEvent.change(screen.getByLabelText(/Verbal Response \(V\)/), { target: { value: "4" } });
   expect(screen.getByText("12 / 15 points (E3V4M5)")).toBeTruthy();
-  expect(screen.getByText("Moderate brain injury (9–12)")).toBeTruthy();
+  expect(screen.getByText("9–12 point band")).toBeTruthy();
 
   // Check prompt insertion
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this GCS score" }));
   expect(onInsertPrompt).toHaveBeenCalled();
   const promptCall = onInsertPrompt.mock.calls[0][0];
-  expect(promptCall).toContain("12/15 (E3V4M5 - Moderate brain injury (9–12))");
+  expect(promptCall).toContain("12/15 (E3V4M5; 9–12 point band)");
   expect(promptCall).toContain("Glasgow Coma Scale");
 });
 
@@ -182,22 +240,31 @@ it("calculates HAS-BLED bleeding risk score without diagnostic claims and update
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "HAS-BLED (Bleeding Risk)" }));
-  expect(screen.getByText(/assesses 1-year major bleeding risk in patients receiving anticoagulation/)).toBeTruthy();
+  expect(screen.getByText(/records factors clinicians consider/)).toBeTruthy();
+  expect(screen.getByText("0 of 9 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Ask MedAssist about this HAS-BLED score" }).disabled).toBe(true);
+  const fields = screen.getByRole("tabpanel", { name: "HAS-BLED (Bleeding Risk)" }).querySelectorAll("select");
+  expect(fields).toHaveLength(9);
+  for (const field of fields) fireEvent.change(field, { target: { value: "absent" } });
+  fireEvent.change(screen.getByLabelText(/Labile INR/), { target: { value: "not_applicable" } });
   expect(screen.getByText("0 / 9 points")).toBeTruthy();
-  expect(screen.getByText(/Low bleeding risk/)).toBeTruthy();
-  expect(screen.getByText(/is not an absolute reason to withhold oral anticoagulation/)).toBeTruthy();
+  expect(screen.getByText("0–1 point band")).toBeTruthy();
+  expect(screen.getByText(/cannot determine personal bleeding risk/)).toBeTruthy();
 
-  // Toggle Hypertension (+1) and Abnormal renal function (+1) -> 2 / 9 -> Moderate
-  fireEvent.click(screen.getByLabelText(/H: Hypertension/));
-  fireEvent.click(screen.getByLabelText(/A: Abnormal renal function/));
+  fireEvent.change(screen.getByLabelText(/Uncontrolled hypertension/), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Abnormal renal function/), { target: { value: "present" } });
   expect(screen.getByText("2 / 9 points")).toBeTruthy();
-  expect(screen.getByText(/Moderate bleeding risk/)).toBeTruthy();
+  expect(screen.getByText("2 point band")).toBeTruthy();
 
-  // Toggle Stroke (+1) and Bleeding history (+1) -> 4 / 9 -> High
-  fireEvent.click(screen.getByLabelText(/S: Stroke history/));
-  fireEvent.click(screen.getByLabelText(/B: Bleeding history/));
+  fireEvent.change(screen.getByLabelText(/Prior stroke/), { target: { value: "present" } });
+  fireEvent.change(screen.getByLabelText(/Bleeding history/), { target: { value: "present" } });
   expect(screen.getByText("4 / 9 points")).toBeTruthy();
-  expect(screen.getByText(/High bleeding risk/)).toBeTruthy();
+  expect(screen.getByText("3–9 point band")).toBeTruthy();
+
+  fireEvent.change(screen.getByLabelText(/Bleeding history/), { target: { value: "unknown" } });
+  expect(screen.getByText("8 of 9 findings assessed")).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Copy result" }).disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText(/Bleeding history/), { target: { value: "present" } });
 
   // Check prompt insertion
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this HAS-BLED score" }));
@@ -261,28 +328,29 @@ it("calculates Mosteller Body Surface Area (BSA) in metric and imperial units wi
   expect(promptCall).toContain("Mosteller Body Surface Area (BSA)");
 });
 
-it("calculates AST to Platelet Ratio Index (APRI) with fibrosis risk stratification and input bounds", () => {
+it("calculates APRI only from entered labs without diagnosing fibrosis", () => {
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "APRI (Liver Fibrosis)" }));
-  expect(screen.getByText(/AST to Platelet Ratio Index \(APRI\) is a non-invasive biomarker index/)).toBeTruthy();
-  expect(screen.getByText("Score: 0.75")).toBeTruthy();
-  expect(screen.getByText(/Indeterminate \/ intermediate fibrosis probability/)).toBeTruthy();
+  expect(screen.getByText(/APRI is a laboratory index/)).toBeTruthy();
+  expect(screen.queryByText(/Score: /)).toBeNull();
+  fireEvent.change(screen.getByRole("spinbutton", { name: "AST Upper Limit of Normal (ULN) (U/L)" }), { target: { value: "40" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Platelet Count (10⁹/L or ×10³/µL)" }), { target: { value: "150" } });
+  expect(screen.queryByText(/Score: /)).toBeNull();
 
-  // Test Low fibrosis probability (APRI <= 0.50): AST 20 -> ((20/40)/150)*100 = 0.33
+  // AST 20 -> ((20/40)/150)*100 = 0.33
   fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "20" } });
   expect(screen.getByText("Score: 0.33")).toBeTruthy();
-  expect(screen.getByText(/Low probability of significant fibrosis/)).toBeTruthy();
+  expect(screen.getByText("Laboratory index")).toBeTruthy();
 
-  // Test High fibrosis probability (1.00 < APRI <= 1.50): AST 70 -> ((70/40)/150)*100 = 1.17
+  // AST 70 -> ((70/40)/150)*100 = 1.17
   fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "70" } });
   expect(screen.getByText("Score: 1.17")).toBeTruthy();
-  expect(screen.getByText(/High probability of significant fibrosis/)).toBeTruthy();
 
-  // Test Cirrhosis (APRI > 1.50): AST 120 -> ((120/40)/150)*100 = 2.00
+  // AST 120 -> ((120/40)/150)*100 = 2.00; this does not establish cirrhosis.
   fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "120" } });
   expect(screen.getByText("Score: 2.00")).toBeTruthy();
-  expect(screen.getByText(/High probability of cirrhosis/)).toBeTruthy();
+  expect(screen.queryByText(/High probability of cirrhosis/)).toBeNull();
 
   // Test input rejection out of bounds
   fireEvent.change(screen.getByRole("spinbutton", { name: "AST (Aspartate Aminotransferase) (U/L)" }), { target: { value: "2" } });
@@ -294,20 +362,27 @@ it("calculates AST to Platelet Ratio Index (APRI) with fibrosis risk stratificat
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this APRI score" }));
   expect(onInsertPrompt).toHaveBeenCalled();
   const promptCall = onInsertPrompt.mock.calls[0][0];
-  expect(promptCall).toContain("score of 2.00");
+  expect(promptCall).toContain("value of 2.00");
   expect(promptCall).toContain("APRI");
+  expect(promptCall).toContain("without diagnosing an individual");
 });
 
-it("calculates Child-Pugh cirrhosis mortality score across risk classes and validates bounds", () => {
+it("requires complete Child-Pugh assessments and reports classes without personal mortality", () => {
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
   fireEvent.click(screen.getByRole("tab", { name: "Child-Pugh (Cirrhosis)" }));
-  expect(screen.getByText(/Child-Pugh \(Child-Turcotte-Pugh \/ CTP\) score is a classic clinical staging and prognostic system/)).toBeTruthy();
-
-  // Default: Bili 1.5 (1 pt), Alb 3.8 (1 pt), INR 1.1 (1 pt), Ascites none (1 pt), Enceph none (1 pt) -> 5 points -> Class A
+  expect(screen.getByText(/Child-Pugh \(Child-Turcotte-Pugh \/ CTP\) classifies cirrhosis/)).toBeTruthy();
+  expect(screen.queryByText(/Score: \d+ points/)).toBeNull();
+  expect(screen.queryByText(/1-year survival|perioperative abdominal mortality/)).toBeNull();
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "1.5" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Albumin (g/dL)" }), { target: { value: "3.8" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }), { target: { value: "1.1" } });
+  expect(screen.queryByText(/Score: \d+ points/)).toBeNull();
+  fireEvent.change(screen.getByRole("combobox", { name: "Ascites" }), { target: { value: "none" } });
+  expect(screen.queryByText(/Score: \d+ points/)).toBeNull();
+  fireEvent.change(screen.getByRole("combobox", { name: "Hepatic Encephalopathy" }), { target: { value: "none" } });
   expect(screen.getByText("Score: 5 points")).toBeTruthy();
   expect(screen.getByText("Class A (5–6 points)")).toBeTruthy();
-  expect(screen.getByText(/Well-compensated cirrhosis/)).toBeTruthy();
 
   // Change to Class B (7-9 points):
   // Bili 2.5 (+2 pts), Alb 3.0 (+2 pts), INR 1.9 (+2 pts), Ascites mild (+2 pts), Enceph none (+1 pt) -> 9 points -> Class B
@@ -317,7 +392,6 @@ it("calculates Child-Pugh cirrhosis mortality score across risk classes and vali
   fireEvent.change(screen.getByRole("combobox", { name: "Ascites" }), { target: { value: "mild" } });
   expect(screen.getByText("Score: 9 points")).toBeTruthy();
   expect(screen.getByText("Class B (7–9 points)")).toBeTruthy();
-  expect(screen.getByText(/Significant functional compromise/)).toBeTruthy();
 
   // Change to Class C (10-15 points):
   // Bili 4.0 (+3 pts), Alb 2.5 (+3 pts), INR 2.5 (+3 pts), Ascites moderate (+3 pts), Enceph grade3_4 (+3 pts) -> 15 points -> Class C
@@ -328,12 +402,11 @@ it("calculates Child-Pugh cirrhosis mortality score across risk classes and vali
   fireEvent.change(screen.getByRole("combobox", { name: "Hepatic Encephalopathy" }), { target: { value: "grade3_4" } });
   expect(screen.getByText("Score: 15 points")).toBeTruthy();
   expect(screen.getByText("Class C (10–15 points)")).toBeTruthy();
-  expect(screen.getByText(/Decompensated cirrhosis/)).toBeTruthy();
 
   // Input out of bounds validation
   fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "0" } });
   expect(screen.queryByText("Score: 15 points")).toBeNull();
-  expect(screen.getByText(/Please enter valid Bilirubin/)).toBeTruthy();
+  expect(screen.getByText(/Enter valid Bilirubin/)).toBeTruthy();
 
   // Restore and check prompt insertion
   fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "4.0" } });
@@ -342,19 +415,29 @@ it("calculates Child-Pugh cirrhosis mortality score across risk classes and vali
   const promptCall = onInsertPrompt.mock.calls[0][0];
   expect(promptCall).toContain("Child-Pugh score of 15 points");
   expect(promptCall).toContain("Class C");
+  expect(promptCall).toContain("Do not infer personal survival or surgical mortality");
 });
 
-it("calculates MELD-Na liver disease mortality score and supports dialysis status", () => {
+it("labels historical MELD-Na accurately and requires complete inputs", () => {
   const onInsertPrompt = vi.fn();
   render(<ClinicalCalculatorsModal isOpen onClose={vi.fn()} onInsertPrompt={onInsertPrompt} />);
 
   fireEvent.click(screen.getByRole("tab", { name: "MELD-Na (Liver Disease)" }));
   expect(screen.getByRole("heading", { name: "Health calculators" })).toBeTruthy();
-  expect(screen.getByText(/OPTN 2016/)).toBeTruthy();
+  expect(screen.getByText(/OPTN adopted MELD 3.0 for allocation in 2023/)).toBeTruthy();
+  expect(screen.queryByText(/90-day mortality/)).toBeNull();
+  expect(screen.queryByText(/Score: /)).toBeNull();
+  const dialysisSelect = screen.getByLabelText(/Two or more dialysis treatments/);
+  expect(dialysisSelect.value).toBe("unknown");
 
-  // Default values: Bili 1.5, Cr 1.2, INR 1.3, Na 135 -> 15 points, Intermediate risk
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "1.5" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Creatinine (mg/dL)" }), { target: { value: "1.2" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }), { target: { value: "1.3" } });
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "135" } });
+  expect(screen.queryByText("Score: 15 points")).toBeNull();
+  fireEvent.change(dialysisSelect, { target: { value: "no" } });
   expect(screen.getByText("Score: 15 points")).toBeTruthy();
-  expect(screen.getByText("Intermediate risk (~6.0% 90-day mortality)")).toBeTruthy();
+  expect(screen.getByText("10–19 point band")).toBeTruthy();
 
   // Severe decompensation: Bili 4.0, Cr 3.5, INR 2.8, Na 128 -> 36 points, Very high risk
   fireEvent.change(screen.getByRole("spinbutton", { name: "Total Bilirubin (mg/dL)" }), { target: { value: "4.0" } });
@@ -362,26 +445,26 @@ it("calculates MELD-Na liver disease mortality score and supports dialysis statu
   fireEvent.change(screen.getByRole("spinbutton", { name: "INR (Prothrombin Time / INR)" }), { target: { value: "2.8" } });
   fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "128" } });
   expect(screen.getByText("Score: 36 points")).toBeTruthy();
-  expect(screen.getByText("Very high risk (~52.6% 90-day mortality)")).toBeTruthy();
+  expect(screen.getByText("30–39 point band")).toBeTruthy();
 
-  // Test dialysis: Dialysis checkbox sets Cr to 4.0 per UNOS
-  const dialysisCheckbox = screen.getByRole("checkbox", { name: /Dialysis history/i });
-  fireEvent.click(dialysisCheckbox);
-  expect(dialysisCheckbox.checked).toBe(true);
+  // The historical dialysis rule substitutes creatinine 4.0.
+  fireEvent.change(dialysisSelect, { target: { value: "yes" } });
   expect(screen.getByRole("spinbutton", { name: "Serum Creatinine (mg/dL)" }).disabled).toBe(true);
   expect(screen.getByText("Score: 37 points")).toBeTruthy();
 
   // Input out-of-bounds validation
   fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "80" } });
   expect(screen.queryByText("Score: 37 points")).toBeNull();
-  expect(screen.getByText(/Please enter valid Bilirubin/)).toBeTruthy();
+  expect(screen.getByText(/Enter bilirubin/)).toBeTruthy();
 
   // Restore and test prompt insertion
   fireEvent.change(screen.getByRole("spinbutton", { name: "Serum Sodium (mEq/L)" }), { target: { value: "128" } });
   fireEvent.click(screen.getByRole("button", { name: "Ask MedAssist about this MELD-Na score" }));
   expect(onInsertPrompt).toHaveBeenCalled();
   const meldPrompt = onInsertPrompt.mock.calls[0][0];
-  expect(meldPrompt).toContain("MELD-Na score of 37 points");
+  expect(meldPrompt).toContain("historical 2016 MELD-Na equation");
+  expect(meldPrompt).toContain("37 points");
+  expect(meldPrompt).toContain("Do not predict individual mortality");
 });
 
 it("calculates Modified Centor / McIsaac score for pharyngitis across age groups and clinical criteria", () => {

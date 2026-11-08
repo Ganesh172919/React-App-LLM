@@ -132,22 +132,22 @@ mindmap
       22 Clinical Calculators
         BMI Metric and Imperial
         CKD-EPI 2021 eGFR
-        CHA2DS2-VASc Stroke Risk
+        CHA2DS2-VASc Factors
         MAP Hemodynamic Perfusion
         Cockcroft-Gault CrCl
         Payne Corrected Calcium
         Serum Anion Gap
         FeNa and FeUrea
         Holliday-Segar Fluids
-        Wells PE Pre-Test Score
+        Wells PE Findings Record
         CURB-65 Pneumonia Score
         Glasgow Coma Scale GCS
         HAS-BLED Bleeding Risk
         qSOFA Sepsis Screening
         Mosteller Body Surface Area BSA
-        APRI Liver Fibrosis and Cirrhosis
-        Child-Pugh Cirrhosis Mortality Score
-        MELD-Na Liver Disease Prognosis
+        APRI Laboratory Index
+        Child-Pugh Cirrhosis Classification
+        Historical MELD-Na Teaching Equation
         Modified Centor McIsaac Strep
         HEART Score Chest Pain MACE
         PERC Rule PE Rule-Out
@@ -893,9 +893,9 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
    │ ├── 14. HAS-BLED Bleeding Risk Score (9-point AF stratification)│
    │ ├── 15. qSOFA Bedside Sepsis Mortality Screening                │
    │ ├── 16. Mosteller Body Surface Area (BSA Metric & Imperial)     │
-   │ ├── 17. AST to Platelet Ratio Index (APRI Liver Fibrosis/Cirrh) │
-   │ ├── 18. Child-Pugh Cirrhosis Mortality Score (CTP Prognosis)    │
-   │ ├── 19. MELD-Na Liver Disease Prognosis (UNOS/OPTN 2016 Model)  │
+   │ ├── 17. AST to Platelet Ratio Index (APRI laboratory index)     │
+   │ ├── 18. Child-Pugh Cirrhosis Classification (CTP)             │
+   │ ├── 19. Historical 2016 MELD-Na Teaching Equation               │
    │ ├── 20. Modified Centor (McIsaac) GAS Pharyngitis Score         │
    │ ├── 21. HEART Score for ED Chest Pain Risk Stratification       │
    │ └── 22. PERC Rule (Pulmonary Embolism Rule-Out Criteria)        │
@@ -912,7 +912,7 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 |:---|:---|:---|:---:|:---|
 | **Body Mass Index (BMI)** | Weight (kg or lbs), Height (cm or in) | $\text{BMI} = \frac{\text{kg}}{\text{m}^2}$ or $\frac{\text{lbs}}{\text{in}^2} \times 703$ | Weight: 20–300 kg<br>Height: 50–250 cm | Underweight (<18.5), Normal (18.5–24.9), Overweight (25–29.9), Obese (≥30). |
 | **CKD-EPI 2021 eGFR** | Age, Biological Sex, Serum Creatinine (mg/dL) | $142 \times \min(S_{\text{cr}}/\kappa, 1)^\alpha \times \max(S_{\text{cr}}/\kappa, 1)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$ | Age: 18–120 yr<br>Creatinine: 0.1–20 mg/dL | G1 (≥90), G2 (60–89), G3a (45–59), G3b (30–44), G4 (15–29), G5 (<15 Kidney Failure). |
-| **CHA₂DS₂-VASc** | CHF (1), HTN (1), Age ≥75 (2), Diabetes (1), Stroke/TIA (2), Vascular (1), Age 65–74 (1), Sex Female (1) | Point summation (Range: 0–9) | Binary toggles (0 or 1) | Score 0 (Men) / 1 (Women): Low risk.<br>Score ≥2 (Men) / ≥3 (Women): Oral anticoagulation recommended. |
+| **CHA₂DS₂-VASc** | Five clinical factors, age category, sex category | Point count (0–9) after seven inputs are assessed | Explicit not assessed / absent / present and categories | Educational factor count; no individual stroke estimate or anticoagulation advice. |
 | **Mean Arterial Pressure (MAP)** | Systolic BP (mmHg), Diastolic BP (mmHg) | $\text{MAP} = \text{DBP} + \frac{1}{3}(\text{SBP} - \text{DBP}) = \frac{2 \times \text{DBP} + \text{SBP}}{3}$ | SBP: 50–260 mmHg<br>DBP: 30–150 mmHg | Normal: 70–100 mmHg.<br><65 mmHg: Inadequate organ perfusion / septic shock indicator. |
 | **Cockcroft-Gault CrCl** | Age, Biological Sex, Weight (kg), Serum Creatinine (mg/dL) | $\text{CrCl} = \frac{(140 - \text{Age}) \times \text{Weight}}{72 \times S_{\text{cr}}} \times [0.85 \text{ if Female}]$ | Age: 18–120 yr<br>Weight: 30–250 kg<br>Cr: 0.2–15 mg/dL | Used for pharmacological renal dose adjustments (DOACs, antimicrobials). |
 | **Payne Corrected Calcium** | Measured Total Calcium (mg/dL), Serum Albumin (g/dL) | $\text{Corrected Ca} = \text{Measured Ca} + 0.8 \times (4.0 - \text{Albumin})$ | Total Ca: 4–18 mg/dL<br>Albumin: 1–6 g/dL | Adjusts for hypoalbuminemia. Normal range: 8.5–10.2 mg/dL. |
@@ -920,15 +920,15 @@ MedAssist AI embeds an evidence-based clinical calculator suite accessible direc
 | **Fractional Excretion of Sodium (FeNa)** | Serum Na, Urine Na, Serum Cr, Urine Cr | $\text{FeNa} = \frac{U_{\text{Na}} \times S_{\text{cr}}}{S_{\text{Na}} \times U_{\text{cr}}} \times 100\%$ | Creatinine: 0.1–20 mg/dL<br>Sodium: 5–200 mEq/L | <1%: Prerenal azotemia.<br>>2%: Acute Tubular Necrosis (ATN). (Invalid if diuretics active). |
 | **Fractional Excretion of Urea (FeUrea)** | Serum BUN, Urine Urea, Serum Cr, Urine Cr | $\text{FeUrea} = \frac{U_{\text{Urea}} \times S_{\text{cr}}}{S_{\text{BUN}} \times U_{\text{cr}}} \times 100\%$ | BUN: 2–150 mg/dL<br>Urea: 50–2500 mg/dL | <35%: Prerenal azotemia in patients taking loop or thiazide diuretics.<br>>50%: Intrinsic renal failure. |
 | **Maintenance Fluids (4-2-1)** | Body Weight (kg) | $4 \text{ mL/kg/hr for first 10 kg} + 2 \text{ mL/kg/hr for 11–20 kg} + 1 \text{ mL/kg/hr for each kg > 20 kg}$ | Weight: 1–150 kg | Pediatric and adult basal hydration rate calculation. |
-| **Wells' Criteria for PE** | DVT signs (3), Alternative less likely (3), HR >100 (1.5), Immobilization/Surgery (1.5), Prior DVT/PE (1.5), Hemoptysis (1), Malignancy (1) | Point summation (Range: 0–12.5) | Binary toggles | ≤4.0: PE Unlikely (Proceed to D-dimer).<br>>4.0: PE Likely (Proceed directly to CT Pulmonary Angiography). |
-| **CURB-65 Pneumonia Score** | Confusion (+1), Urea >19 mg/dL (+1), RR ≥30 (+1), Low BP SBP <90 or DBP ≤60 (+1), Age ≥65 (+1) | Point summation (Range: 0–5) | Binary toggles | 0–1: Low risk (<3% mortality, outpatient management).<br>2: Intermediate risk (~9% mortality, short inpatient admission).<br>3–5: High / severe risk (15–40% mortality, urgent admission/ICU). |
-| **Glasgow Coma Scale (GCS)** | Eye Opening $E$ (1–4), Verbal Response $V$ (1–5), Motor Response $M$ (1–6) | $\text{GCS} = E + V + M$ (Range: 3–15) | $E \in [1,4], V \in [1,5], M \in [1,6]$ | 13–15: Mild brain injury / Alert.<br>9–12: Moderate brain injury.<br>3–8: Severe brain injury / Coma (critical loss of airway protection reflexes). |
-| **HAS-BLED Bleeding Risk** | Hypertension (1), Abnormal renal/liver (1-2), Stroke (1), Bleeding (1), Labile INR (1), Elderly >65 (1), Drugs/Alcohol (1-2) | $\text{HAS-BLED} = \sum \text{Risk Factors}$ (Range: 0–9) | Binary toggles | 0–1: Low bleeding risk (~1% / yr).<br>2: Moderate risk (~1.9% / yr).<br>≥3: High risk (≥3.7% / yr; evaluate modifiable bleeding risks). |
-| **qSOFA Sepsis Screening** | Altered mentation GCS <15 (+1), Tachypnea RR ≥22 (+1), Hypotension SBP ≤100 (+1) | $\text{qSOFA} = \sum \text{Criteria}$ (Range: 0–3) | Binary toggles | 0–1: Not high risk for in-hospital sepsis mortality.<br>2–3: High risk for in-hospital sepsis mortality (prompt evaluation for organ dysfunction, blood cultures, lactate, and sepsis protocols). |
+| **Wells' Criteria for PE** | Seven NICE PE findings | Point summation (0–12.5) after complete assessment | Explicit not assessed / absent / present | NICE point band: 4 or less, or above 4; no individual rule-out or testing advice. |
+| **CURB-65 Pneumonia Score** | Confusion, BUN, respiratory rate, blood pressure, age | Point summation (Range: 0–5) | 5 explicitly assessed findings | Point bands only; no personal mortality estimate or admission decision. |
+| **Glasgow Coma Scale (GCS)** | Eye, verbal, and motor responses | $\text{GCS} = E + V + M$ (Range: 3–15) | 3 observed numeric responses required; Not testable leaves total unavailable | Point band only; no injury diagnosis or airway decision. |
+| **HAS-BLED Bleeding Risk** | Hypertension, renal/liver function, stroke, bleeding, INR, age, drugs, alcohol | $\text{HAS-BLED} = \sum \text{Risk Factors}$ (Range: 0–9) | 9 explicitly assessed findings; INR can be Not applicable | Point band only; no personal bleeding estimate or anticoagulation decision. |
+| **qSOFA Sepsis Screening** | Altered mentation, respiratory rate, systolic blood pressure | $\text{qSOFA} = \sum \text{Criteria}$ (Range: 0–3) | 3 explicitly assessed findings | A low count does not exclude sepsis; qSOFA is not a sole screening tool. |
 | **Mosteller Body Surface Area (BSA)** | Height (cm or in), Weight (kg or lbs) | $\text{BSA} = \sqrt{\frac{\text{Height (cm)} \times \text{Weight (kg)}}{3600}}$ or $\sqrt{\frac{\text{Height (in)} \times \text{Weight (lbs)}}{3131}}$ | Height: 30–250 cm / 12–100 in<br>Weight: 2–350 kg / 5–800 lbs | Reference adult norm ~1.73 m² (men ~1.9, women ~1.6). Applied in oncology chemotherapy dosing and cardiac index (L/min/m²). |
-| **AST to Platelet Ratio Index (APRI)** | AST (U/L), AST ULN (U/L), Platelets (10⁹/L) | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | ≤0.50: Significant fibrosis unlikely (high NPV).<br>>1.00: High probability of significant fibrosis (F2–F4).<br>>1.50: High probability of cirrhosis (F4). |
-| **Child-Pugh Score (CTP)** | Total Bilirubin (mg/dL), Serum Albumin (g/dL), INR, Ascites, Hepatic Encephalopathy | $\text{Child-Pugh} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{INR Pts} + \text{Ascites Pts} + \text{Enceph Pts}$ | Bilirubin: 0.1–50 mg/dL<br>Albumin: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | Class A (5–6 pts): Well-compensated (~100% 1-yr survival).<br>Class B (7–9 pts): Significant compromise (~80% 1-yr survival).<br>Class C (10–15 pts): Decompensated (~45% 1-yr survival; 70–80% perioperative mortality). |
-| **MELD-Na Liver Disease Prognosis** | Bilirubin (mg/dL), Creatinine (mg/dL), INR, Serum Sodium (mEq/L), Dialysis | $\text{MELD}(i) = 9.57 \ln(\text{Cr}) + 3.78 \ln(\text{Bili}) + 11.2 \ln(\text{INR}) + 6.43$; if $>11$, $\text{MELD-Na} = \text{MELD} + 1.32(137 - \text{Na}) - [0.033 \times \text{MELD} \times (137 - \text{Na})]$ | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | OPTN/UNOS standard model for liver transplant allocation. 90-day mortality risk: ≤9 (1.9%), 10–19 (6.0%), 20–29 (19.6%), 30–39 (52.6%), ≥40 (71.3%). |
+| **AST to Platelet Ratio Index (APRI)** | AST (U/L), local AST ULN (U/L), Platelets (10⁹/L); all required | $\text{APRI} = \frac{(S_{\text{AST}} / S_{\text{AST, ULN}})}{\text{Platelets } (10^9/\text{L})} \times 100$ | AST: 5–2000 U/L<br>ULN: 10–100 U/L<br>Platelets: 10–1000 ×10⁹/L | Numeric index only; no automatic fibrosis or cirrhosis diagnosis. |
+| **Child-Pugh Classification (CTP)** | Total Bilirubin (mg/dL), Serum Albumin (g/dL), INR, Ascites, Hepatic Encephalopathy; all required | $\text{Child-Pugh} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{INR Pts} + \text{Ascites Pts} + \text{Enceph Pts}$ | Bilirubin: 0.1–50 mg/dL<br>Albumin: 0.5–6.0 g/dL<br>INR: 0.5–10.0 | A: 5–6; B: 7–9; C: 10–15 points. No individual mortality estimate. |
+| **Historical 2016 MELD-Na equation** | Bilirubin, creatinine, INR, sodium, explicit dialysis history | 2016 point formula, output 6–40 only when complete | Bili: 0.1–50 mg/dL<br>Cr: 0.1–15 mg/dL<br>INR: 0.5–10<br>Na: 100–160 mEq/L | Educational point band only. OPTN adopted MELD 3.0 for allocation in 2023; this is not a current listing or personal mortality score. |
 | **Modified Centor (McIsaac) Strep Score** | Tonsillar exudates, tender nodes, fever, absence of cough, age group | $\text{Centor} = \sum \text{Criteria} + \text{Age Adj}$ (Range: -1 to 5) | 4 explicit finding selectors and age group; all required | Point band only; no strep diagnosis, test, or antibiotic decision from this form. |
 | **HEART Score for Chest Pain MACE** | History, ECG, age, risk factors, initial troponin | $\text{HEART} = H + E + A + R + T$ (Range: 0–10) | 5 categorical selectors; all required | Point bands only; no discharge, testing, or treatment decision from this form. |
 | **PERC Criteria Record** | Age, heart rate, oxygen saturation, leg swelling, hemoptysis, trauma/surgery, prior VTE, estrogen use | Count of recorded present criteria (0–8) | 8 explicit Present/Absent/Not assessed selectors; all required | Cannot establish low pretest probability, rule out PE, or decide testing. |
@@ -969,18 +969,10 @@ export function calculateCKDEPI({ age, sex, creatinine }) {
 
 ```jsx
 // frontend/src/components/tools/ClinicalCalculatorsModal.jsx
-// GCS Scoring Logic & Stratification
-const gcsEyeScore = parseInt(gcsEye, 10) || 4;
-const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
-const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
-const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
-
-let gcsStratification = "Mild brain injury / Alert (13–15)";
-if (gcsScore <= 8) {
-  gcsStratification = "Severe brain injury / Coma (3–8)";
-} else if (gcsScore <= 12) {
-  gcsStratification = "Moderate brain injury (9–12)";
-}
+// GCS total is available only after three observed numeric responses.
+const gcsResponses = [gcsEye, gcsVerbal, gcsMotor];
+const gcsComplete = gcsResponses.every((value) => /^\d$/.test(value));
+const gcsScore = gcsComplete ? gcsResponses.reduce((sum, value) => sum + Number(value), 0) : null;
 
 // WAI-ARIA Focus Management & Keyboard Trap
 useEffect(() => {
@@ -1021,7 +1013,7 @@ useEffect(() => {
 
 ```jsx
 // frontend/src/components/tools/ClinicalCalculatorsModal.jsx
-// TAB 18: Child-Pugh Score for Cirrhosis Mortality
+// TAB 18: Child-Pugh cirrhosis classification
 let points = 0;
 // Bilirubin points (<2.0: 1, 2.0-3.0: 2, >3.0: 3)
 if (cpBiliNum < 2.0) points += 1;
@@ -1051,13 +1043,10 @@ else points += 3;
 cpScore = points;
 if (cpScore <= 6) {
   cpClass = "Class A (5–6 points)";
-  cpInterpretation = "Well-compensated cirrhosis (1-year survival ~100%, 2-year survival ~85%, perioperative abdominal mortality ~10%)";
 } else if (cpScore <= 9) {
   cpClass = "Class B (7–9 points)";
-  cpInterpretation = "Significant functional compromise (1-year survival ~80%, 2-year survival ~60%, perioperative abdominal mortality ~30%)";
 } else {
   cpClass = "Class C (10–15 points)";
-  cpInterpretation = "Decompensated cirrhosis (1-year survival ~45%, 2-year survival ~35%, perioperative abdominal mortality ~70–80%)";
 }
 ```
 

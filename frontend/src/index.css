@@ -364,6 +364,12 @@ input:focus, textarea:focus, select:focus { border-color: #087d79; }
   border: 1px solid #d3ece6;
   border-radius: 10px;
 }
+.calc-result .button:disabled {
+  background: #e4ecee;
+  border-color: #c8d5d9;
+  color: #52646d;
+  opacity: 1;
+}
 .calc-result-metric {
   display: flex;
   align-items: center;
@@ -760,6 +766,11 @@ input:focus, textarea:focus, select:focus { border-color: #087d79; }
 [data-theme="dark"] .calc-result {
   background: #0b1728;
   border-color: #1e3a5f;
+}
+[data-theme="dark"] .calc-result .button:disabled {
+  background: #263447;
+  border-color: #405166;
+  color: #b6c4d3;
 }
 [data-theme="dark"] .drug-alert-card {
   background: #2b1114;

@@ -139,15 +139,12 @@ $$\text{BSA (Imperial)} = \sqrt{\frac{\text{Height (in)} \times \text{Weight (lb
 - **Clinical Role**: Universally adopted standard for indexing physiological parameters (e.g., cardiac output, GFR), renal replacement therapy dosing, and body-surface indexed oncologic chemotherapy.
 - **Reference Ranges**: Average adult female $\approx 1.6\text{ m}^2$; average adult male $\approx 1.9\text{ m}^2$.
 
-### 3.3 AST to Platelet Ratio Index (APRI) for Liver Fibrosis
+### 3.3 AST to Platelet Ratio Index (APRI)
 $$\text{APRI} = \frac{(\text{AST} / \text{AST}_{\text{ULN}}) \times 100}{\text{Platelet Count (}\times 10^9/\text{L})}$$
 Where:
-- $\text{AST}_{\text{ULN}}$ defaults to $40\text{ U/L}$ (standard institutional laboratory upper limit of normal).
-- **Physiological Clamping**: AST $5 - 2000\text{ U/L}$, Platelets $10 - 1500 \times 10^9/\text{L}$.
-- **Risk Stratification Bands**:
-  - $\text{Score} < 0.50$: Cirrhosis / advanced fibrosis unlikely (high negative predictive value).
-  - $0.50 \le \text{Score} \le 1.50$: Indeterminate / intermediate fibrosis probability (warrants secondary elastography).
-  - $\text{Score} > 1.50$: High probability of significant fibrosis / cirrhosis (prompt hepatology evaluation).
+- $\text{AST}_{\text{ULN}}$ must be entered from the laboratory report; it is not prefilled.
+- **Validated input bounds**: AST $5 - 2000\text{ U/L}$, AST ULN $10 - 100\text{ U/L}$, platelets $10 - 1000 \times 10^9/\text{L}$.
+- The UI reports only the calculated index after all three inputs are entered. Cutoffs vary by liver disease and setting; a standalone APRI value cannot diagnose or exclude fibrosis or cirrhosis. See the [AASLD overview](https://www.aasld.org/liver-fellow-network/core-series/why-series/why-are-non-invasive-risk-scores-such-fib-4-used).
 
 ### 3.4 eGFR (CKD-EPI 2021 Race-Free Equation)
 $$\text{eGFR} = 142 \times \min\left(\frac{S_{\text{cr}}}{\kappa}, 1\right)^\alpha \times \max\left(\frac{S_{\text{cr}}}{\kappa}, 1\right)^{-1.200} \times 0.9938^{\text{Age}} \times [1.012 \text{ if Female}]$$
@@ -179,7 +176,7 @@ $$\text{FeUrea (\%)} = \frac{\text{Urine Urea} \times \text{Serum Cr}}{\text{Ser
 - $+ 1\text{ mL/kg/h}$ for each $\text{kg} > 20\text{ kg}$
 - Example ($70\text{ kg}$ adult): $40 + 20 + 50 = 110\text{ mL/hour}$.
 
-### 3.10 Child-Pugh Score for Cirrhosis Mortality
+### 3.10 Child-Pugh Cirrhosis Classification
 $$\text{Child-Pugh Score} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{INR Pts} + \text{Ascites Pts} + \text{Encephalopathy Pts}$$
 
 - **Physiological Clamping**:
@@ -194,10 +191,7 @@ $$\text{Child-Pugh Score} = \text{Bilirubin Pts} + \text{Albumin Pts} + \text{IN
   | **INR** | $< 1.7$ | $1.7 - 2.3$ | $> 2.3$ |
   | **Ascites** | None | Slight / Diuretic-controlled | Moderate to Severe / Refractory |
   | **Encephalopathy** | None | Grade 1–2 (mild confusion) | Grade 3–4 (severe / coma) |
-- **Prognostic Risk Stratification**:
-  - **Class A ($5 - 6$ points)**: Well-compensated cirrhosis; 1-year survival $\approx 100\%$, 2-year survival $\approx 85\%$, perioperative abdominal mortality $\approx 10\%$.
-  - **Class B ($7 - 9$ points)**: Significant functional compromise; 1-year survival $\approx 80\%$, 2-year survival $\approx 60\%$, perioperative abdominal mortality $\approx 30\%$.
-  - **Class C ($10 - 15$ points)**: Decompensated cirrhosis; 1-year survival $\approx 45\%$, 2-year survival $\approx 35\%$, perioperative abdominal mortality $\approx 70 - 80\%$.
+- **Class bands**: A = 5–6, B = 7–9, C = 10–15 points. All three laboratory results and both clinical assessments are required before a class appears. The app does not calculate individual survival or surgical risk from the class. Ascites and encephalopathy require clinical judgment. See the [AASLD overview](https://www.aasld.org/liver-fellow-network/core-series/back-basics/evolution-meld-scores).
 
 ### 3.11 Wells' Criteria for Pulmonary Embolism (PE)
 $$\text{Wells Score} = \sum \text{Points across 7 Clinical Criteria}$$
@@ -205,26 +199,22 @@ $$\text{Wells Score} = \sum \text{Points across 7 Clinical Criteria}$$
   - Clinical signs and symptoms of DVT: $+3.0$
   - Alternative diagnosis is less likely than PE: $+3.0$
   - Heart rate $> 100\text{ bpm}$: $+1.5$
-  - Immobilization ($\ge 3$ consecutive days) or surgery in previous 4 weeks: $+1.5$
+  - Immobilization for more than 3 days or surgery in previous 4 weeks: $+1.5$
   - Previous documented DVT/PE: $+1.5$
   - Hemoptysis: $+1.0$
   - Malignancy (treatment within 6 months or palliative): $+1.0$
-- **Stratification**:
-  - Score $\le 4.0$: PE Unlikely ($\approx 12.1\%$ PE incidence; recommend high-sensitivity D-dimer).
-  - Score $> 4.0$: PE Likely ($\approx 37.1\%$ PE incidence; recommend CT Pulmonary Angiography).
+- Each finding starts as not assessed and must be explicitly marked present or absent. The UI withholds the point count and Ask/Copy actions until all seven are assessed.
+- Completed results show the NICE two-level point band (4 or less, or above 4) for education. They do not give a personal PE probability, rule-out, or testing recommendation. See the [NICE PE pathway](https://www.nice.org.uk/guidance/ng158/chapter/recommendations).
 
 ### 3.12 CURB-65 Pneumonia Severity Score
 $$\text{CURB-65 Score} = C + U + R + B + 65$$
 - **Criteria (1 point each)**:
   - **C**onfusion (Abbreviated Mental Test score $\le 8$ or new disorientation)
-  - **U**rea $> 19\text{ mg/dL}$ ($> 7\text{ mmol/L}$)
+  - Blood **u**rea nitrogen $> 19\text{ mg/dL}$ (urea $> 7\text{ mmol/L}$)
   - **R**espiratory Rate $\ge 30\text{ breaths/min}$
   - **B**lood Pressure (Systolic $< 90\text{ mmHg}$ or Diastolic $\le 60\text{ mmHg}$)
   - Age $\ge \mathbf{65}\text{ years}$
-- **30-Day Mortality Stratification**:
-  - Score $0 - 1$: Low risk ($< 3\%$ mortality; appropriate for outpatient management).
-  - Score $2$: Intermediate risk ($\approx 9\%$ mortality; recommend short in-hospital stay or close monitoring).
-  - Score $3 - 5$: High risk ($15 - 40\%$ mortality; recommend urgent hospital admission / ICU evaluation).
+- **UI behavior**: All five findings start as Not assessed. The total and Ask/Copy actions appear only after each is recorded. The UI shows point bands without an individual mortality estimate or admission decision. NICE advises using clinical judgement alongside CURB-65 for adults with diagnosed pneumonia.
 
 ### 3.13 Glasgow Coma Scale (GCS)
 $$\text{GCS Score} = \text{Eye (1–4)} + \text{Verbal (1–5)} + \text{Motor (1–6)}$$
@@ -232,10 +222,7 @@ $$\text{GCS Score} = \text{Eye (1–4)} + \text{Verbal (1–5)} + \text{Motor (1
   - **Eye Opening ($E$)**: 4 = Spontaneous, 3 = To verbal command, 2 = To pain, 1 = None.
   - **Verbal Response ($V$)**: 5 = Oriented, 4 = Confused speech, 3 = Inappropriate words, 2 = Incomprehensible sounds, 1 = None.
   - **Motor Response ($M$)**: 6 = Obeys commands, 5 = Localizes to pain, 4 = Withdraws from pain, 3 = Flexion to pain (decorticate), 2 = Extension to pain (decerebrate), 1 = None.
-- **Stratification**:
-  - Score $13 - 15$: Mild traumatic brain injury / Alert.
-  - Score $9 - 12$: Moderate brain injury.
-  - Score $3 - 8$: Severe brain injury / Coma (loss of airway protective reflexes; prompt endotracheal intubation consideration).
+- **UI behavior**: Eye, verbal, and motor responses start as Not assessed. A component may be marked Not testable; in that case no total is shown. Only three observed numeric responses produce a total and enable Ask/Copy. The point band is educational and cannot diagnose injury severity or determine airway treatment.
 
 ### 3.14 HAS-BLED Bleeding Risk Score
 $$\text{HAS-BLED Score} = H + A + S + B + L + E + D$$
@@ -247,10 +234,7 @@ $$\text{HAS-BLED Score} = H + A + S + B + L + E + D$$
   - **L**abile INRs (time in therapeutic range $< 60\%$): $+1$
   - **E**lderly (Age $> 65$): $+1$
   - **D**rugs (antiplatelet agents/NSAIDs) or Alcohol excess: $+1$ or $+2$
-- **Stratification**:
-  - Score $0 - 1$: Low bleeding risk ($\approx 1.13\text{ bleeds / 100 pt-yrs}$).
-  - Score $2$: Moderate bleeding risk ($\approx 1.88\text{ bleeds / 100 pt-yrs}$).
-  - Score $\ge 3$: High bleeding risk ($\ge 3.74\text{ bleeds / 100 pt-yrs}$; indicates need for cautious anticoagulation monitoring and correction of modifiable risks).
+- **UI behavior**: All nine findings start as Not assessed; labile INR may be marked Not applicable when there is no vitamin K antagonist. The total and Ask/Copy actions appear only after all findings are recorded. The point band is not an individual bleeding prediction or a decision to start or withhold anticoagulation.
 
 ### 3.15 qSOFA Sepsis Screening (Quick Sepsis-Related Organ Failure Assessment)
 $$\text{qSOFA Score} = \text{Altered Mentation (1)} + \text{Tachypnea (1)} + \text{Hypotension (1)}$$
@@ -271,10 +255,7 @@ $$\text{CHA}_2\text{DS}_2\text{-VASc} = C + H + A_2 + D + S_2 + V + A + Sc$$
   - **V**ascular disease (prior MI, PAD, aortic plaque): $+1$
   - **A**ge $65 - 74\text{ years}$: $+1$
   - **S**ex **c**ategory (Female): $+1$
-- **Stratification & Anticoagulation Guidelines**:
-  - Score $0$ (Men) / $1$ (Women): Low risk (no antithrombotic therapy recommended).
-  - Score $1$ (Men) / $2$ (Women): Moderate risk (oral anticoagulation should be considered based on clinical shared decision-making).
-  - Score $\ge 2$ (Men) / $\ge 3$ (Women): High risk (oral anticoagulation with DOAC or warfarin strongly recommended).
+- **UI behavior**: Five clinical factors, age category, and sex category start unassessed. The point count and Ask/Copy actions require all seven inputs. The result is an educational factor count, not an individual stroke probability or medication recommendation. See the [ACC/AHA atrial fibrillation guideline summary](https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2023/11/27/19/46/2023-acc-guideline-for-af-gl-af).
 
 ### 3.17 Modified Centor (McIsaac) Score for Strep Pharyngitis
 $$\text{Centor Score} = \text{Exudate (+1)} + \text{Tender Nodes (+1)} + \text{Fever (+1)} + \text{No Cough (+1)} + \text{Age Group (+1, 0, -1)}$$
@@ -299,21 +280,16 @@ $$\text{HEART Score} = H + E + A + R + T$$
   - **T (Troponin)**: Normal / $\le$ normal limit ($0$), $1 - 3\times$ normal limit ($1$), $> 3\times$ normal limit ($2$).
 - **UI behavior**: All five inputs start as Not assessed. The point count and Ask/Copy actions appear only when each is recorded. The UI displays $0-3$, $4-6$, or $7-10$ point bands without individual event percentages, discharge decisions, or treatment instructions. Acute chest symptoms require urgent assessment independent of the score.
 
-### 3.19 MELD-Na Score for End-Stage Liver Disease Mortality
+### 3.19 Historical 2016 MELD-Na teaching equation
 $$\text{MELD(i)} = 9.57 \times \ln(\text{Cr}) + 3.78 \times \ln(\text{Bili}) + 11.20 \times \ln(\text{INR}) + 6.43$$
 $$\text{MELD-Na} = \text{MELD(i)} + 1.32 \times (137 - \text{Na}) - [0.033 \times \text{MELD(i)} \times (137 - \text{Na})]$$
-- **Physiological Clamping & UNOS Rules**:
+- **Historical equation bounds**:
   - Creatinine: $1.0 - 4.0\text{ mg/dL}$ (if patient is on dialysis $\ge 2$ times in prior 7 days, Cr automatically clamped to $4.0$).
   - Bilirubin: $\ge 1.0\text{ mg/dL}$.
   - INR: $\ge 1.0$.
   - Serum Sodium: bounded between $125 - 137\text{ mEq/L}$.
   - Result score clamped between $6 - 40$.
-- **90-Day Mortality Stratification**:
-  - Score $\le 9$: $\approx 1.9\%$ mortality.
-  - Score $10 - 19$: $\approx 6.0\%$ mortality.
-  - Score $20 - 29$: $\approx 19.6\%$ mortality.
-  - Score $30 - 39$: $\approx 52.6\%$ mortality.
-  - Score $\ge 40$: $\approx 71.3\%$ mortality (urgent liver transplant priority).
+- **UI behavior**: Laboratory values start empty and dialysis history starts Not assessed. The historical point count appears only after all required inputs are recorded. The UI shows point bands without personal mortality percentages or transplant priority. OPTN adopted MELD 3.0 for allocation in 2023; its [current calculator](https://optn.transplant.hrsa.gov/data/allocation-calculators/meld-calculator/) uses additional inputs and a different formula.
 
 ### 3.20 PERC Criteria for Pulmonary Embolism Rule-Out
 $$\text{PERC Score} = \sum \text{Positive Findings across 8 Exclusion Criteria}$$

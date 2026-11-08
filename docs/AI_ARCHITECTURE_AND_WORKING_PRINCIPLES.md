@@ -466,9 +466,8 @@ Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the
     (Race-Free Standard)              * 0.9938^Age * (1.012 if female)                   Scr: 0.2-15.0 mg/dL
                                (κ = 0.7 F / 0.9 M; α = -0.241 F / -0.302 M)
 
-    CHA2DS2-VASc               Points: CHF (+1), HTN (+1), Age >=75 (+2), Diabetes (+1), Age: 18-120 years
-    (Stroke Risk in AFib)      Stroke/TIA (+2), Vascular Disease (+1), Age 65-74 (+1),   Binary clinical flags
-                               Female Sex (+1). Range: 0 to 9 points.
+    CHA2DS2-VASc               Five clinical findings, age category, sex category.       Seven explicit inputs;
+    (AFib Factor Count)        Count 0-9 only after every input is assessed.              no treatment direction
 
     Mean Arterial Pressure     MAP = DBP + 1/3 * (SBP - DBP)                             SBP: 50-260 mmHg
     (MAP Hemodynamics)                                                                   DBP: 30-160 mmHg
@@ -491,22 +490,20 @@ Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the
     Maintenance Fluids (4-2-1) Total Rate = 4 mL (1-10kg) + 2 mL (11-20kg) + 1 mL (>20kg)Weight: 1-150 kg
                                Holliday-Segar basal hydration formula                    Hourly and 24h rates
 
-    Wells Criteria for PE      Clinical DVT (+3), PE #1 diagnosis (+3), HR >100 (+1.5),  Binary clinical flags
-                               Immobilization/Surgery (+1.5), Prior DVT/PE (+1.5),       PE unlikely <= 4
-                               Hemoptysis (+1), Malignancy (+1). Range: 0 to 12.5.       PE likely > 4
+    Wells Criteria for PE      Seven NICE PE findings, counted after full assessment.    Each: unassessed, absent,
+                               Range: 0 to 12.5; no individual diagnostic claim.        or present; NICE bands
 
-    CURB-65 Pneumonia Score    Confusion (+1), Urea > 19 mg/dL (+1), RR >= 30 (+1),      Binary clinical flags
-                               Low BP SBP < 90 or DBP <= 60 (+1), Age >= 65 (+1).       0-1: Low, 2: Int, 3-5: High
+    CURB-65 Pneumonia Score    Five clinician-assessed findings for diagnosed CAP.       Each finding: unassessed,
+                               Count only after all five findings are recorded.         absent, or present; 0-5
 
-    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6)              E: 1-4, V: 1-5, M: 1-6
-                               Total Score: 3 to 15. <=8 Severe / Coma, 9-12 Moderate.   Score: 3 to 15 points
+    Glasgow Coma Scale (GCS)   GCS = Eye (1-4) + Verbal (1-5) + Motor (1-6).             Each response: unassessed,
+                               No total if a component is unassessed or not testable.   not testable, or numeric
 
-    HAS-BLED Bleeding Risk     Sum of HTN (+1), Renal (+1), Liver (+1), Stroke (+1),     9 binary flags (0-9)
-                               Bleeding (+1), Labile INR (+1), Age >65 (+1), Drugs (+1), Low: 0-1, Mod: 2,
-                               Alcohol (+1). Range: 0 to 9 points.                       High: >=3 (>=3.7% / yr)
+    HAS-BLED Bleeding Factors  Nine assessed factors, including labile INR for          Each: unassessed, absent,
+                               vitamin K antagonist use. Count only when complete.      present; INR may be N/A
 
-    qSOFA Sepsis Screening     Altered mental status (GCS <15) + Tachypnea (RR >=22) +   3 binary flags (0-3)
-                               Hypotension (SBP <=100 mmHg).                             >=2: High in-hospital risk
+    qSOFA Sepsis Screening     Altered mental status (GCS <15) + Tachypnea (RR >=22) +   3 explicitly assessed
+                               Hypotension (SBP <=100 mmHg); no diagnostic rule-out.     findings; 0-3 points
 
     Mosteller BSA              BSA = sqrt(Height_cm * Weight_kg / 3600)                  Height: 30-250 cm
                                Imperial: sqrt(Height_in * Weight_lbs / 3131)             Weight: 2-350 kg
@@ -526,18 +523,10 @@ Implemented in `frontend/src/components/tools/ClinicalCalculatorsModal.jsx`, the
 ```jsx
 // Excerpt from frontend/src/components/tools/ClinicalCalculatorsModal.jsx
 export function ClinicalCalculatorsModal({ isOpen, onClose }) {
-  // GCS Calculation & Stratification
-  const gcsEyeScore = parseInt(gcsEye, 10) || 4;
-  const gcsVerbalScore = parseInt(gcsVerbal, 10) || 5;
-  const gcsMotorScore = parseInt(gcsMotor, 10) || 6;
-  const gcsScore = gcsEyeScore + gcsVerbalScore + gcsMotorScore;
-
-  let gcsStratification = "Mild brain injury / Alert (13–15)";
-  if (gcsScore <= 8) {
-    gcsStratification = "Severe brain injury / Coma (3–8)";
-  } else if (gcsScore <= 12) {
-    gcsStratification = "Moderate brain injury (9–12)";
-  }
+  // GCS total is available only after three observed numeric responses.
+  const gcsResponses = [gcsEye, gcsVerbal, gcsMotor];
+  const gcsComplete = gcsResponses.every((value) => /^\d$/.test(value));
+  const gcsScore = gcsComplete ? gcsResponses.reduce((sum, value) => sum + Number(value), 0) : null;
 
   // WAI-ARIA Focus Trapping and Tab Cycling
   useEffect(() => {
@@ -576,13 +565,12 @@ export function ClinicalCalculatorsModal({ isOpen, onClose }) {
 }
 ```
 
-### 4.2 Child-Pugh Score Calculation & Cirrhosis Prognosis Implementation
+### 4.2 Child-Pugh Cirrhosis Classification Implementation
 
 ```jsx
-// TAB 18: Child-Pugh Score for Cirrhosis Mortality in ClinicalCalculatorsModal.jsx
+// TAB 18: Child-Pugh classification in ClinicalCalculatorsModal.jsx
 let cpScore = null;
 let cpClass = "";
-let cpInterpretation = "";
 const cpBiliNum = parseFloat(cpBilirubin);
 const cpAlbNum = parseFloat(cpAlbumin);
 const cpInrNum = parseFloat(cpInr);
@@ -590,7 +578,8 @@ const cpInrNum = parseFloat(cpInr);
 if (
   !isNaN(cpBiliNum) && cpBiliNum >= 0.1 && cpBiliNum <= 50 &&
   !isNaN(cpAlbNum) && cpAlbNum >= 0.5 && cpAlbNum <= 6.0 &&
-  !isNaN(cpInrNum) && cpInrNum >= 0.5 && cpInrNum <= 10.0
+  !isNaN(cpInrNum) && cpInrNum >= 0.5 && cpInrNum <= 10.0 &&
+  cpAscites !== "unknown" && cpEncephalopathy !== "unknown"
 ) {
   let points = 0;
   // Bilirubin points (<2.0: 1, 2.0-3.0: 2, >3.0: 3)
@@ -621,18 +610,17 @@ if (
   cpScore = points;
   if (cpScore <= 6) {
     cpClass = "Class A (5–6 points)";
-    cpInterpretation = "Well-compensated cirrhosis (1-year survival ~100%, 2-year survival ~85%, perioperative abdominal mortality ~10%)";
   } else if (cpScore <= 9) {
     cpClass = "Class B (7–9 points)";
-    cpInterpretation = "Significant functional compromise (1-year survival ~80%, 2-year survival ~60%, perioperative abdominal mortality ~30%)";
   } else {
     cpClass = "Class C (10–15 points)";
-    cpInterpretation = "Decompensated cirrhosis (1-year survival ~45%, 2-year survival ~35%, perioperative abdominal mortality ~70–80%)";
   }
 }
   }, [isOpen]);
 }
 ```
+
+Inputs start unassessed; the UI displays the class only after all five components are supplied. It does not calculate individual survival or surgical mortality.
 
 ---
 
