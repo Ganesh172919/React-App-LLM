@@ -97,6 +97,12 @@ This repository organizes documentation following the **Diátaxis** framework:
 
 ### Quadrant I: Tutorials & How-To Guides
 - [Tutorial: Getting Started](tutorials/getting-started.md): Verified 15-minute developer onboarding guide with executable test commands.
+- [How-To: Run Tests & Verification Checks](how-to/develop/run-tests.md): Step-by-step procedures to run backend integration tests, frontend unit tests, and the full multi-tier verification suite.
+- [How-To: Add a New Clinical Scoring Tool](how-to/develop/add-clinical-calculator.md): Implementing a new clinical calculator in `ClinicalCalculatorsModal.jsx` preserving safety invariants.
+- [How-To: Add a Deterministic DDI Rule](how-to/develop/add-ddi-rule.md): Expanding the 23 FDA Boxed Warning screener with regex word boundaries and tests.
+- [How-To: Deploy with Docker Compose](how-to/operate/deploy.md): Orchestrating containerized services with Nginx ingress, MongoDB auth, and health checks.
+- [How-To: Zero-Downtime Rollback](how-to/operate/rollback.md): Rolling back containers, restoring MongoDB collections, and switching AI model providers.
+- [How-To: Fine-Tune LoRA Adapters](how-to/ai/finetune-lora.md): Offline training recipes for MedQuAD/PubMedQA LoRA adapters using PEFT and PyTorch.
 - [DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md](DEVELOPER_EXTENSION_AND_ONBOARDING_GUIDE.md): Practical steps for adding clinical tools, DDI rules, and tests.
 - [PRODUCTION_DEVELOPER_BUILD_GUIDE.md](PRODUCTION_DEVELOPER_BUILD_GUIDE.md): Step-by-step local build, Docker orchestration, and troubleshooting recipes.
 - [AI_FINE_TUNING_AND_LORA_GUIDE.md](AI_FINE_TUNING_AND_LORA_GUIDE.md): Hands-on training recipes for fine-tuning MedQuAD/PubMedQA LoRA adapters.
@@ -104,7 +110,12 @@ This repository organizes documentation following the **Diátaxis** framework:
 
 ### Quadrant II: Reference
 - [Configuration Reference](reference/configuration.md): Exhaustive environment variable reference covering all 34 configuration keys.
+- [Authentication & Session Architecture](reference/api/authentication.md): Specification of JWT lifecycles, Web Locks token renewal mutex, and cookie flags.
+- [API Error Catalog & Status Codes](reference/api/errors.md): Directory of REST API error codes, JSON envelopes, and client retry policies.
 - [Database Architecture & MongoDB Schemas](reference/database.md): Entity relationship model, collection schemas, indexes, and BSON size limits.
+- [Frontend Architecture Reference](reference/frontend.md): React 19 SPA structure, Vite 6 build pipeline, and context providers.
+- [Observability & Probes Catalog](reference/observability-catalog.md): Structured JSON logs, correlation IDs, and health probe contracts.
+- [Clinical Tools & DDI Screener Specification](reference/ai/tools.md): Technical inventory and formulas for the 22 clinical risk tools and 23 FDA rules.
 - [Biomedical RAG Pipeline Reference](reference/ai/rag-pipeline.md): End-to-end specification of PubMed literature retrieval, relevance ranking, and citation grounding.
 - [Clinical Prompt Registry & Directives](reference/ai/prompts.md): System prompt directives, audience profile adaptations, and emergency intercepts.
 - [Service Level Objectives (SLOs) & Error Budgets](reference/slo.md): Availability indicators, p95 latency targets, and budget depletion policies.
@@ -117,13 +128,16 @@ This repository organizes documentation following the **Diátaxis** framework:
 
 ### Quadrant III: Explanation & Architecture
 - [Trust Boundaries & Network Isolation](explanation/security/trust-boundaries.md): Deep dive into the 4 security trust boundaries, CORS, cookie flags, and AES vaults.
+- [Biomedical AI Safety Architecture](explanation/ai/safety-and-guardrails.md): Multi-tier safety guardrails, PII scrubbing, deterministic screening, and PubMed grounding.
+- [System Limitations & Clinical Boundaries](explanation/ai/limitations.md): Operational boundaries between educational AI and certified medical devices.
+- [Data Privacy & Compliance Architecture](explanation/security/privacy.md): Privacy engineering analysis of patient information handling, de-identification, and AES-256-GCM vaults.
 - [SYSTEM_ARCHITECTURE_DEEP_DIVE.md](SYSTEM_ARCHITECTURE_DEEP_DIVE.md): Full-stack architectural breakdown, trust boundaries, and network flows.
 - [DEEP_DIVE_AI_WORKING_PRINCIPLES.md](DEEP_DIVE_AI_WORKING_PRINCIPLES.md): Mathematical principles of biomedical RAG, literature weighting, and citation validation.
 - [DEEP_DIVE_LORA_AND_FINE_TUNING.md](DEEP_DIVE_LORA_AND_FINE_TUNING.md): Mathematical foundations of Low-Rank Adaptation (LoRA) and PEFT backpropagation.
 - [COMPREHENSIVE_CODEBASE_ANALYSIS.md](COMPREHENSIVE_CODEBASE_ANALYSIS.md): Staff engineer architectural critique and design evaluation.
 - [ISSUES_AND_RISKS.md](ISSUES_AND_RISKS.md): Risk register, STRIDE analysis, and SSRF defensive boundaries.
 
-### Quadrant IV: Living Engineering Records
+### Quadrant IV: Living Engineering Records & Policies
 - **Architectural Decision Records (ADRs)**:
   - [ADR 0000: Use Markdown ADRs](records/decisions/0000-use-markdown-architectural-decision-records.md)
   - [ADR 0001: In-Memory MongoDB for Isolated Testing](records/decisions/0001-use-in-memory-mongodb-for-isolated-backend-testing.md)
@@ -131,6 +145,9 @@ This repository organizes documentation following the **Diátaxis** framework:
   - [ADR 0003: Web Locks Mutex for Single-Flight JWT Renewal](records/decisions/0003-use-web-locks-mutex-for-single-flight-jwt-renewal.md)
   - [ADR 0004: Two-Phase Chat Generation & Persistence Handshake](records/decisions/0004-two-phase-chat-generation-and-persistence-handshake.md)
   - [ADR 0005: Unassessed Defaults & Complete Record Gating](records/decisions/0005-unassessed-defaults-and-complete-record-gating-for-clinical-calculators.md)
+  - [ADR 0006: AES-256-GCM Vault for User Provider Credentials](records/decisions/0006-aes-256-gcm-vault-for-provider-credentials.md)
+- **Policies & Processes**:
+  - [Release Process and Quality Gates](release/release-process.md)
 - **Threat Models**:
   - [System STRIDE Threat Model](records/threat-models/system.md)
   - [OWASP Top 10 for LLM Applications (2025)](records/threat-models/ai.md)

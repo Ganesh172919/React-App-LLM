@@ -5,6 +5,12 @@
 ## Getting Started & Tutorials
 
 - [Getting Started Tutorial](docs/tutorials/getting-started.md): 15-minute quickstart guide to clone, install, test, and build the project locally.
+- [How to Run Tests and Verification Checks](docs/how-to/develop/run-tests.md): Procedures for executing backend, frontend, dataset, and multi-tier verification suites.
+- [How to Add a Clinical Scoring Tool](docs/how-to/develop/add-clinical-calculator.md): Adding a clinical calculator in ClinicalCalculatorsModal with safety invariants.
+- [How to Add a Deterministic DDI Rule](docs/how-to/develop/add-ddi-rule.md): Expanding the 23 FDA Boxed Warning screener with regex word boundaries and tests.
+- [How to Deploy with Docker Compose](docs/how-to/operate/deploy.md): Orchestrating containerized services with Nginx ingress, MongoDB auth, and health checks.
+- [How to Perform Rollback & Disaster Recovery](docs/how-to/operate/rollback.md): Rolling back containers, restoring MongoDB collections, and switching AI model providers.
+- [How to Train and Validate LoRA Adapters](docs/how-to/ai/finetune-lora.md): Offline fine-tuning runbook for MedQuAD/PubMedQA LoRA adapters using PEFT and PyTorch.
 - [Repository Overview](README.md): Top-level overview, quickstart instructions, and architecture summary.
 - [Contributing Guide](CONTRIBUTING.md): Developer setup, code standards, git workflow, and test requirements.
 - [Agent Developer Guide](AGENTS.md): Instructions, invariants, and directory map for AI coding agents.
@@ -16,7 +22,12 @@
 ## Reference Specifications
 
 - [Configuration Reference](docs/reference/configuration.md): Exhaustive environment variable reference covering all 34 configuration keys.
+- [Authentication and Session Architecture](docs/reference/api/authentication.md): Specification of JWT lifecycles, Web Locks token renewal mutex, and cookie flags.
+- [API Error Catalog and Status Codes](docs/reference/api/errors.md): Directory of REST API error codes, JSON envelopes, and client retry policies.
 - [Database Architecture & MongoDB Schemas](docs/reference/database.md): Entity relationship model, collection schemas, indexes, and BSON size limits.
+- [Frontend Architecture Reference](docs/reference/frontend.md): React 19 SPA structure, Vite 6 build pipeline, and context providers.
+- [Observability, Logging, and Probes Catalog](docs/reference/observability-catalog.md): Structured JSON logs, correlation IDs, and health probe contracts.
+- [Clinical Tools & DDI Screener Specification](docs/reference/ai/tools.md): Technical inventory and formulas for the 22 clinical risk tools and 23 FDA rules.
 - [Biomedical RAG Pipeline Reference](docs/reference/ai/rag-pipeline.md): End-to-end specification of PubMed literature retrieval, relevance ranking, and citation grounding.
 - [Clinical Prompt Registry & Directives](docs/reference/ai/prompts.md): System prompt directives, audience profile adaptations, and emergency intercepts.
 - [Service Level Objectives & Error Budgets](docs/reference/slo.md): Availability indicators, p95 latency targets, and budget depletion policies.
@@ -32,6 +43,8 @@
 - [ADR 0003: Web Locks Mutex for Single-Flight JWT Renewal](docs/records/decisions/0003-use-web-locks-mutex-for-single-flight-jwt-renewal.md): Preventing token refresh race conditions across concurrent requests and browser tabs.
 - [ADR 0004: Two-Phase Chat Generation and Persistence Handshake](docs/records/decisions/0004-two-phase-chat-generation-and-persistence-handshake.md): Decoupling LLM generation from database writes with exchange idempotency.
 - [ADR 0005: Unassessed Defaults and Complete Record Gating for Clinical Calculators](docs/records/decisions/0005-unassessed-defaults-and-complete-record-gating-for-clinical-calculators.md): Clinical safety invariants across all 22 interactive clinical tools.
+- [ADR 0006: AES-256-GCM Vault for User Provider Credentials](docs/records/decisions/0006-aes-256-gcm-vault-for-provider-credentials.md): Cryptographic authenticated encryption and key rotation for personal provider API keys.
+- [Release Process and Quality Gates](docs/release/release-process.md): SemVer release standards, automated verification gates, and rollback criteria.
 
 ## Threat Models & Model Cards
 
@@ -50,6 +63,9 @@
 
 ## Architecture Explanations
 
+- [Biomedical AI Safety Architecture](docs/explanation/ai/safety-and-guardrails.md): Multi-tier safety guardrails, PII scrubbing, deterministic screening, and PubMed grounding.
+- [System Limitations & Clinical Boundaries](docs/explanation/ai/limitations.md): Operational boundaries between educational AI and certified medical devices.
+- [Data Privacy & Compliance Architecture](docs/explanation/security/privacy.md): Privacy engineering analysis of patient information handling, de-identification, and AES-256-GCM vaults.
 - [Trust Boundaries & Network Isolation](docs/explanation/security/trust-boundaries.md): Deep dive into the 4 security trust boundaries, CORS, cookie flags, and AES vaults.
 - [System Architecture Deep Dive](docs/SYSTEM_ARCHITECTURE_DEEP_DIVE.md): Exhaustive breakdown of component contracts, message lifecycles, and database schemas.
 - [Verification Log](docs/_meta/verification-log.md): Verified execution log of the 228 automated check suite.
