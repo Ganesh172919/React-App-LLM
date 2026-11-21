@@ -13,6 +13,8 @@ source_of_truth: ["docker-compose.yml", "deploy/README.md", "deploy/mongo-init.j
 
 # How to Deploy MedAssist AI with Docker Compose
 
+For public HTTPS on one AWS instance, follow the [Amazon EC2 deployment guide](deploy-aws-ec2.md).
+
 This guide provides instructions for deploying MedAssist AI into a production or staging containerized environment using Docker Compose.
 
 ---

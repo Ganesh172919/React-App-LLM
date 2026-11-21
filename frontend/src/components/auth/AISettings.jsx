@@ -1,10 +1,26 @@
+// Import React lifecycle hooks and authorized API request utility.
+// Connects UI form controls to the backend user settings endpoints.
+// Dispatches preferences updates and provider key encryption requests.
 import { useEffect, useState } from "react";
 import { apiRequest } from "../../lib/api";
 
-const names = { gemini: "Gemini", groq: "Groq", together: "Together AI", local: "Local model" };
+// Mapping dictionary for provider display names for AI provider options.
+// Maps internal provider identifiers to branded user-facing label strings.
+// Provides clean visual titles for Gemini, Groq, Together AI, and Local models.
+const names = { gemini: "Gemini", groq: "Groq", together: "Together AI", local: "Local model", openrouter: "OpenRouter", xai: "xAI", fireworks: "Fireworks AI" };
+
+// Generates human-friendly option label string for AI provider selection dropdowns.
+// Distinguishes system deployment defaults from user-provided personal API keys.
+// Returns formatted display name mapping provider keys to branded titles.
 const choiceLabel = (choice) => choice.id === "deployment" ? `Deployment default (${names[choice.provider] || choice.provider})` : `${choice.source === "personal" ? "My key" : "Deployment"} · ${names[choice.provider] || choice.provider}`;
 
+// Renders the AI provider preference configuration and personal key manager.
+// Manages model selection, response verbosity, audience targeting, and memory.
+// Secures and persists user-provided API credentials with AES-256 server encryption.
 export default function AISettings() {
+  // Local state tracking settings payloads, form drafts, API key inputs, and UI status.
+  // Stores draft configuration for provider choice, answer style, and past-chat memory.
+  // Manages loading states, key removal confirmations, and feedback notifications.
   const [settings, setSettings] = useState(null);
   const [draft, setDraft] = useState(null);
   const [keyProvider, setKeyProvider] = useState("gemini");
@@ -15,12 +31,20 @@ export default function AISettings() {
   const [loadVersion, setLoadVersion] = useState(0);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
+
+  // Effect hook loading active settings and provider configurations from the backend.
+  // Queries GET /settings on mount and when loadVersion counter increments on retry.
+  // Populates local settings object and pre-fills editable draft form controls.
   useEffect(() => {
     let active = true;
     setLoading(true); setError("");
     apiRequest("/settings").then((data) => { if (active) { setSettings(data); setDraft({ providerChoice: data.providerChoice, answerStyle: data.answerStyle, audienceProfile: data.audienceProfile || "general", usePastChats: data.usePastChats }); } }).catch((err) => { if (active) setError(err.message); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [loadVersion]);
+
+  // Generic submission handler executing settings mutations and managing feedback.
+  // Sets busy loading state, clears prior notices, and invokes the supplied API action.
+  // Refreshes settings state, resets sensitive key inputs, and displays success banners.
   const submit = async (action, success) => {
     setBusy(true); setError(""); setStatus("");
     try {
@@ -31,6 +55,10 @@ export default function AISettings() {
     } catch (err) { setError(err.message); }
     finally { setBusy(false); }
   };
+
+  // Render settings interface card with provider choices, memory toggle, and key list.
+  // Displays dropdowns for answer provider, answer length, and clinician/student audience.
+  // Provides encrypted key management form and removal controls for stored credentials.
   return <section className="card ai-settings"><h2>AI and memory settings</h2>
     <p className="muted">Choose where answers are generated and how much context is used. Medical questions still use PubMed records. Provider availability and free quotas depend on each provider account.</p>
     {error && <p className="notice error" role="alert">{error}</p>}

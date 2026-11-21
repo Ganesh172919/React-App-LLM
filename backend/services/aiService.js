@@ -9,7 +9,7 @@
  *
  * Technical Parameters:
  *   - Endpoint: https://generativelanguage.googleapis.com/v1beta/models/:model:generateContent
- *   - Default Model: `gemini-3.8-flash` (customizable via `process.env.GEMINI_MODEL`)
+ *   - Default Model: `gemini-3.5-flash-lite` (customizable via `process.env.GEMINI_MODEL`)
  *   - Generation Config: Temperature: 0.25 (cautious, factual), Top-P: 0.9,
  *     Max Output Tokens: 900.
  *   - History Window: Up to 8 recent turns, each truncated to 2000 chars maximum.
@@ -39,11 +39,11 @@
  *   │     ├── Sends POST with x-goog-api-key header and 20s timeout
  *   │     └── Extracts text via extractText(payload.candidates[0])
  *   │
- *   └── 5. Output Validation
- *         ├── If empty response: Throws AI_EMPTY_RESPONSE
- *         └── Returns { text, model }
- *
- * ----------------------------------------------------------------------------
+ *   ├── 5. Output Validation
+ *   │     ├── If empty response: Throws AI_EMPTY_RESPONSE
+ *   │     └── Returns { text, model, provider }
+ *   │
+ *   ----------------------------------------------------------------------------
  * ASCII FLOW: GEMINI REQUEST DISPATCH & CANDIDATE EXTRACTION
  * ----------------------------------------------------------------------------
  *  aiService                      Google Gemini API Endpoint
@@ -57,20 +57,37 @@
  *      │<── 200 OK Response Payload ──────────┤
  *      │    { candidates: [ { content } ] }   │
  *  [5] ├─ extractText(data)                   │
- *  [6] └── Return { text, model }             │
+ *  [6] └── Return { text, model, provider }   │
  * ============================================================================
  */
+// Import Axios HTTP client library for external REST API communication.
+// Facilitates structured JSON requests with configurable timeouts and abort signals.
+// Supplies HTTP client transport for connecting to Google Generative Language endpoints.
 const axios = require("axios");
+const { modelFor } = require("./providerSelection");
 
+// Base URL root for Google Generative Language (Gemini) v1beta REST endpoints.
+// Pre-configured root path used for constructing model-specific generateContent URLs.
+// Targets the official Google AI API for generative language completions.
 const GEMINI_API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models";
 
+// Helper function extracting synthesized textual response from Gemini candidate parts.
+// Safely navigates candidate array and maps individual text parts into a single string.
+// Trims surrounding whitespace and returns an empty string fallback when parts are missing.
 const extractText = (payload) =>
   payload?.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text || "")
+    ?.filter((part) => !part.thought)
+    .map((part) => part.text || "")
     .join("\n")
     .trim();
 
+// Dispatches prompt, system instructions, and history to Gemini via HTTP POST.
+// Normalizes chat history roles into "model" and "user" while bounding character lengths.
+// Validates finish reasons and ensures non-empty textual output before returning.
 const generateWithGemini = async ({ prompt, systemInstruction, history = [], signal, providerConfig }) => {
+  // Resolve API key from provider config or deployment environment variables.
+  // Checks presence of valid Gemini API credentials before making network requests.
+  // Throws AI_NOT_CONFIGURED error when no API key is available in either source.
   const apiKey = providerConfig?.apiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     const error = new Error("GEMINI_API_KEY is not configured");
@@ -78,7 +95,10 @@ const generateWithGemini = async ({ prompt, systemInstruction, history = [], sig
     throw error;
   }
 
-  const model = providerConfig?.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  // Resolve target model name and map conversational history turns into Gemini schema.
+  // Filters valid conversational turns and restricts context to the last 8 messages.
+  // Maps "assistant" role to "model" and truncates individual messages to 2000 characters.
+  const model = providerConfig?.model || modelFor("gemini");
   const contents = history
     .filter((item) => item?.text)
     .slice(-8)
@@ -87,8 +107,14 @@ const generateWithGemini = async ({ prompt, systemInstruction, history = [], sig
       parts: [{ text: item.text.slice(0, 2000) }],
     }));
 
+  // Append the active user prompt turn to the prepared message contents array.
+  // Constructs user role turn containing the un-redacted active prompt string.
+  // Completes the chronological conversational structure expected by the Gemini API.
   contents.push({ role: "user", parts: [{ text: prompt }] });
 
+  // Execute authenticated HTTP POST request to the Gemini generateContent endpoint.
+  // Sets temperature to 0.25 and maxOutputTokens to 900 for grounded clinical answers.
+  // Configures a 20-second timeout, cancellation signal, and x-goog-api-key header.
   const response = await axios.post(
     `${GEMINI_API_ROOT}/${encodeURIComponent(model)}:generateContent`,
     {
@@ -112,6 +138,9 @@ const generateWithGemini = async ({ prompt, systemInstruction, history = [], sig
     }
   );
 
+  // Extract generated text and inspect safety finish reasons or prompt blockings.
+  // Ensures candidate finishReason is strictly "STOP" to prevent truncated completions.
+  // Rejects empty text responses with explicit error codes for caller fallback handling.
   const text = extractText(response.data);
   if (response.data?.promptFeedback?.blockReason || response.data?.candidates?.[0]?.finishReason !== "STOP") {
     const error = new Error("The provider blocked or did not complete the answer");
@@ -124,7 +153,13 @@ const generateWithGemini = async ({ prompt, systemInstruction, history = [], sig
     throw error;
   }
 
-  return { text, model };
+  // Return the synthesized response text alongside the active model identifier.
+  // Encapsulates the verified response string for downstream verifiers and citation checks.
+  // Provides provider telemetry tracking the exact model version used for generation.
+  return { text, model, provider: "Gemini" };
 };
 
+// Export Gemini generation function for integration into provider selection services.
+// Provides standardized interface consumed by modelProvider and answerService.
+// Encapsulates Google Generative Language API communication behind a clean abstraction.
 module.exports = { generateWithGemini };

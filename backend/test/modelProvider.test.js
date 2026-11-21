@@ -1,9 +1,15 @@
+// Import standard Node.js test harness, assertion primitives, and HTTP client.
+// Load model provider generation routines and answer grounding verifiers.
+// Configures mocks and environments for external model API contract testing.
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const axios = require("axios");
 const { generateAnswer, providerConfigured } = require("../services/modelProvider");
 const { verifyAnswer } = require("../services/answerVerifier");
 
+// Test that Together AI provider payload formatting preserves system roles and handles completion stops.
+// Assert that incomplete responses truncated by token limits trigger AI_INCOMPLETE_RESPONSE rejections.
+// Guarantees proper failure signaling when responses exceed model context limits.
 test("Together sends bounded chat messages and rejects incomplete answers", async (t) => {
   const old = { ...process.env };
   t.after(() => { for (const key of ["AI_PROVIDER", "TOGETHER_API_KEY", "TOGETHER_MODEL"]) old[key] === undefined ? delete process.env[key] : process.env[key] = old[key]; });
@@ -20,6 +26,9 @@ test("Together sends bounded chat messages and rejects incomplete answers", asyn
   await assert.rejects(generateAnswer({ prompt: "hello", systemInstruction: "instruction" }), { code: "AI_INCOMPLETE_RESPONSE" });
 });
 
+// Test that local OpenAI-compatible endpoints operate without requiring authorization headers.
+// Verify that non-local remote URLs enforce mandatory HTTPS encryption protocol requirements.
+// Enforces transport security boundaries for external and internal model endpoints.
 test("local provider uses the configured endpoint and does not send an empty key", async (t) => {
   const keys = ["AI_PROVIDER", "LOCAL_AI_BASE_URL", "LOCAL_AI_MODEL", "LOCAL_AI_API_KEY"];
   const old = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
@@ -32,6 +41,9 @@ test("local provider uses the configured endpoint and does not send an empty key
   await assert.rejects(generateAnswer({ prompt: "hello", systemInstruction: "instruction" }), /HTTPS/);
 });
 
+// Test that Groq requests dispatch to the official HTTPS endpoint using personal user credentials.
+// Assert that authorization headers and model identifiers match custom per-user configuration.
+// Confirms credential encapsulation and target model routing for user-supplied keys.
 test("Groq uses its fixed HTTPS endpoint and the selected personal key", async (t) => {
   t.mock.method(axios, "post", async (url, payload, options) => {
     assert.equal(url, "https://api.groq.com/openai/v1/chat/completions");
@@ -43,6 +55,32 @@ test("Groq uses its fixed HTTPS endpoint and the selected personal key", async (
   assert.equal(result.provider, "Groq");
 });
 
+test("additional hosted providers send credentials only to their fixed endpoints", async (t) => {
+  const configs = [
+    ["openrouter", "https://openrouter.ai/api/v1/chat/completions", "OpenRouter"],
+    ["xai", "https://api.x.ai/v1/chat/completions", "xAI"],
+    ["fireworks", "https://api.fireworks.ai/inference/v1/chat/completions", "Fireworks AI"],
+  ];
+  for (const [provider, endpoint, label] of configs) {
+    await t.test(provider, async (subtest) => {
+      subtest.mock.method(axios, "post", async (url, body, options) => {
+        assert.equal(url, endpoint);
+        assert.equal(options.headers.Authorization, "Bearer synthetic-key");
+        assert.equal(options.maxRedirects, 0);
+        assert.equal(body.model, "requested-model");
+        return { data: { model: "served-model", choices: [{ finish_reason: "stop", message: { content: "Test answer" } }] } };
+      });
+      const providerConfig = { provider, apiKey: "synthetic-key", model: "requested-model", baseUrl: "https://untrusted.example/v1" };
+      assert.deepEqual(await generateAnswer({ prompt: "hello", systemInstruction: "instruction", providerConfig }), {
+        text: "Test answer", model: "served-model", provider: label,
+      });
+    });
+  }
+});
+
+// Test that the answer verification service requires deterministic SUPPORTED or UNSUPPORTED verdicts.
+// Assert that ambiguous or ungrounded model output strings are rejected with validation errors.
+// Enforces binary grounding decisions to prevent ambiguous clinical assertions.
 test("model review accepts only an explicit verdict", async () => {
   const args = { question: "Q", answer: "A [1]", sourceText: "[1] evidence" };
   assert.equal((await verifyAnswer({ ...args, generate: async () => ({ text: "SUPPORTED", model: "fixture" }) })).supported, true);

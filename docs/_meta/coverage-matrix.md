@@ -51,6 +51,12 @@
 | `GROQ_MODEL` | Groq Model Name | `openai/gpt-oss-20b` | No | `backend/services/modelProvider.js` | `docs/runbooks/llm-provider-outage-or-rate-limit.md` |
 | `TOGETHER_API_KEY` | Together AI Inference Key| Optional | Yes | `backend/services/modelProvider.js` | `docs/runbooks/llm-provider-outage-or-rate-limit.md` |
 | `TOGETHER_MODEL` | Together Model Name | Optional | No | `backend/services/modelProvider.js` | `docs/runbooks/llm-provider-outage-or-rate-limit.md` |
+| `OPENROUTER_API_KEY` | OpenRouter key | Optional | Yes | `backend/services/providerSelection.js` | `docs/reference/configuration.md` |
+| `OPENROUTER_MODEL` | OpenRouter model slug | `openrouter/free` | No | `backend/services/providerSelection.js` | `docs/reference/configuration.md` |
+| `XAI_API_KEY` | xAI key | Optional | Yes | `backend/services/providerSelection.js` | `docs/reference/configuration.md` |
+| `XAI_MODEL` | xAI model ID | Optional | No | `backend/services/providerSelection.js` | `docs/reference/configuration.md` |
+| `FIREWORKS_API_KEY` | Fireworks key | Optional | Yes | `backend/services/providerSelection.js` | `docs/reference/configuration.md` |
+| `FIREWORKS_MODEL` | Fireworks model ID | Optional | No | `backend/services/providerSelection.js` | `docs/reference/configuration.md` |
 | `LOCAL_AI_BASE_URL` | Self-Hosted Model URL | `http://127.0.0.1:8000/v1` | No | `backend/services/modelProvider.js` | `docs/runbooks/llm-provider-outage-or-rate-limit.md` |
 | `LOCAL_AI_MODEL` | Self-Hosted Model Name | Optional | No | `backend/services/modelProvider.js` | `docs/runbooks/llm-provider-outage-or-rate-limit.md` |
 | `LOCAL_AI_API_KEY` | Self-Hosted Auth Header | Optional | Yes | `backend/services/modelProvider.js` | `docs/runbooks/llm-provider-outage-or-rate-limit.md` |
